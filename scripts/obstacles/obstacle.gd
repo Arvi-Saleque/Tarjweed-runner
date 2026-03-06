@@ -23,6 +23,43 @@ func setup(model_scene: PackedScene, obs_type: ObstacleType = ObstacleType.GROUN
 	_auto_collision()
 
 
+func setup_overhead(model_scene: PackedScene) -> void:
+	## Setup an overhead obstacle the player must slide under.
+	## Model is elevated so its bottom sits above slide height (~0.9m).
+	obstacle_type = ObstacleType.LOW
+	collision_layer = 4
+	collision_mask = 0
+	add_to_group("obstacles")
+
+	if model_scene:
+		_model = model_scene.instantiate()
+		add_child(_model)
+
+	# Get model AABB to know its size
+	var aabb := _compute_aabb()
+	var model_height: float = aabb.size.y if aabb.size.y > 0.1 else 0.5
+
+	# Position model so its bottom edge is at OVERHEAD_Y
+	var overhead_y: float = 0.9
+	var model_bottom: float = aabb.position.y  # local-space bottom of model
+	if _model:
+		_model.position.y = overhead_y - model_bottom
+
+	# Scale the model wider to span the lane and look imposing
+	if _model:
+		_model.scale = Vector3(1.8, 1.4, 1.6)
+
+	# Create collision that covers the overhead area
+	var col := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	# Wide collision spanning the lane, from overhead_y upward
+	var col_height: float = maxf(model_height * 1.4, 1.2)
+	box.size = Vector3(1.4, col_height, 0.8)
+	col.shape = box
+	col.position.y = overhead_y + col_height / 2.0
+	add_child(col)
+
+
 func setup_placeholder(box_size: Vector3, material: StandardMaterial3D = null) -> void:
 	collision_layer = 4
 	collision_mask = 0
@@ -78,6 +115,21 @@ func _auto_collision() -> void:
 	col.shape = box
 	col.position = aabb.get_center()
 	add_child(col)
+
+
+func _compute_aabb() -> AABB:
+	## Calculate combined AABB of all mesh children.
+	var aabb := AABB()
+	var found := false
+	for child in _get_all_children(self):
+		if child is MeshInstance3D:
+			var mesh_aabb: AABB = child.get_aabb()
+			if not found:
+				aabb = mesh_aabb
+				found = true
+			else:
+				aabb = aabb.merge(mesh_aabb)
+	return aabb
 
 
 func _get_all_children(node: Node) -> Array[Node]:

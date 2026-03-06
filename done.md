@@ -1270,3 +1270,48 @@ assets/                        (426 files — unchanged)
 | Lane change (Quiz) | A/D | Swipe left/right |
 
 ---
+
+## Update: Overhead Slide-Under Obstacles (Natural Mode)
+
+### Added Assets (copied from `D:\3 - 2\System\assets\3d\`)
+New folder: `assets/Obstacles/Overhead/` containing 6 GLB models:
+- **fence-rope.glb** — Horizontal rope barrier (kenney_platformer-kit)
+- **pipe.glb** — Metal pipe obstacle (kenney_platformer-kit)
+- **poles.glb** — Wooden poles barrier (kenney_platformer-kit)
+- **saw.glb** — Spinning saw blade (kenney_platformer-kit)
+- **log_large.glb** — Large fallen tree trunk (kenney_nature-kit)
+- **fence_gate.glb** — Wooden fence gate (kenney_nature-kit)
+
+### Changed Files
+- **scripts/world/world_generator.gd**:
+  - Added `overhead_obstacle_scenes: Array[PackedScene]`
+  - `_preload_obstacles()` now also loads all 6 overhead GLBs
+  - New `get_random_overhead_scene()` method
+
+- **scripts/obstacles/obstacle.gd**:
+  - New `setup_overhead(model_scene)` method — positions model with bottom edge at y=0.9m
+  - Scales model wider (1.8x, 1.4x, 1.6x) to look imposing and span the lane
+  - Creates collision box starting at y=0.9 upward — blocks standing player, clears sliding player
+  - New `_compute_aabb()` helper for mesh bounds calculation
+
+- **scripts/world/obstacle_spawner.gd**:
+  - New constants: `OVERHEAD_CHANCE_BASE = 0.15`, `OVERHEAD_CHANCE_MAX = 0.35`
+  - `_spawn_natural_obstacles()` now randomly picks overhead vs ground obstacles
+  - Overhead chance scales with difficulty (15% → 35%)
+  - New `_create_overhead_obstacle()` function using overhead GLB models
+  - Overhead obstacles are always single-lane (player can dodge OR slide)
+
+### Collision Math
+| State | Player Height | Collision Top | Overhead Bottom | Result |
+|-------|--------------|---------------|-----------------|--------|
+| Standing | 1.8m | y=1.8 | y=0.9 | **HIT** — must slide or dodge |
+| Sliding | 0.6m | y=0.6 | y=0.9 | **CLEAR** — slides under safely |
+
+### Gameplay Impact
+- Natural mode now has two obstacle types requiring different responses:
+  - **Ground obstacles**: Jump over (Space/Swipe up) or dodge to another lane
+  - **Overhead obstacles**: Slide under (S/Swipe down) or dodge to another lane
+- Creates more varied, engaging gameplay with meaningful use of the slide mechanic
+- Difficulty increases overhead frequency from 15% to 35% as game progresses
+
+---

@@ -17,6 +17,7 @@ var _chunk_index: int = 0
 # Preloaded resources (passed to chunk spawners)
 var decoration_scenes: Dictionary = {}
 var obstacle_scenes: Array[PackedScene] = []
+var overhead_obstacle_scenes: Array[PackedScene] = []
 var coin_scenes: Dictionary = {}  # "gold" -> PackedScene, etc.
 var obstacle_material: StandardMaterial3D
 var coin_material: StandardMaterial3D
@@ -216,6 +217,14 @@ func _preload_obstacles() -> void:
 		"res://assets/Obstacles/RocksSmall/cliff_blockHalf_rock.glb",
 		"res://assets/Obstacles/RocksSmall/cliff_blockQuarter_rock.glb",
 	])
+	overhead_obstacle_scenes = _load_scene_array([
+		"res://assets/Obstacles/Overhead/fence-rope.glb",
+		"res://assets/Obstacles/Overhead/pipe.glb",
+		"res://assets/Obstacles/Overhead/poles.glb",
+		"res://assets/Obstacles/Overhead/saw.glb",
+		"res://assets/Obstacles/Overhead/log_large.glb",
+		"res://assets/Obstacles/Overhead/fence_gate.glb",
+	])
 
 
 func _preload_coins() -> void:
@@ -239,3 +248,9 @@ func get_random_obstacle_scene() -> PackedScene:
 	if obstacle_scenes.is_empty():
 		return null
 	return obstacle_scenes[randi() % obstacle_scenes.size()]
+
+
+func get_random_overhead_scene() -> PackedScene:
+	if overhead_obstacle_scenes.is_empty():
+		return null
+	return overhead_obstacle_scenes[randi() % overhead_obstacle_scenes.size()]

@@ -8,6 +8,8 @@ const OBSTACLE_SCRIPT: String = "res://scripts/obstacles/obstacle.gd"
 # Natural mode settings
 const SLOT_SPACING: float = 5.0
 const MIN_SLOT_OFFSET: float = 3.0
+const OVERHEAD_CHANCE_BASE: float = 0.15   # 15% chance at low difficulty
+const OVERHEAD_CHANCE_MAX: float = 0.35    # 35% chance at high difficulty
 
 # Quiz mode settings — full-row blocks the player MUST jump over
 const QUIZ_MIN_ROW_GAP: float = 48.0   # ~4s at base speed (12 m/s)
@@ -44,6 +46,12 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 		slots.append(z)
 		z -= SLOT_SPACING
 
+	# Overhead chance scales with difficulty
+	var overhead_chance: float = clampf(
+		OVERHEAD_CHANCE_BASE + (difficulty - 1.0) * 0.1,
+		OVERHEAD_CHANCE_BASE, OVERHEAD_CHANCE_MAX
+	)
+
 	var last_obstacle_z: float = 999.0
 	for slot_z: float in slots:
 		if randf() > frequency:
@@ -51,12 +59,20 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 		if absf(slot_z - last_obstacle_z) < SLOT_SPACING * 0.8:
 			continue
 
-		var pattern: int = _pick_pattern(difficulty)
-		var lanes_to_block: Array[int] = _get_lanes_for_pattern(pattern)
-
-		for lane: int in lanes_to_block:
+		# Decide: overhead (slide-under) or ground (jump-over / dodge)
+		var is_overhead: bool = randf() < overhead_chance
+		if is_overhead:
+			# Overhead = single lane, player must slide under it
+			var lane: int = randi() % 3
 			var lane_x: float = GameManager.LANE_POSITIONS[lane]
-			_create_obstacle(chunk, Vector3(lane_x, 0.0, slot_z), generator)
+			_create_overhead_obstacle(chunk, Vector3(lane_x, 0.0, slot_z), generator)
+		else:
+			# Ground obstacles — original lane-blocking pattern
+			var pattern: int = _pick_pattern(difficulty)
+			var lanes_to_block: Array[int] = _get_lanes_for_pattern(pattern)
+			for lane: int in lanes_to_block:
+				var lane_x: float = GameManager.LANE_POSITIONS[lane]
+				_create_obstacle(chunk, Vector3(lane_x, 0.0, slot_z), generator)
 
 		last_obstacle_z = slot_z
 
@@ -186,3 +202,32 @@ static func _create_obstacle(parent: Node3D, pos: Vector3, generator: Node3D) ->
 		if generator and generator.obstacle_material:
 			fallback_mat = generator.obstacle_material
 		obstacle.call("setup_placeholder", Vector3(0.8, 0.8, 0.8), fallback_mat)
+
+
+static func _create_overhead_obstacle(parent: Node3D, pos: Vector3, generator: Node3D) -> void:
+	var obs_script: GDScript = load(OBSTACLE_SCRIPT) as GDScript
+	if not obs_script:
+		return
+
+	var obstacle := Area3D.new()
+	obstacle.set_script(obs_script)
+	obstacle.position = pos
+	obstacle.name = "OverheadObstacle"
+	parent.add_child(obstacle)
+
+	# Try to use real GLB overhead model
+	var model_scene: PackedScene = null
+	if generator and generator.has_method("get_random_overhead_scene"):
+		model_scene = generator.get_random_overhead_scene()
+
+	if model_scene:
+		obstacle.call("setup_overhead", model_scene)
+		# Random Y rotation for visual variety
+		obstacle.rotation.y = [0.0, PI * 0.5, PI, PI * 1.5].pick_random()
+	else:
+		# Fallback: placeholder overhead bar
+		var bar_mat := StandardMaterial3D.new()
+		bar_mat.albedo_color = Color(0.6, 0.35, 0.15)
+		bar_mat.roughness = 0.8
+		obstacle.call("setup_placeholder", Vector3(1.6, 0.4, 0.4), bar_mat)
+		obstacle.position.y = 0.9  # Elevate fallback
