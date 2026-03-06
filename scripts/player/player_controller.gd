@@ -50,6 +50,16 @@ const GIANT_ROCK_BLAST_RANGE: float = 35.0   # can blast within this range
 var _last_space_time: float = -1.0
 var _nearby_giant_rock: Node = null
 
+# --- River / Bridge ---
+const RIVER_DETECT_RANGE: float = 40.0     # Start detecting river at this distance
+const RIVER_BRIDGE_RANGE: float = 30.0     # Can build bridge within this range
+const RIVER_NO_JUMP_RANGE: float = 20.0    # No jumping within this range of a river
+const BRIDGE_HOLD_TIME: float = 0.4        # Seconds of holding spacebar to build
+var _nearby_river: Node = null
+var _space_hold_time: float = 0.0
+var _bridge_built_for_river: Node = null    # Track which river we already built a bridge for
+var _near_river_no_jump: bool = false       # True when within 20m of a river (suppress jump)
+
 # --- Node References ---
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var player_model: Node3D = $PlayerModel
@@ -136,6 +146,10 @@ func _physics_process(delta: float) -> void:
 	# Detect nearby giant rocks for hint display
 	_scan_for_giant_rocks()
 
+	# Detect nearby rivers and handle bridge building
+	_scan_for_rivers()
+	_update_bridge_hold(delta)
+
 	# Sync model tilt for lane changes
 	var lane_diff: float = target_x - position.x
 	player_model.rotation.z = lerp(player_model.rotation.z, clampf(-lane_diff * 0.15, -0.2, 0.2), delta * 10.0)
@@ -158,12 +172,13 @@ func _input(event: InputEvent) -> void:
 				if delta_v.length() < SWIPE_MIN_DISTANCE:
 					# Short tap — treat like spacebar for giant rock blast
 					if GameManager.current_theme != "quiz":
-						var blast_result := _try_giant_rock_blast()
-						if blast_result == 1:
-							pass  # Blast fired
-						elif blast_result == -1:
-							pass  # First tap near giant rock, wait for double
-						elif is_grounded or not coyote_timer.is_stopped():
+						# Near river — no jump, spacebar reserved for bridge
+						if not _near_river_no_jump:
+							var blast_result := _try_giant_rock_blast()
+							if blast_result == 1:
+								pass  # Blast fired
+							# Always jump on tap
+							if is_grounded or not coyote_timer.is_stopped():
 								_jump()
 				else:
 					_process_swipe(event.position)
@@ -214,13 +229,15 @@ func _handle_input() -> void:
 	# In Quiz mode, spacebar jump is disabled — use quiz_jump() from QuizManager
 	if GameManager.current_theme != "quiz":
 		if Input.is_action_just_pressed("jump"):
-			# Check for giant rock double-tap blast first
+			# Near a river — spacebar is reserved for bridge building, no jump
+			if _near_river_no_jump:
+				return
+			# Check for giant rock double-tap blast
 			var blast_result := _try_giant_rock_blast()
 			if blast_result == 1:
-				pass  # Blast fired
-			elif blast_result == -1:
-				pass  # First tap near giant rock, do nothing (no jump)
-			elif is_grounded or not coyote_timer.is_stopped():
+				pass  # Blast fired, jump already happened on first tap
+			# Always jump regardless of blast state
+			if is_grounded or not coyote_timer.is_stopped():
 				_jump()
 			else:
 				_input_buffer_jump = true
@@ -415,7 +432,22 @@ func _handle_collision(node: Node) -> void:
 	if _is_invincible or current_state == PlayerState.DEAD:
 		return
 
-	if node.is_in_group("obstacles"):
+	# River kill zones — skip if bridge was built on this lane
+	if node.is_in_group("river_kill_zones"):
+		var lane_idx: int = node.get_meta("lane_index", -1)
+		if lane_idx == current_lane:
+			# Check if this river has a bridge on our lane
+			var river_parent: Node = node.get_parent()
+			if river_parent and river_parent.has_meta("bridge_lane_%d" % lane_idx):
+				return  # Bridge exists, safe to pass
+		# No bridge — die
+		hit_obstacle.emit()
+		AudioManager.play_impact()
+		GameManager.trigger_game_over()
+		_die()
+		return
+
+	if node.is_in_group("obstacles") and not node.is_in_group("river_kill_zones"):
 		hit_obstacle.emit()
 		AudioManager.play_impact()
 		GameManager.trigger_game_over()
@@ -470,7 +502,7 @@ func _scan_for_giant_rocks() -> void:
 
 
 func _try_giant_rock_blast() -> int:
-	## Returns: 1 = blast fired, -1 = first tap (blocked jump), 0 = no giant rock nearby
+	## Returns: 1 = blast fired, -1 = first tap recorded, 0 = no giant rock nearby
 	if _nearby_giant_rock == null or not is_instance_valid(_nearby_giant_rock):
 		_last_space_time = -1.0
 		return 0
@@ -487,7 +519,7 @@ func _try_giant_rock_blast() -> int:
 		_fire_blast_projectile(_nearby_giant_rock)
 		return 1
 	else:
-		# First tap — record time, block jump
+		# First tap — record time (jump still happens)
 		_last_space_time = now
 		return -1
 
@@ -548,6 +580,107 @@ func _fire_blast_projectile(target_rock: Node) -> void:
 		fade_tween.parallel().tween_callback(func(): mat.albedo_color.a = 0.0)
 		fade_tween.tween_callback(projectile.queue_free)
 	)
+
+
+# --- River Detection & Bridge Building ---
+
+func _scan_for_rivers() -> void:
+	## Check for nearby rivers and update _nearby_river.
+	_nearby_river = null
+	_near_river_no_jump = false
+	var rivers := get_tree().get_nodes_in_group("river_crossings")
+	for river in rivers:
+		var river_z: float = river.global_position.z
+		if river_z > 2.0:
+			continue  # Already passed
+		var abs_dist: float = absf(river_z)
+		if abs_dist < RIVER_DETECT_RANGE:
+			# Don't target rivers we already built a bridge for on our lane
+			if river == _bridge_built_for_river and river.has_meta("bridge_lane_%d" % current_lane):
+				continue
+			# Within 20m — suppress jumping
+			if abs_dist < RIVER_NO_JUMP_RANGE:
+				_near_river_no_jump = true
+			if abs_dist < RIVER_BRIDGE_RANGE:
+				_nearby_river = river
+
+
+func _update_bridge_hold(delta: float) -> void:
+	## Track spacebar hold to build bridge over river.
+	if _nearby_river == null or not is_instance_valid(_nearby_river):
+		_space_hold_time = 0.0
+		return
+
+	# Already built bridge for this river on this lane
+	if _nearby_river.has_meta("bridge_lane_%d" % current_lane):
+		return
+
+	if Input.is_action_pressed("jump"):
+		_space_hold_time += delta
+		if _space_hold_time >= BRIDGE_HOLD_TIME:
+			_build_bridge(_nearby_river)
+			_space_hold_time = 0.0
+	else:
+		_space_hold_time = 0.0
+
+
+func _build_bridge(river: Node) -> void:
+	## Spawn a bridge on the player's current lane over the river.
+	var lane_x: float = GameManager.LANE_POSITIONS[current_lane]
+
+	# Find the world generator to get a bridge model
+	var generator: Node = null
+	var generators := get_tree().get_nodes_in_group("world_generator")
+	if generators.size() > 0:
+		generator = generators[0]
+
+	# Mark this river as bridged (all lanes covered)
+	for l in 3:
+		river.set_meta("bridge_lane_%d" % l, true)
+	_bridge_built_for_river = river
+
+	# Remove ALL kill zones since bridge covers the full river
+	for child in river.get_children():
+		if child.is_in_group("river_kill_zones"):
+			child.remove_from_group("obstacles")
+			child.remove_from_group("river_kill_zones")
+			for sub in child.get_children():
+				if sub is CollisionShape3D:
+					sub.set_deferred("disabled", true)
+
+	# Spawn bridge model — covers the entire river
+	var bridge_node := Node3D.new()
+	bridge_node.name = "Bridge_Lane%d" % current_lane
+	bridge_node.position = Vector3(lane_x, 0.15, 0.0)  # On the player's current lane
+
+	var bridge_model: Node3D = null
+	if generator and generator.has_method("get_random_bridge_scene"):
+		var scene: PackedScene = generator.get_random_bridge_scene()
+		if scene:
+			bridge_model = scene.instantiate()
+
+	if bridge_model:
+		# Scale bridge to cover the full river
+		bridge_model.scale = Vector3(3.0, 1.5, 2.5)
+		bridge_model.rotation.y = PI * 0.5  # Rotate to span across the river
+		bridge_node.add_child(bridge_model)
+	else:
+		# Fallback: procedural wood plank bridge
+		var plank := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(10.0, 0.2, 5.0)
+		var mat := StandardMaterial3D.new()
+		mat.albedo_color = Color(0.55, 0.35, 0.15)
+		mat.roughness = 0.9
+		box.material = mat
+		plank.mesh = box
+		bridge_node.add_child(plank)
+
+	river.add_child(bridge_node)
+
+	# Play a sound effect
+	AudioManager.play_sfx(AudioManager.sfx_landing, 0.3)
+	print("[Bridge] Built on lane %d for river at Z=%.1f" % [current_lane, river.global_position.z])
 
 
 func _ensure_player_visible() -> void:

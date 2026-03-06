@@ -78,6 +78,14 @@ func start_game() -> void:
 	# Reset quiz mode tracking
 	if has_meta("_quiz_last_obs_z"):
 		remove_meta("_quiz_last_obs_z")
+	# Reset giant rock tracking
+	if has_meta("_last_giant_rock_dist"):
+		remove_meta("_last_giant_rock_dist")
+	if has_meta("_giant_rock_positions"):
+		remove_meta("_giant_rock_positions")
+	# Reset river tracking
+	if has_meta("_last_river_dist"):
+		remove_meta("_last_river_dist")
 	current_state = GameState.PLAYING
 	get_tree().paused = false
 	game_started.emit()

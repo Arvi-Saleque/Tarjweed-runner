@@ -19,6 +19,8 @@ var decoration_scenes: Dictionary = {}
 var obstacle_scenes: Array[PackedScene] = []
 var overhead_obstacle_scenes: Array[PackedScene] = []
 var giant_rock_scenes: Array[PackedScene] = []
+var river_scenes: Array[PackedScene] = []
+var bridge_scenes: Array[PackedScene] = []
 var coin_scenes: Dictionary = {}  # "gold" -> PackedScene, etc.
 var obstacle_material: StandardMaterial3D
 var coin_material: StandardMaterial3D
@@ -28,6 +30,7 @@ var path_edge_material: StandardMaterial3D
 
 
 func _ready() -> void:
+	add_to_group("world_generator")
 	_chunk_container = Node3D.new()
 	_chunk_container.name = "ChunkContainer"
 	add_child(_chunk_container)
@@ -274,22 +277,40 @@ func _preload_decorations() -> void:
 			"res://assets/Environment/ExtraProps/grass_leafs.glb",
 			"res://assets/Environment/ExtraProps/grass_leafsLarge.glb",
 		]),
+		"grass": _load_scene_array([
+			"res://assets/Environment/grass/Tuft of grass.glb",
+			"res://assets/Environment/grass/grass yellowing.glb",
+			"res://assets/Environment/grass/Grass Patch.glb",
+			"res://assets/Environment/ExtraProps/grass.glb",
+			"res://assets/Environment/ExtraProps/grass_leafs.glb",
+		]),
+		"animals": _load_scene_array([
+			"res://assets/Environment/animals/Alpaca.glb",
+			"res://assets/Environment/animals/Elephant.glb",
+			"res://assets/Environment/animals/Kangaroo.glb",
+			"res://assets/Environment/animals/Lion.glb",
+			"res://assets/Environment/animals/Stag.glb",
+		]),
 		"mountains": _load_scene_array([
 			"res://assets/Environment/big hills/Mountain.glb",
 			"res://assets/Environment/big hills/Mountain1.glb",
 			"res://assets/Environment/big hills/Snowy Hills.glb",
 		]),
-		"animals": _load_scene_array([
-			"res://assets/Environment/animals/Alpaca.glb",
-			"res://assets/Environment/animals/Cow/Cow.fbx",
-			"res://assets/Environment/animals/Elephant.glb",
-			"res://assets/Environment/animals/Kangaroo.glb",
-			"res://assets/Environment/animals/Lion.glb",
-			"res://assets/Environment/animals/Rhinoceros.glb",
-			"res://assets/Environment/animals/Squirrel.glb",
-			"res://assets/Environment/animals/Stag.glb",
-		]),
 	}
+
+	# River crossing scenes (placed across the road)
+	river_scenes = _load_scene_array([
+		"res://assets/Obstacles/River/ground_riverCross.glb",
+		"res://assets/Obstacles/River/ground_riverOpen.glb",
+		"res://assets/Environment/ExtraProps/ground_riverStraight.glb",
+	])
+
+	# Bridge scenes (spawned by player to cross rivers)
+	bridge_scenes = _load_scene_array([
+		"res://assets/Obstacles/Bridge/bridge_center_wood.glb",
+		"res://assets/Obstacles/Bridge/bridge_side_wood.glb",
+		"res://assets/Obstacles/Bridge/bridge_stone.glb",
+	])
 
 
 func _load_scene_array(paths: Array) -> Array[PackedScene]:
@@ -376,3 +397,15 @@ func get_random_giant_rock_scene() -> PackedScene:
 	if giant_rock_scenes.is_empty():
 		return null
 	return giant_rock_scenes[randi() % giant_rock_scenes.size()]
+
+
+func get_random_river_scene() -> PackedScene:
+	if river_scenes.is_empty():
+		return null
+	return river_scenes[randi() % river_scenes.size()]
+
+
+func get_random_bridge_scene() -> PackedScene:
+	if bridge_scenes.is_empty():
+		return null
+	return bridge_scenes[randi() % bridge_scenes.size()]

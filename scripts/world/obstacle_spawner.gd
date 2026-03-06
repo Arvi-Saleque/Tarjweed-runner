@@ -17,6 +17,13 @@ const GIANT_ROCK_CHANCE: float = 0.20       # 20% per chunk
 const GIANT_ROCK_MIN_DISTANCE: float = 80.0   # minimum meters between giant rocks
 const GIANT_ROCK_MIN_SCORE: float = 50.0      # don't spawn until player has run 50m
 
+# River crossing settings
+const RIVER_CHANCE: float = 0.25              # 25% per eligible chunk
+const RIVER_MIN_DISTANCE: float = 50.0        # minimum meters between rivers
+const RIVER_ROAD_WIDTH: float = 8.0           # Width to cover all 3 lanes
+const RIVER_DEPTH: float = 4.0                # River depth (Z direction)
+const RIVER_CLEARANCE: float = 20.0           # No obstacles/coins within this distance before river
+
 # Quiz mode settings — full-row blocks the player MUST jump over
 const QUIZ_MIN_ROW_GAP: float = 48.0   # ~4s at base speed (12 m/s)
 const QUIZ_MAX_ROW_GAP: float = 60.0   # ~5s at base speed (12 m/s)
@@ -52,13 +59,23 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 
 	# Try spawning a giant rock in this chunk (rare, blocks all lanes)
 	var giant_rock_spawned: bool = false
+	var rock_z: float = -(chunk_length * 0.5)  # Middle of chunk
 	if _should_spawn_giant_rock(chunk_dist):
-		var rock_z: float = -(chunk_length * 0.5)  # Place in middle of chunk
 		_create_giant_rock(chunk, Vector3(0.0, 0.0, rock_z), generator)
 		giant_rock_spawned = true
 		# Track distance for spacing
 		GameManager.set_meta("_last_giant_rock_dist", chunk_dist)
-		print("[GiantRock] === SPAWNED at chunk_dist=%.0f ==" % chunk_dist)
+		# Track global Z position for cross-chunk clearance
+		var rock_global_z: float = chunk.position.z + rock_z
+		var positions: Array = GameManager.get_meta("_giant_rock_positions", []) as Array
+		positions.append(rock_global_z)
+		GameManager.set_meta("_giant_rock_positions", positions)
+		print("[GiantRock] === SPAWNED at chunk_dist=%.0f global_z=%.0f ==" % [chunk_dist, rock_global_z])
+
+	# Try spawning a river crossing (deadly water, player must build bridge)
+	var river_z_pos: float = -INF
+	if not giant_rock_spawned:
+		river_z_pos = _try_spawn_river(chunk, chunk_length, chunk_dist, generator)
 
 	var slots: Array[float] = []
 	var z: float = -MIN_SLOT_OFFSET
@@ -79,16 +96,33 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 		if absf(slot_z - last_obstacle_z) < SLOT_SPACING * 0.8:
 			continue
 
-		# Don't place regular obstacles near giant rock
-		# Clearance scales with speed: 30-50m before, 20-50m after
+		# Don't place obstacles on top of a river
+		# Don't place obstacles within 20m of a river
+		if river_z_pos > -INF and absf(slot_z - river_z_pos) < RIVER_CLEARANCE:
+			continue
+
+		# Don't place regular obstacles near ANY giant rock
+		# Clearance scales with speed: 40-100m before, 50-100m after
+		var speed_ratio: float = clampf((GameManager.current_speed - GameManager.BASE_SPEED) / (GameManager.MAX_SPEED - GameManager.BASE_SPEED), 0.0, 1.0)
+		var clear_before: float = lerpf(40.0, 100.0, speed_ratio)
+		var clear_after: float = lerpf(50.0, 100.0, speed_ratio)
+		var slot_global_z: float = chunk.position.z + slot_z
+		var too_close: bool = false
+		# Check current chunk's giant rock
 		if giant_rock_spawned:
-			var rock_z: float = -(chunk_length * 0.5)
-			var speed_ratio: float = clampf((GameManager.current_speed - GameManager.BASE_SPEED) / (GameManager.MAX_SPEED - GameManager.BASE_SPEED), 0.0, 1.0)
-			var clear_before: float = lerpf(30.0, 50.0, speed_ratio)
-			var clear_after: float = lerpf(20.0, 50.0, speed_ratio)
-			var dist_to_rock: float = slot_z - rock_z  # positive = before rock
+			var dist_to_rock: float = slot_z - rock_z
 			if dist_to_rock > -clear_after and dist_to_rock < clear_before:
-				continue
+				too_close = true
+		# Check all tracked giant rock positions (cross-chunk clearance)
+		if not too_close:
+			var positions: Array = GameManager.get_meta("_giant_rock_positions", []) as Array
+			for gr_z: float in positions:
+				var dist: float = slot_global_z - gr_z
+				if dist > -clear_after and dist < clear_before:
+					too_close = true
+					break
+		if too_close:
+			continue
 
 		# Decide: overhead (slide-under) or ground (jump-over / dodge)
 		var is_overhead: bool = randf() < overhead_chance
@@ -309,3 +343,98 @@ static func _create_giant_rock(parent: Node3D, pos: Vector3, generator: Node3D) 
 	else:
 		# Fallback: use setup with null (will just be collision box)
 		rock.call("setup", null)
+
+
+# =============================================================================
+# RIVER CROSSING — deadly water, player must hold spacebar to build bridge
+# =============================================================================
+
+static func _try_spawn_river(chunk: Node3D, chunk_length: float, chunk_dist: float, generator: Node3D) -> float:
+	## Returns the local Z position of the river if spawned, or -INF if not.
+	if GameManager.current_theme != "natural":
+		return -INF
+	if chunk_dist < 30.0:
+		return -INF
+
+	var last_river_dist: float = GameManager.get_meta("_last_river_dist", -999.0) as float
+	if chunk_dist - last_river_dist < RIVER_MIN_DISTANCE:
+		return -INF
+
+	# Guaranteed first river at ~60m
+	var force_spawn: bool = last_river_dist < 0.0 and chunk_dist >= 60.0
+	if not force_spawn and randf() > RIVER_CHANCE:
+		return -INF
+
+	var river_z: float = -(chunk_length * 0.5)  # Middle of chunk
+
+	# Create the river container
+	var river := Node3D.new()
+	river.name = "RiverCrossing"
+	river.position = Vector3(0.0, 0.0, river_z)
+	river.add_to_group("river_crossings")
+
+	# Main water plane — sits on top of road
+	var water_mesh := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(RIVER_ROAD_WIDTH + 2.0, RIVER_DEPTH)
+	var water_mat := StandardMaterial3D.new()
+	water_mat.albedo_color = Color(0.05, 0.3, 0.6, 0.8)
+	water_mat.metallic = 0.4
+	water_mat.roughness = 0.05
+	water_mat.emission_enabled = true
+	water_mat.emission = Color(0.02, 0.15, 0.4)
+	water_mat.emission_energy_multiplier = 0.8
+	water_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	water_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	plane.material = water_mat
+	water_mesh.mesh = plane
+	water_mesh.position = Vector3(0.0, 0.12, 0.0)
+	water_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	river.add_child(water_mesh)
+
+	# Second layer — slightly lower, darker, for depth effect
+	var depth_mesh := MeshInstance3D.new()
+	var depth_plane := PlaneMesh.new()
+	depth_plane.size = Vector2(RIVER_ROAD_WIDTH + 2.0, RIVER_DEPTH + 0.5)
+	var depth_mat := StandardMaterial3D.new()
+	depth_mat.albedo_color = Color(0.02, 0.15, 0.35, 0.9)
+	depth_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	depth_plane.material = depth_mat
+	depth_mesh.mesh = depth_plane
+	depth_mesh.position = Vector3(0.0, 0.08, 0.0)
+	depth_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	river.add_child(depth_mesh)
+
+	# Per-lane kill zones — Area3D in "obstacles" group so player dies on contact
+	for lane_idx in 3:
+		var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
+		var kill_zone := Area3D.new()
+		kill_zone.name = "RiverKillZone_Lane%d" % lane_idx
+		kill_zone.position = Vector3(lane_x, 0.5, 0.0)
+		kill_zone.collision_layer = 4  # Obstacles layer
+		kill_zone.collision_mask = 0
+		kill_zone.add_to_group("obstacles")
+		kill_zone.add_to_group("river_kill_zones")
+		kill_zone.set_meta("lane_index", lane_idx)
+
+		var col := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = Vector3(GameManager.LANE_WIDTH, 1.5, RIVER_DEPTH - 0.2)
+		col.shape = box
+		kill_zone.add_child(col)
+		river.add_child(kill_zone)
+
+	# Also try to place a river GLB model on top for texture detail
+	if generator.has_method("get_random_river_scene"):
+		var glb_scene: PackedScene = generator.get_random_river_scene()
+		if glb_scene:
+			var glb_inst: Node3D = glb_scene.instantiate()
+			glb_inst.position = Vector3(0.0, 0.13, 0.0)
+			glb_inst.scale = Vector3(5.0, 1.0, 3.0)
+			glb_inst.rotation.y = PI * 0.5
+			river.add_child(glb_inst)
+
+	chunk.add_child(river)
+	GameManager.set_meta("_last_river_dist", chunk_dist)
+	print("[River] === SPAWNED at chunk_dist=%.0f ==" % chunk_dist)
+	return river_z

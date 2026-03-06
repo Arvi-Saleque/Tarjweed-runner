@@ -1614,57 +1614,69 @@ The entire road and nearby area was covered in shadow, like a plane above blocki
 
 ---
 
-## No Coins Near Giant Rock
-- **chunk.gd**: Added `_has_giant_rock()` helper — checks children for "giant_rocks" group
-- `_spawn_coins()` now skips entirely if chunk has a giant rock, preventing unfair coin placements
+## Giant Rock Clearance Update ✅
+
+### What Was Done
+Updated giant rock obstacle/coin clearance zones and made clearance work across chunk boundaries for ALL giant rocks, not just the current chunk.
+
+### Changes
+- **Clearance values updated**:
+  - Base speed (12 m/s): **40m before**, **30m after** (was 30/20)
+  - Max speed (28 m/s): **60m before**, **60m after** (was 50/50)
+- **Cross-chunk clearance**: Giant rock global Z positions are now tracked in a `_giant_rock_positions` meta array on GameManager. Every obstacle slot checks distance to ALL known giant rocks, not just one on the same chunk.
+- **Clean reset**: Both `_last_giant_rock_dist` and `_giant_rock_positions` meta are cleared on `start_game()`.
+
+### Changed Files
+- **obstacle_spawner.gd**: Updated lerpf values, added global position tracking + cross-chunk clearance loop
+- **game_manager.gd**: Reset giant rock position tracking on game start
 
 ---
 
-## Mountain Path Fix + Mountain1 + Bigger Scale + Animals
+## Snowy Hills Background Scenery Fix ✅
 
-### Mountain Paths Fixed
-- Old path `res://assets/Obstacles/big hills/` → corrected to `res://assets/Environment/big hills/`
-- Added new **Mountain1.glb** to the mountains pool (3 mountain models now: Mountain, Mountain1, Snowy Hills)
+### What Was Done
+Fixed the mountain/hills background scenery path — `Mountain.glb` and `Snowy Hills.glb` were referenced at a wrong path (`assets/Obstacles/big hills/`) and never loaded. Corrected to the actual path (`assets/Environment/big hills/`).
 
-### Mountains Scaled Up
-- `MOUNTAIN_SCALE_MIN`: 4.0 → **8.0**
-- `MOUNTAIN_SCALE_MAX`: 8.0 → **15.0**
-- Mountains now look like massive imposing background hills
-
-### Animals Added as Scenery
-- New **"animals"** decoration category with 8 animal models:
-  - Alpaca, Cow, Elephant, Kangaroo, Lion, Rhinoceros, Squirrel, Stag
-- Weight: 1.5, Scale range: 0.8–1.4
-- Animals spawn randomly along roadsides mixed with other decorations
+### Settings (already existed, now actually working)
+- Placed **30–55 units** from road (far background)
+- Scaled **4x–8x** for imposing silhouettes
+- **60% chance** per side per chunk
+- Random rotation, shadows disabled
 
 ### Changed Files
-- **world_generator.gd**: Fixed mountain paths, added Mountain1.glb, added "animals" category with 8 models
-- **decoration_spawner.gd**: Mountain scale 8–15x, added "animals" to CATEGORY_WEIGHTS and SCALE_RANGES
+- **world_generator.gd**: Fixed mountains path from `assets/Obstacles/big hills/` to `assets/Environment/big hills/`
 
 ---
 
-## Mountains Pushed Back + Animals Off Road + Animal Walking Animation
+## Dense Grass + Walking Animals ✅
 
-### Mountains Further Back
-- `MOUNTAIN_X_MIN`: 30 → **70** (much further from road)
-- `MOUNTAIN_X_MAX`: 55 → **130** (deep background)
-- `MOUNTAIN_Y_OFFSET`: -1.5 → **-2.0** (sink more into ground)
-- Mountains no longer block the road view — visible as distant background hills
+### What Was Done
+Made the ground look like a jungle with 90% grass coverage, and added 8 animal species that walk around with procedural animation.
 
-### Animals Placed Away From Road
-- Animals now spawn at X range **10–25 units** from road (was using general 4–20)
-- Animals get shadow casting disabled (no road darkening)
+### Grass (Jungle Feel)
+- New `"grass"` category with **weight 18.0** (all other categories combined ~28) → ~40% of all decorations are grass
+- 8 grass models: Tuft of grass, Tuft of grass (1), grass yellowing, Grass Patch + 4 ExtraProps grass models
+- Placed from edge of path (3.5) out to far sides (20m), flat on ground
+- Scale range: 0.6x–1.8x for natural variety
 
-### Animal Walking Animation
-- New **animal_wander.gd** script — procedural walk behavior:
-  - Slow random walk speed (0.3–0.8)
-  - Gentle body bobbing (simulates walking)
-  - Changes direction every 2–5 seconds
-  - Stays within 5 units of spawn position (won't wander onto road)
-- Attached automatically to all animal instances at spawn time
+### Animals (Procedural Walking)
+- **8 species**: Alpaca, Elephant, Kangaroo, Lion, Rhinoceros, Squirrel, Stag, Zebra
+- **35% chance** per side per chunk (0-2 animals per chunk)
+- Placed 8–22 units from road
+- **Procedural walking animation** via `animal_walker.gd`:
+  - Wander in random directions, change direction every 3–7s
+  - Walk speed 0.8–2.0 m/s with variation
+  - Body bob (0.08 amplitude at 3 Hz) simulates footstep rhythm
+  - Subtle body sway (roll + pitch) for lifelike movement
+  - Smooth rotation toward walk direction
+  - Boundary clamping — animals stay off the road and within chunk range
+- Also tries to play embedded GLB animations (Walk, Idle, Eat) if the model has them
+
+### New Files Created
+- **scripts/world/animal_walker.gd**: Procedural walking script attached to animal instances
 
 ### Changed Files
-- **decoration_spawner.gd**: Mountain X 70–130, animals at 10–25 from road, animal animation attachment, shadow disable for animals
-- **animal_wander.gd** (NEW): Procedural walking/wandering script for roadside animals
+- **world_generator.gd**: Added `"grass"` (8 models) and `"animals"` (8 models) categories
+- **decoration_spawner.gd**: Added grass weight 18.0, animal settings, `_spawn_animals()`, `_try_play_animation()`, grass placement rules
 
 ---

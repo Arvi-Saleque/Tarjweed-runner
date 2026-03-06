@@ -134,6 +134,10 @@ func _spawn_coins() -> void:
 	if _has_giant_rock():
 		return
 
+	# No coins on chunks with a river
+	if _has_river():
+		return
+
 	# 45% chance this chunk gets coins
 	if randf() > 0.45:
 		return
@@ -158,5 +162,12 @@ func _spawn_coins() -> void:
 func _has_giant_rock() -> bool:
 	for child in get_children():
 		if child.is_in_group("giant_rocks"):
+			return true
+	return false
+
+
+func _has_river() -> bool:
+	for child in get_children():
+		if child.is_in_group("river_crossings"):
 			return true
 	return false
