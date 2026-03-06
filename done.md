@@ -1442,7 +1442,7 @@ Applied forest-green material override to the player character so it blends with
 
 ### Details
 - Added `_apply_nature_tint()` and `_override_meshes()` in **player_controller.gd**
-- Color: `Color(0.28, 0.62, 0.26)` — forest green with slight roughness
+- Color: `Color(0.28, 0.62, 0.26)` ï¿½ forest green with slight roughness
 - Overrides all mesh surfaces on the loaded GLB model
 
 ---
@@ -1450,11 +1450,11 @@ Applied forest-green material override to the player character so it blends with
 ## Giant Rock + Sonic Blast (Natural Mode) ?
 
 ### Feature
-Giant boulders that block ALL 3 lanes — player must double-tap spacebar (or double-tap screen on mobile) to fire a sonic blast that destroys the rock. Miss the timing = death.
+Giant boulders that block ALL 3 lanes ï¿½ player must double-tap spacebar (or double-tap screen on mobile) to fire a sonic blast that destroys the rock. Miss the timing = death.
 
 ### New Files
 - **scripts/obstacles/giant_rock.gd**: Destructible rock obstacle with states (INTACT ? SHAKING ? EXPLODING ? DESTROYED). Shows "DOUBLE TAP!" hint label. On first tap: rock shakes + glows orange. On second tap within 0.5s: collision removed, debris flies outward, sonic blast VFX triggers, camera shakes, bonus coin awarded.
-- **scripts/obstacles/sonic_blast.gd**: Expanding torus shockwave ring (cyan glow), spark burst (30 particles), rising smoke (20 particles), bright omni light flash. All procedural — no texture dependencies.
+- **scripts/obstacles/sonic_blast.gd**: Expanding torus shockwave ring (cyan glow), spark burst (30 particles), rising smoke (20 particles), bright omni light flash. All procedural ï¿½ no texture dependencies.
 - **assets/Obstacles/GiantRock/**: 4 GLB models (rock_tallA, rock_tallB, rock_tallC, rock_largeA) from kenney_nature-kit, scaled 3.5x to span all lanes.
 
 ### Modified Files
@@ -1464,12 +1464,12 @@ Giant boulders that block ALL 3 lanes — player must double-tap spacebar (or doub
 
 ### How It Works
 1. After 80m, each chunk has 5% chance to spawn a giant rock (min 150m between rocks)
-2. Rock spans all 3 lanes — no dodging possible
+2. Rock spans all 3 lanes ï¿½ no dodging possible
 3. At 35m distance: "DOUBLE TAP!" hint appears above rock
 4. At 25m distance: spacebar/tap interaction enabled
 5. First press: rock shakes, glows orange
-6. Second press within 0.5s: BOOM — sonic blast, debris scatter, camera shake
-7. Rock collision removed instantly — player passes through
+6. Second press within 0.5s: BOOM ï¿½ sonic blast, debris scatter, camera shake
+7. Rock collision removed instantly ï¿½ player passes through
 8. If too slow: collide and die
 
 ---
@@ -1477,9 +1477,9 @@ Giant boulders that block ALL 3 lanes — player must double-tap spacebar (or doub
 ## Giant Rock Blast Fix + Projectile VFX ?
 
 ### Bugs Fixed
-1. **Distance detection was inverted** — rocks ahead (negative Z) were being filtered out as "behind". Fixed coordinate check in `_scan_for_giant_rocks()`.
-2. **Detection/blast range too short** — increased from 35/25m to 45/35m.
-3. **Double-tap window too tight** — increased from 0.5s to 1.5s.
+1. **Distance detection was inverted** ï¿½ rocks ahead (negative Z) were being filtered out as "behind". Fixed coordinate check in `_scan_for_giant_rocks()`.
+2. **Detection/blast range too short** ï¿½ increased from 35/25m to 45/35m.
+3. **Double-tap window too tight** ï¿½ increased from 0.5s to 1.5s.
 
 ### New Feature: Visible Blast Projectile
 - Press SPACE near rock ? **glowing blue energy ball** fires from player toward the rock
@@ -1493,5 +1493,89 @@ Giant boulders that block ALL 3 lanes — player must double-tap spacebar (or doub
 ### Changed Files
 - **player_controller.gd**: Rewrote `_scan_for_giant_rocks()` (fixed Z direction), `_try_giant_rock_blast()` (simplified), added `_fire_blast_projectile()` (visible energy ball)
 - **giant_rock.gd**: Hint text "PRESS SPACE!" / "HIT AGAIN!", hint stays visible during SHAKING state
+
+---
+
+## Giant Rock Collision Timing Fix
+
+### Problem
+Player was dying when hitting the giant rock because the collision was only disabled on the **second** blast hit (in `trigger_blast()`). The rock stayed solid during the SHAKING state after the first hit, so the player would collide and die before the second blast could land.
+
+### Fix
+- Moved collision disable + `remove_from_group("obstacles")` from `trigger_blast()` into `start_charge()` (first hit)
+- Now the **first blast immediately clears the path** â€” player can run through the shaking rock
+- Second blast triggers the full explosion VFX as before
+- Removed redundant collision disable code from `trigger_blast()`
+
+### Changed Files
+- **giant_rock.gd**: `start_charge()` now disables all CollisionShape3D children and removes from "obstacles" group on first hit
+
+---
+
+## Giant Rock Polish â€” Clear Zone + Instant Destruction
+
+### Problem 1: Obstacles blocking spacebar press
+Regular obstacles were spawning too close in front of giant rocks, forcing the player to jump instead of pressing spacebar to fire the blast.
+
+### Fix 1: 20m clear zone before giant rocks
+- Changed obstacle clearance from 12m radius around rock to **20m before** and 5m after
+- Uses directional check: `dist_to_rock > -5.0 and dist_to_rock < 20.0` (positive = before rock)
+- Player now has a clear runway to see the rock and press spacebar
+
+### Problem 2: Two-hit mechanic looked unprofessional
+Rock turning yellow/shaking after first hit, then player running through a glowing obstacle before second hit looked unpolished.
+
+### Fix 2: Single-blast instant destruction
+- Removed `SHAKING` state entirely â€” enum is now `{ INTACT, EXPLODING, DESTROYED }`
+- Merged `start_charge()` into `trigger_blast()` â€” one function handles everything
+- Single spacebar press fires energy ball â†’ rock **explodes immediately** with full VFX (debris + shockwave + camera shake)
+- Removed double-tap logic from player_controller.gd â€” blast check is now `state >= 1` (anything past INTACT is done)
+- Faster projectile speed (dist/50 instead of dist/40)
+
+### Changed Files
+- **obstacle_spawner.gd**: 20m clear zone before giant rocks (was 12m radius)
+- **giant_rock.gd**: Removed SHAKING state, removed `start_charge()`, `trigger_blast()` now handles instant destruction from INTACT state
+- **player_controller.gd**: Removed two-hit logic, single blast destroys rock, faster projectile
+
+---
+
+## Background Mountain Hills â€” Road Scenery
+
+### What Was Added
+User added 2 mountain/hill GLB models in `assets/Obstacles/big hills/`:
+- **Mountain.glb** â€” with `Mountain_LandscapeSurface_Color.png` texture
+- **Snowy Hills.glb** â€” snowy mountain variant
+
+### Implementation
+Mountains are spawned as **background scenery** behind the trees, far from the road, to give a professional distant landscape feel.
+
+**Spawning system** (separate from weighted random decorations):
+- 60% chance per side per chunk (so mountains appear frequently but not every chunk)
+- Placed at X = 30â€“55 units from road center (far behind trees which are at 6â€“20)
+- Scale: 4.0xâ€“8.0x (large, imposing background hills)
+- Y height variation: 0.7â€“1.3x multiplier for different mountain profiles
+- Sunk -1.5 units into ground to hide flat bases
+- Random Y rotation for variety
+
+### Changed Files
+- **world_generator.gd**: Added `"mountains"` category to `decoration_scenes` with both GLBs
+- **decoration_spawner.gd**: Added `_spawn_background_mountains()` function with dedicated placement logic (not via weighted random system), called before regular decorations on every chunk
+
+---
+
+## Shadow/Lighting Fix â€” Mountains Casting Darkness
+
+### Problem
+The entire road and nearby area was covered in shadow, like a plane above blocking light. Only far away had light. Cause: the newly added mountains (scaled 4xâ€“8x, 30+ units tall) were casting massive directional shadows across the entire road. Plus SSAO was too aggressive (2.0) darkening everything further.
+
+### Fixes
+1. **Mountains**: disabled shadow casting via `_disable_shadows_recursive()` â€” mountains are background scenery, don't need to cast shadows
+2. **Large decorations**: disabled shadows on `trees_large`, `trees_pine`, and `rocks` categories â€” prevents tall trees from also casting road shadows
+3. **SSAO intensity**: reduced from `2.0` to `0.8` â€” less artificial darkness in shadowed areas
+4. **Ambient light energy**: increased from `0.5` to `0.7` â€” brighter base lighting so shadows aren't as dark
+
+### Changed Files
+- **decoration_spawner.gd**: Added `_disable_shadows_recursive()` helper, called on mountains and large decoration categories
+- **game.tscn**: `ambient_light_energy` 0.5â†’0.7, `ssao_intensity` 2.0â†’0.8
 
 ---

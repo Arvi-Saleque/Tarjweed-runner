@@ -46,15 +46,19 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 	var difficulty: float = GameManager.difficulty_multiplier
 	var frequency: float = GameManager.obstacle_frequency
 
+	# Estimate the distance this chunk represents
+	# Chunks start at +20 and go negative. Chunk at Z=-100 means ~100m from start.
+	var chunk_dist: float = maxf(GameManager.distance, absf(chunk.position.z))
+
 	# Try spawning a giant rock in this chunk (rare, blocks all lanes)
 	var giant_rock_spawned: bool = false
-	if _should_spawn_giant_rock():
+	if _should_spawn_giant_rock(chunk_dist):
 		var rock_z: float = -(chunk_length * 0.5)  # Place in middle of chunk
 		_create_giant_rock(chunk, Vector3(0.0, 0.0, rock_z), generator)
 		giant_rock_spawned = true
 		# Track distance for spacing
-		GameManager.set_meta("_last_giant_rock_dist", GameManager.distance)
-		print("[GiantRock] === SPAWNED at dist=%.0f ===" % GameManager.distance)
+		GameManager.set_meta("_last_giant_rock_dist", chunk_dist)
+		print("[GiantRock] === SPAWNED at chunk_dist=%.0f ==" % chunk_dist)
 
 	var slots: Array[float] = []
 	var z: float = -MIN_SLOT_OFFSET
@@ -75,9 +79,12 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 		if absf(slot_z - last_obstacle_z) < SLOT_SPACING * 0.8:
 			continue
 
-		# Don't place regular obstacles too close to giant rock
-		if giant_rock_spawned and absf(slot_z - (-(chunk_length * 0.5))) < 12.0:
-			continue
+		# Don't place regular obstacles within 20m BEFORE and 5m AFTER giant rock
+		if giant_rock_spawned:
+			var rock_z: float = -(chunk_length * 0.5)
+			var dist_to_rock: float = slot_z - rock_z  # positive = before rock (closer to player spawn)
+			if dist_to_rock > -5.0 and dist_to_rock < 20.0:
+				continue
 
 		# Decide: overhead (slide-under) or ground (jump-over / dodge)
 		var is_overhead: bool = randf() < overhead_chance
@@ -257,7 +264,7 @@ static func _create_overhead_obstacle(parent: Node3D, pos: Vector3, generator: N
 # GIANT ROCK — blocks all 3 lanes, destroyed by double-tap blast
 # =============================================================================
 
-static func _should_spawn_giant_rock() -> bool:
+static func _should_spawn_giant_rock(chunk_dist: float) -> bool:
 	# Only in natural mode
 	if GameManager.current_theme != "natural":
 		return false
@@ -265,15 +272,15 @@ static func _should_spawn_giant_rock() -> bool:
 	var last_dist: float = GameManager.get_meta("_last_giant_rock_dist", -999.0) as float
 
 	# GUARANTEED first giant rock at ~100m
-	if last_dist < 0 and GameManager.distance >= 80.0:
-		print("[GiantRock] GUARANTEED first spawn at dist=%.0f" % GameManager.distance)
+	if last_dist < 0 and chunk_dist >= 80.0:
+		print("[GiantRock] GUARANTEED first spawn at chunk_dist=%.0f" % chunk_dist)
 		return true
 
 	# After that, random with spacing enforced
-	if GameManager.distance - last_dist < GIANT_ROCK_MIN_DISTANCE:
+	if chunk_dist - last_dist < GIANT_ROCK_MIN_DISTANCE:
 		return false
 	var roll: float = randf()
-	print("[GiantRock] dist=%.0f last=%.0f roll=%.2f need<%.2f" % [GameManager.distance, last_dist, roll, GIANT_ROCK_CHANCE])
+	print("[GiantRock] chunk_dist=%.0f last=%.0f roll=%.2f need<%.2f" % [chunk_dist, last_dist, roll, GIANT_ROCK_CHANCE])
 	return roll < GIANT_ROCK_CHANCE
 
 

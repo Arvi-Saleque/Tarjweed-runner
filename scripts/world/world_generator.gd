@@ -256,6 +256,10 @@ func _preload_decorations() -> void:
 			"res://assets/Environment/ExtraProps/grass_leafs.glb",
 			"res://assets/Environment/ExtraProps/grass_leafsLarge.glb",
 		]),
+		"mountains": _load_scene_array([
+			"res://assets/Obstacles/big hills/Mountain.glb",
+			"res://assets/Obstacles/big hills/Snowy Hills.glb",
+		]),
 	}
 
 

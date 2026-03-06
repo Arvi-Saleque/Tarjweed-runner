@@ -5,7 +5,7 @@ extends Area3D
 
 signal rock_destroyed
 
-enum RockState { INTACT, SHAKING, EXPLODING, DESTROYED }
+enum RockState { INTACT, EXPLODING, DESTROYED }
 
 const DETECTION_RANGE: float = 35.0  # How far ahead player can see/target the rock
 const BLAST_RANGE: float = 25.0       # Must be within this range for blast to work
@@ -47,18 +47,6 @@ func setup(model_scene: PackedScene) -> void:
 
 func _process(delta: float) -> void:
 	match state:
-		RockState.SHAKING:
-			_shake_timer += delta
-			if _model:
-				# Shake the rock visually
-				var intensity: float = 0.05 + _shake_timer * 0.1
-				_model.position.x = sin(_shake_timer * 40.0) * intensity
-				_model.position.z = cos(_shake_timer * 30.0) * intensity * 0.5
-			if _hint_label:
-				_hint_label.modulate.a = 0.5 + sin(_shake_timer * 10.0) * 0.5
-				_hint_label.text = "HIT AGAIN!"
-				_hint_label.visible = true
-
 		RockState.EXPLODING:
 			_shake_timer += delta
 			if _shake_timer > 1.5:
@@ -68,21 +56,9 @@ func _process(delta: float) -> void:
 			pass
 
 
-func start_charge() -> void:
-	## Called on first spacebar press when in range.
-	if state != RockState.INTACT:
-		return
-	state = RockState.SHAKING
-	_shake_timer = 0.0
-
-	# Visual feedback — rock starts glowing/shaking
-	if _model:
-		_apply_glow_tint(_model, Color(1.0, 0.6, 0.2, 1.0))
-
-
 func trigger_blast() -> void:
-	## Called on second spacebar press (double-tap). Destroy the rock!
-	if state != RockState.SHAKING:
+	## Called when player fires blast — instantly destroys the rock with VFX.
+	if state != RockState.INTACT:
 		return
 	state = RockState.EXPLODING
 	_shake_timer = 0.0
@@ -91,8 +67,6 @@ func trigger_blast() -> void:
 	for child in get_children():
 		if child is CollisionShape3D:
 			child.set_deferred("disabled", true)
-
-	# Remove from obstacles group so no death trigger
 	remove_from_group("obstacles")
 
 	# Hide hint
@@ -201,6 +175,7 @@ func _create_hint_label() -> void:
 
 func show_hint() -> void:
 	if _hint_label and state == RockState.INTACT:
+		_hint_label.text = "PRESS SPACE!"
 		_hint_label.visible = true
 
 

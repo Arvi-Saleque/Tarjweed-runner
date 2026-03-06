@@ -37,6 +37,15 @@ const SCALE_RANGES: Dictionary = {
 }
 
 
+# Mountain/hill background settings
+const MOUNTAIN_CHANCE_PER_SIDE: float = 0.6   # 60% chance per side per chunk
+const MOUNTAIN_X_MIN: float = 30.0            # Far from road
+const MOUNTAIN_X_MAX: float = 55.0            # Very far background
+const MOUNTAIN_SCALE_MIN: float = 4.0         # Large hills
+const MOUNTAIN_SCALE_MAX: float = 8.0         # Massive mountains
+const MOUNTAIN_Y_OFFSET: float = -1.5         # Sink slightly into ground
+
+
 static func spawn_decorations(chunk: Node3D, chunk_length: float, path_width: float, generator: Node3D) -> void:
 	if not generator or generator.decoration_scenes.is_empty():
 		_spawn_fallback_decorations(chunk, chunk_length, path_width)
@@ -45,6 +54,9 @@ static func spawn_decorations(chunk: Node3D, chunk_length: float, path_width: fl
 	var deco_container := Node3D.new()
 	deco_container.name = "Decorations"
 	chunk.add_child(deco_container)
+
+	# Spawn background mountains (separate from weighted random system)
+	_spawn_background_mountains(deco_container, chunk_length, generator)
 
 	# Spawn decorations on both sides
 	for side in [-1.0, 1.0]:
@@ -85,7 +97,18 @@ static func spawn_decorations(chunk: Node3D, chunk_length: float, path_width: fl
 				instance.position.x = side * randf_range(SIDE_X_MIN, 8.0)
 				instance.position.y = 0.0
 
+			# Disable shadow casting on large decorations to prevent road darkening
+			if category in ["trees_large", "trees_pine", "rocks"]:
+				_disable_shadows_recursive(instance)
+
 			deco_container.add_child(instance)
+
+
+static func _disable_shadows_recursive(node: Node) -> void:
+	if node is GeometryInstance3D:
+		(node as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	for child in node.get_children():
+		_disable_shadows_recursive(child)
 
 
 static func _pick_weighted_category(available_scenes: Dictionary) -> String:
@@ -113,6 +136,39 @@ static func _pick_weighted_category(available_scenes: Dictionary) -> String:
 			return valid_categories[i]
 
 	return valid_categories.back()
+
+
+static func _spawn_background_mountains(container: Node3D, chunk_length: float, generator: Node3D) -> void:
+	## Place 0-1 large mountain hills per side, far in the background.
+	var mountain_scenes: Array = generator.decoration_scenes.get("mountains", [])
+	if mountain_scenes.is_empty():
+		return
+
+	for side in [-1.0, 1.0]:
+		if randf() > MOUNTAIN_CHANCE_PER_SIDE:
+			continue
+
+		var scene: PackedScene = mountain_scenes[randi() % mountain_scenes.size()]
+		var instance: Node3D = scene.instantiate()
+
+		# Place far from road, random Z within chunk
+		var x: float = side * randf_range(MOUNTAIN_X_MIN, MOUNTAIN_X_MAX)
+		var z: float = randf_range(0, -chunk_length)
+		instance.position = Vector3(x, MOUNTAIN_Y_OFFSET, z)
+
+		# Large scale for imposing background presence
+		var s: float = randf_range(MOUNTAIN_SCALE_MIN, MOUNTAIN_SCALE_MAX)
+		# Slight Y scale variation for different mountain profiles
+		var sy: float = s * randf_range(0.7, 1.3)
+		instance.scale = Vector3(s, sy, s)
+
+		# Random Y rotation for variety
+		instance.rotation.y = randf_range(0, TAU)
+
+		# Disable shadow casting — large mountains cast shadows over the whole road
+		_disable_shadows_recursive(instance)
+
+		container.add_child(instance)
 
 
 static func _spawn_fallback_decorations(chunk: Node3D, chunk_length: float, path_width: float) -> void:

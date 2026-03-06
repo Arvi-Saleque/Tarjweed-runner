@@ -471,10 +471,9 @@ func _try_giant_rock_blast() -> bool:
 	if rock_state == null:
 		return false
 
-	# State 0 = INTACT → first hit (crack it)
-	# State 1 = SHAKING → second hit (destroy it)
-	# State 2+ = already exploding/destroyed → ignore
-	if rock_state >= 2:
+	# State 0 = INTACT → blast it (single hit destroys)
+	# State 1+ = already exploding/destroyed → ignore
+	if rock_state >= 1:
 		return false
 
 	# Fire a visible blast projectile from player toward the rock
@@ -513,40 +512,24 @@ func _fire_blast_projectile(target_rock: Node) -> void:
 	# Target: the rock's global position (center mass)
 	var target_pos := Vector3(target_rock.global_position.x, 1.5, target_rock.global_position.z)
 
-	# Determine if this is first or second hit
-	var rock_state = target_rock.get("state")
-	var is_second_hit: bool = (rock_state == 1)
-
 	# Animate the projectile flying to the rock
 	var dist: float = projectile.position.distance_to(target_pos)
-	var travel_time: float = clampf(dist / 40.0, 0.15, 0.5)  # Fast projectile
+	var travel_time: float = clampf(dist / 50.0, 0.1, 0.4)  # Fast projectile
 
 	var tween := get_tree().create_tween()
 	tween.tween_property(projectile, "position", target_pos, travel_time).set_ease(Tween.EASE_IN)
 	tween.parallel().tween_property(projectile, "scale", Vector3(1.5, 1.5, 1.5), travel_time)
 
-	# On hit: trigger rock reaction and clean up projectile
+	# On hit: instantly destroy the rock
 	tween.tween_callback(func():
 		# Screen flash
 		if light:
 			light.light_energy = 10.0
 
 		if is_instance_valid(target_rock):
-			if is_second_hit:
-				if target_rock.has_method("trigger_blast"):
-					target_rock.trigger_blast()
-			else:
-				if target_rock.has_method("start_charge"):
-					target_rock.start_charge()
-				AudioManager.play_impact()
-
-		# Small camera shake on first hit, bigger on second
-		var camera_rig = get_node_or_null("CameraRig")
-		if camera_rig and camera_rig.has_method("shake"):
-			if is_second_hit:
-				camera_rig.shake(0.4, 3.0)
-			else:
-				camera_rig.shake(0.15, 5.0)
+			if target_rock.has_method("trigger_blast"):
+				target_rock.trigger_blast()
+			AudioManager.play_impact()
 
 		# Fade and remove projectile
 		var fade_tween := get_tree().create_tween()
