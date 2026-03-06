@@ -1,0 +1,39 @@
+﻿Runner UI cleaned successfully.
+
+Kept:
+
+UI\Buttons
+- button_rectangle_depth_gloss.png
+- button_rectangle_depth_flat.png
+- button_round_depth_gloss.png
+
+UI\Icons
+- icon_play_light.png
+- pause.png
+- gear.png
+- home.png
+- audioOn.png
+- audioOff.png
+- musicOn.png
+- musicOff.png
+- trophy.png
+- icon_cross.png
+- icon_checkmark.png
+
+UI\Fonts
+- Kenney Future.ttf
+- Kenney Future Narrow.ttf
+
+Audio\UI
+- click1.ogg
+- click2.ogg
+- rollover1.ogg
+- switch1.ogg
+- mouserelease1.ogg
+
+Environment\Sky
+- qwantani_noon_puresky_4k.exr
+
+Removed:
+- UI_Library
+- extra duplicate UI files

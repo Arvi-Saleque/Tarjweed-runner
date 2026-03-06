@@ -1,0 +1,99 @@
+[gd_scene load_steps=14 format=3 uid="uid://game_scene"]
+
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1"]
+[ext_resource type="Script" path="res://scripts/world/world_generator.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/ui/pause_menu.gd" id="4"]
+[ext_resource type="Script" path="res://scripts/ui/game_over.gd" id="5"]
+[ext_resource type="Script" path="res://scripts/vfx/speed_lines.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/vfx/screen_effects.gd" id="7"]
+[ext_resource type="Texture2D" path="res://assets/Environment/Sky/qwantani_noon_puresky_4k.exr" id="8"]
+[ext_resource type="Script" path="res://scripts/world/environment_effects.gd" id="9"]
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_1"]
+panorama = ExtResource("8")
+
+[sub_resource type="Sky" id="Sky_1"]
+sky_material = SubResource("PanoramaSkyMaterial_1")
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 2
+sky = SubResource("Sky_1")
+ambient_light_source = 2
+ambient_light_color = Color(0.75, 0.8, 0.85, 1)
+ambient_light_energy = 0.5
+reflected_light_source = 2
+tonemap_mode = 3
+tonemap_exposure = 1.0
+tonemap_white = 6.0
+ssao_enabled = true
+ssao_radius = 1.5
+ssao_intensity = 2.0
+glow_enabled = true
+glow_intensity = 0.4
+glow_strength = 0.8
+glow_bloom = 0.15
+glow_blend_mode = 1
+fog_enabled = true
+fog_light_color = Color(0.78, 0.85, 0.92, 1)
+fog_light_energy = 0.8
+fog_density = 0.003
+fog_aerial_perspective = 0.6
+fog_sky_affect = 0.7
+volumetric_fog_enabled = false
+adjustment_enabled = true
+adjustment_brightness = 1.02
+adjustment_contrast = 1.05
+adjustment_saturation = 1.1
+
+[sub_resource type="GDScript" id="GDScript_game_controller"]
+script/source = "extends Node
+
+func _ready() -> void:
+	await get_tree().create_timer(0.2).timeout
+	GameManager.start_game()
+"
+
+[node name="Game" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 15, 0)
+light_color = Color(1.0, 0.96, 0.88, 1)
+light_energy = 1.3
+light_indirect_energy = 0.5
+light_angular_distance = 0.5
+shadow_enabled = true
+shadow_bias = 0.03
+shadow_normal_bias = 1.5
+directional_shadow_mode = 1
+directional_shadow_max_distance = 100.0
+
+[node name="WorldGenerator" type="Node3D" parent="."]
+script = ExtResource("2")
+
+[node name="Player" parent="." instance=ExtResource("1")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="GameController" type="Node" parent="."]
+script = SubResource("GDScript_game_controller")
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("3")
+
+[node name="PauseMenu" type="CanvasLayer" parent="."]
+script = ExtResource("4")
+
+[node name="GameOver" type="CanvasLayer" parent="."]
+script = ExtResource("5")
+
+[node name="SpeedLines" type="CanvasLayer" parent="."]
+script = ExtResource("6")
+
+[node name="ScreenEffects" type="CanvasLayer" parent="."]
+script = ExtResource("7")
+
+[node name="EnvironmentEffects" type="Node3D" parent="."]
+script = ExtResource("9")
