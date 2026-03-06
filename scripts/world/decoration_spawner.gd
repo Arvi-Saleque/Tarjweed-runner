@@ -3,31 +3,37 @@ extends RefCounted
 ## Uses preloaded GLB scenes from WorldGenerator.
 
 # How many decorations per side per chunk
-const MIN_DECORATIONS_PER_SIDE: int = 3
-const MAX_DECORATIONS_PER_SIDE: int = 7
+const MIN_DECORATIONS_PER_SIDE: int = 5
+const MAX_DECORATIONS_PER_SIDE: int = 12
 
 # X-axis placement ranges (outside the path)
-const SIDE_X_MIN: float = 4.5   # Just beyond path edge
-const SIDE_X_MAX: float = 18.0  # Far out for depth
+const SIDE_X_MIN: float = 4.0   # Just beyond path edge
+const SIDE_X_MAX: float = 20.0  # Far out for depth
 
 # Category weights (higher = more likely to be picked)
 const CATEGORY_WEIGHTS: Dictionary = {
 	"trees_large": 3.0,
-	"trees_small": 2.5,
-	"bushes": 3.0,
+	"trees_pine": 2.5,
+	"trees_small": 2.0,
+	"bushes": 3.5,
+	"flowers": 2.5,
 	"rocks": 2.0,
+	"rocks_small": 1.5,
 	"props": 1.5,
-	"ground_cover": 2.0,
+	"ground_cover": 3.0,
 }
 
 # Scale ranges per category
 const SCALE_RANGES: Dictionary = {
-	"trees_large": Vector2(0.8, 1.3),
+	"trees_large": Vector2(0.8, 1.4),
+	"trees_pine": Vector2(0.7, 1.3),
 	"trees_small": Vector2(0.7, 1.2),
 	"bushes": Vector2(0.6, 1.4),
+	"flowers": Vector2(0.8, 1.5),
 	"rocks": Vector2(0.5, 1.2),
+	"rocks_small": Vector2(0.4, 0.9),
 	"props": Vector2(0.8, 1.1),
-	"ground_cover": Vector2(0.5, 1.0),
+	"ground_cover": Vector2(0.5, 1.2),
 }
 
 
@@ -67,10 +73,14 @@ static func spawn_decorations(chunk: Node3D, chunk_length: float, path_width: fl
 			instance.scale = Vector3(s, s, s)
 
 			# Large trees deeper in, smaller stuff closer to path
-			if category == "trees_large":
+			if category == "trees_large" or category == "trees_pine":
 				instance.position.x = side * randf_range(6.0, SIDE_X_MAX)
 			elif category == "bushes":
+				instance.position.x = side * randf_range(SIDE_X_MIN, 12.0)
+			elif category == "flowers":
 				instance.position.x = side * randf_range(SIDE_X_MIN, 10.0)
+			elif category == "rocks_small":
+				instance.position.x = side * randf_range(SIDE_X_MIN, 9.0)
 			elif category == "ground_cover":
 				instance.position.x = side * randf_range(SIDE_X_MIN, 8.0)
 				instance.position.y = 0.0

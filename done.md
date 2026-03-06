@@ -1315,3 +1315,122 @@ New folder: `assets/Obstacles/Overhead/` containing 6 GLB models:
 - Difficulty increases overhead frequency from 15% to 35% as game progresses
 
 ---
+
+## Update: Massive Asset Variety Expansion
+
+### New Assets Copied from `D:\3 - 2\System\assets\3d\`
+
+**Trees (14 new → 18 total)** — `assets/Environment/Trees/`:
+- `tree_oak`, `tree_oak_dark`, `tree_oak_fall` — Oak tree + seasonal variants
+- `tree_fat`, `tree_fat_fall` — Thick canopy tree + autumn
+- `tree_plateau`, `tree_plateau_fall` — Flat-top tree + autumn
+- `tree_simple`, `tree_simple_fall` — Simple tree + autumn
+- `tree_pineRoundA/B/C` — Round pine varieties
+- `tree_pineTallA/B` — Tall pine varieties
+
+**Bushes (4 new → 8 total)** — `assets/Environment/Bushes/`:
+- `plant_bushLargeTriangle`, `plant_bushTriangle` — Triangular bushes
+- `plant_flatShort`, `plant_flatTall` — Low flat plants
+
+**Flowers & Mushrooms (10 new)** — `assets/Environment/Flowers/` (NEW folder):
+- `flower_purpleA/B`, `flower_redA/B`, `flower_yellowA/B` — Colorful wildflowers
+- `mushroom_red/redGroup`, `mushroom_tan/tanGroup` — Forest floor mushrooms
+
+**Rocks & Stones (22 new → 30 total)** — `assets/Environment/ExtraProps/`:
+- `rock_largeD/E/F`, `rock_tallD–J` — Additional rock formations
+- `rock_smallA–F` — Small decorative rocks
+- `stone_largeA/B/C`, `stone_tallA/B/C` — Stone variants (different texture from rocks)
+
+**Props (9 new → 14 total)** — `assets/Environment/ExtraProps/`:
+- `log_stack`, `log_stackLarge` — Stacked log piles
+- `stump_oldTall`, `stump_square`, `stump_squareDetailed` — More stump types
+- `statue_columnDamaged`, `statue_head`, `statue_obelisk` — Ancient ruins
+- `sign` — Trailside sign
+
+**Ground Cover (3 new → 4 total)** — `assets/Environment/ExtraProps/`:
+- `grass`, `grass_leafs`, `grass_leafsLarge` — Grass varieties
+
+**Obstacles (11 new → 20 total)** — `assets/Obstacles/ExtraObstacleProps/`:
+- `bomb`, `spike-block`, `spike-block-wide` — Platformer hazards
+- `rocks`, `stones`, `hedge`, `hedge-corner` — Natural barriers
+- `cliff_block_stone`, `cliff_blockHalf_stone`, `cliff_blockQuarter_stone` — Stone cliff blocks
+- `cliff_block_rock` (from RocksBig) — Large rock cliff
+
+### Code Changes
+
+**scripts/world/world_generator.gd**:
+- `_preload_decorations()`: 9 categories (was 6), 82 total asset paths (was 20)
+- New categories: `"trees_pine"`, `"flowers"`, `"rocks_small"`
+- `_preload_obstacles()`: 20 obstacle models (was 9)
+
+**scripts/world/decoration_spawner.gd**:
+- Density increased: 5–12 decorations per side (was 3–7)
+- New category weights: flowers (2.5), trees_pine (2.5), rocks_small (1.5), ground_cover (3.0)
+- Placement rules for new categories (flowers near path, pine trees deep, small rocks mid-range)
+- View range extended: SIDE_X_MAX = 20.0 (was 18.0), SIDE_X_MIN = 4.0 (was 4.5)
+
+### Asset Count Summary
+| Category | Before | After |
+|----------|--------|-------|
+| Trees (large) | 4 | 13 |
+| Trees (pine) | 0 | 5 |
+| Trees (small) | 3 | 3 |
+| Bushes | 4 | 8 |
+| Flowers | 0 | 10 |
+| Rocks (large) | 6 | 12 |
+| Rocks (small) | 0 | 12 |
+| Props | 4 | 14 |
+| Ground cover | 1 | 4 |
+| **Obstacles** | **9** | **20** |
+| **Total decoration models** | **22** | **81** |
+
+---
+
+## Update: Fixed Running Animation (Legs Now Animate Properly)
+
+### Root Cause
+The animation name constants in `player_animation.gd` didn't match the actual names inside the Kenney Rig_Medium GLB files. The code expected `"Run"` but the GLB contains `"Running_A"`. Similarly `"Idle"` → `"Idle_A"`, `"Death"` → `"Death_A"`, `"Crouch_Idle"` → `"Crouching"`.
+
+### Actual Animation Names Extracted from GLBs
+| GLB File | Animations |
+|----------|-----------|
+| MovementBasic | `Running_A`, `Running_B`, `Walking_A/B/C`, `Jump_Start`, `Jump_Idle`, `Jump_Land`, `Jump_Full_Long/Short` |
+| General | `Idle_A`, `Idle_B`, `Death_A/B`, `Hit_A/B`, `Spawn_Air/Ground` |
+| MovementAdvanced | `Crouching`, `Crawling`, `Dodge_*`, `Sneaking` |
+| CombatMelee | `Melee_*` attacks, blocks |
+
+### Changed Files
+- **scripts/player/player_animation.gd**:
+  - `ANIM_RUN`: `"Run"` → `"Running_A"` (with `ANIM_RUN_B` = `"Running_B"` available)
+  - `ANIM_IDLE`: `"Idle"` → `"Idle_A"`
+  - `ANIM_SLIDE`: `"Crouch_Idle"` → `"Crouching"`
+  - `ANIM_DEATH`: `"Death"` → `"Death_A"`
+  - `_play_if_exists()`: Added `_A`/`_B` suffix fallback matching
+- **scripts/player/player_controller.gd**:
+  - Force-play on load: `"Run"` → `"Running_A"`
+
+### Result
+All animations now correctly play:
+- **Running**: Legs animate with proper running motion
+- **Jumping**: Jump start → airborne → landing sequences
+- **Sliding**: Crouch animation during slides
+- **Death**: Death fall animation on collision
+- **Hit**: Stumble reaction on obstacle hit
+
+---
+
+## Animation Loop Fix ?
+
+### Problem
+Running animation played once (~1 second) then froze. The Kenney GLB animations are imported with `LOOP_NONE` by default, so they play a single cycle and stop.
+
+### Fix
+Added `_set_loop_modes()` in **scripts/player/player_animation.gd** that runs after AnimationPlayer is discovered. It sets `Animation.LOOP_LINEAR` on all continuous animations:
+- Running_A, Running_B, Idle_A, Idle_B
+- Crouching (slide), Jump_Idle (airborne)
+- Walking_A/B/C, Crawling, Sneaking
+
+### Result
+Running animation now loops continuously as expected.
+
+---

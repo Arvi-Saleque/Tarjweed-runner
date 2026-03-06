@@ -443,9 +443,9 @@ func _ensure_player_visible() -> void:
 			if ap:
 				print("=== AnimationPlayer found: %d anims ===" % ap.get_animation_list().size())
 				print("    Animations: %s" % ", ".join(ap.get_animation_list()))
-				if ap.has_animation("Run"):
-					ap.play("Run")
-					print("=== Force-playing 'Run' ===")
+				if ap.has_animation("Running_A"):
+					ap.play("Running_A")
+					print("=== Force-playing 'Running_A' ===")
 			return
 
 	# Fallback: mannequin without animations

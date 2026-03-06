@@ -3,16 +3,19 @@ extends Node
 ## Works with AnimationPlayer found on the imported GLB model.
 ## If no AnimationPlayer is found, falls back to code-driven transforms.
 
-# --- Animation Names (mapped from Rig_Medium GLBs) ---
-# These will be populated once animations are imported.
-# Common animation names from Kenney Rig_Medium packs:
-const ANIM_IDLE: String = "Idle"
-const ANIM_RUN: String = "Run"
+# --- Animation Names (mapped from Kenney Rig_Medium GLBs) ---
+# Actual names extracted from GLB files:
+# MovementBasic: Running_A, Running_B, Walking_A/B/C, Jump_Start, Jump_Idle, Jump_Land, Jump_Full_Long/Short
+# General: Idle_A, Idle_B, Death_A/B, Hit_A/B, Spawn_Air/Ground
+# MovementAdvanced: Crouching, Crawling, Dodge_*, Sneaking
+const ANIM_IDLE: String = "Idle_A"
+const ANIM_RUN: String = "Running_A"
+const ANIM_RUN_B: String = "Running_B"
 const ANIM_JUMP_UP: String = "Jump_Start"
-const ANIM_JUMP_FALL: String = "Jump_Idle"  # Falling/airborne loop
+const ANIM_JUMP_FALL: String = "Jump_Idle"
 const ANIM_JUMP_LAND: String = "Jump_Land"
-const ANIM_SLIDE: String = "Crouch_Idle"    # Repurposed as slide
-const ANIM_DEATH: String = "Death"
+const ANIM_SLIDE: String = "Crouching"
+const ANIM_DEATH: String = "Death_A"
 const ANIM_STUMBLE: String = "Hit_A"
 
 # Crossfade duration
@@ -200,6 +203,7 @@ func _find_animation_player() -> void:
 	if _anim_player:
 		_has_animations = _anim_player.get_animation_list().size() > 0
 		if _has_animations:
+			_set_loop_modes()
 			print("PlayerAnimation: Found AnimationPlayer with %d animations: %s" % [
 				_anim_player.get_animation_list().size(),
 				", ".join(_anim_player.get_animation_list())
@@ -222,16 +226,35 @@ func _find_anim_player_recursive(node: Node) -> AnimationPlayer:
 
 
 func _play_if_exists(anim_name: String, crossfade: float = XFADE) -> void:
-	if _anim_player and _anim_player.has_animation(anim_name):
+	if not _anim_player:
+		return
+	if _anim_player.has_animation(anim_name):
 		_anim_player.play(anim_name, crossfade)
-	elif _anim_player:
-		# Try common alternative naming
-		var alternatives: Array[String] = [
-			anim_name.to_lower(),
-			anim_name.replace("_", ""),
-			anim_name.to_pascal_case(),
-		]
-		for alt in alternatives:
-			if _anim_player.has_animation(alt):
-				_anim_player.play(alt, crossfade)
-				return
+		return
+	# Try common alternative naming patterns (Kenney uses _A/_B suffixes)
+	var alternatives: Array[String] = [
+		anim_name + "_A",
+		anim_name + "_B",
+		anim_name.to_lower(),
+		anim_name.replace("_", ""),
+		anim_name.to_pascal_case(),
+	]
+	for alt in alternatives:
+		if _anim_player.has_animation(alt):
+			_anim_player.play(alt, crossfade)
+			return
+
+
+## Set loop mode on animations that should play continuously
+func _set_loop_modes() -> void:
+	var looping_anims: Array[String] = [
+		ANIM_RUN, ANIM_RUN_B, ANIM_IDLE, "Idle_B",
+		ANIM_SLIDE, ANIM_JUMP_FALL,
+		"Walking_A", "Walking_B", "Walking_C",
+		"Crawling", "Sneaking",
+	]
+	for anim_name in looping_anims:
+		if _anim_player.has_animation(anim_name):
+			var anim: Animation = _anim_player.get_animation(anim_name)
+			if anim.loop_mode == Animation.LOOP_NONE:
+				anim.loop_mode = Animation.LOOP_LINEAR
