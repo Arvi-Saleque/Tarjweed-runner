@@ -203,6 +203,12 @@ func _on_pause_pressed() -> void:
 	GameManager.pause_game()
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("pause") and GameManager.is_playing():
+		_on_pause_pressed()
+		get_viewport().set_input_as_handled()
+
+
 func _format_number(n: int) -> String:
 	var s: String = str(n)
 	if n < 1000:

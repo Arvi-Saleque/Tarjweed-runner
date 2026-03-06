@@ -3,8 +3,8 @@ extends RefCounted
 ## Uses preloaded GLB scenes from WorldGenerator.
 
 # How many decorations per side per chunk
-const MIN_DECORATIONS_PER_SIDE: int = 5
-const MAX_DECORATIONS_PER_SIDE: int = 12
+const MIN_DECORATIONS_PER_SIDE: int = 12
+const MAX_DECORATIONS_PER_SIDE: int = 24
 
 # X-axis placement ranges (outside the path)
 const SIDE_X_MIN: float = 4.0   # Just beyond path edge
@@ -16,11 +16,13 @@ const CATEGORY_WEIGHTS: Dictionary = {
 	"trees_pine": 2.5,
 	"trees_small": 2.0,
 	"bushes": 3.5,
-	"flowers": 2.5,
+	"flowers": 3.0,
 	"rocks": 2.0,
-	"rocks_small": 1.5,
-	"props": 1.5,
-	"ground_cover": 3.0,
+	"rocks_small": 2.0,
+	"props": 2.5,
+	"ground_cover": 4.0,
+	"roadside": 2.5,
+	"ground_paths": 1.5,
 }
 
 # Scale ranges per category
@@ -34,6 +36,8 @@ const SCALE_RANGES: Dictionary = {
 	"rocks_small": Vector2(0.4, 0.9),
 	"props": Vector2(0.8, 1.1),
 	"ground_cover": Vector2(0.5, 1.2),
+	"roadside": Vector2(0.7, 1.2),
+	"ground_paths": Vector2(0.6, 1.0),
 }
 
 
@@ -96,6 +100,13 @@ static func spawn_decorations(chunk: Node3D, chunk_length: float, path_width: fl
 			elif category == "ground_cover":
 				instance.position.x = side * randf_range(SIDE_X_MIN, 8.0)
 				instance.position.y = 0.0
+			elif category == "roadside":
+				# Barrels, crates, fences — close to path edge for realism
+				instance.position.x = side * randf_range(SIDE_X_MIN, 8.0)
+			elif category == "ground_paths":
+				# Ground path/grass patches — close and flat
+				instance.position.x = side * randf_range(SIDE_X_MIN, 12.0)
+				instance.position.y = 0.01
 
 			# Disable shadow casting on large decorations to prevent road darkening
 			if category in ["trees_large", "trees_pine", "rocks"]:

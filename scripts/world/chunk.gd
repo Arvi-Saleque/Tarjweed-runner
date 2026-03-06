@@ -130,6 +130,10 @@ func _spawn_coins() -> void:
 	if is_safe and chunk_index == 0:
 		return  # No coins on the very first chunk
 
+	# No coins on chunks with a giant rock
+	if _has_giant_rock():
+		return
+
 	# 45% chance this chunk gets coins
 	if randf() > 0.45:
 		return
@@ -149,3 +153,10 @@ func _spawn_coins() -> void:
 	var start_pos := Vector3(0, 0, start_z)
 
 	CoinPattern.call("spawn_pattern", self, pattern, start_pos, lane_idx, _generator)
+
+
+func _has_giant_rock() -> bool:
+	for child in get_children():
+		if child.is_in_group("giant_rocks"):
+			return true
+	return false

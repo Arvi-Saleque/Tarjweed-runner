@@ -44,7 +44,7 @@ var _touch_start: Vector2 = Vector2.ZERO
 var _touch_active: bool = false
 
 # --- Giant Rock / Double-Tap Blast ---
-const DOUBLE_TAP_WINDOW: float = 1.5   # generous window between taps
+const DOUBLE_TAP_WINDOW: float = 0.6   # window for double-tap detection
 const GIANT_ROCK_DETECT_RANGE: float = 45.0  # show hint at this distance
 const GIANT_ROCK_BLAST_RANGE: float = 35.0   # can blast within this range
 var _last_space_time: float = -1.0
@@ -158,8 +158,12 @@ func _input(event: InputEvent) -> void:
 				if delta_v.length() < SWIPE_MIN_DISTANCE:
 					# Short tap — treat like spacebar for giant rock blast
 					if GameManager.current_theme != "quiz":
-						if not _try_giant_rock_blast():
-							if is_grounded or not coyote_timer.is_stopped():
+						var blast_result := _try_giant_rock_blast()
+						if blast_result == 1:
+							pass  # Blast fired
+						elif blast_result == -1:
+							pass  # First tap near giant rock, wait for double
+						elif is_grounded or not coyote_timer.is_stopped():
 								_jump()
 				else:
 					_process_swipe(event.position)
@@ -211,8 +215,11 @@ func _handle_input() -> void:
 	if GameManager.current_theme != "quiz":
 		if Input.is_action_just_pressed("jump"):
 			# Check for giant rock double-tap blast first
-			if _try_giant_rock_blast():
-				pass  # Blast handled, don't jump
+			var blast_result := _try_giant_rock_blast()
+			if blast_result == 1:
+				pass  # Blast fired
+			elif blast_result == -1:
+				pass  # First tap near giant rock, do nothing (no jump)
 			elif is_grounded or not coyote_timer.is_stopped():
 				_jump()
 			else:
@@ -462,23 +469,27 @@ func _scan_for_giant_rocks() -> void:
 				rock.hide_hint()
 
 
-func _try_giant_rock_blast() -> bool:
-	## Returns true if the spacebar press was consumed by giant rock interaction.
+func _try_giant_rock_blast() -> int:
+	## Returns: 1 = blast fired, -1 = first tap (blocked jump), 0 = no giant rock nearby
 	if _nearby_giant_rock == null or not is_instance_valid(_nearby_giant_rock):
-		return false
+		_last_space_time = -1.0
+		return 0
 
 	var rock_state = _nearby_giant_rock.get("state")
-	if rock_state == null:
-		return false
+	if rock_state == null or rock_state >= 1:
+		_last_space_time = -1.0
+		return 0
 
-	# State 0 = INTACT → blast it (single hit destroys)
-	# State 1+ = already exploding/destroyed → ignore
-	if rock_state >= 1:
-		return false
-
-	# Fire a visible blast projectile from player toward the rock
-	_fire_blast_projectile(_nearby_giant_rock)
-	return true
+	var now: float = Time.get_ticks_msec() / 1000.0
+	if _last_space_time > 0.0 and (now - _last_space_time) < DOUBLE_TAP_WINDOW:
+		# Double-tap detected — fire blast!
+		_last_space_time = -1.0
+		_fire_blast_projectile(_nearby_giant_rock)
+		return 1
+	else:
+		# First tap — record time, block jump
+		_last_space_time = now
+		return -1
 
 
 func _fire_blast_projectile(target_rock: Node) -> void:

@@ -79,11 +79,15 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 		if absf(slot_z - last_obstacle_z) < SLOT_SPACING * 0.8:
 			continue
 
-		# Don't place regular obstacles within 20m BEFORE and 5m AFTER giant rock
+		# Don't place regular obstacles near giant rock
+		# Clearance scales with speed: 30-50m before, 20-50m after
 		if giant_rock_spawned:
 			var rock_z: float = -(chunk_length * 0.5)
-			var dist_to_rock: float = slot_z - rock_z  # positive = before rock (closer to player spawn)
-			if dist_to_rock > -5.0 and dist_to_rock < 20.0:
+			var speed_ratio: float = clampf((GameManager.current_speed - GameManager.BASE_SPEED) / (GameManager.MAX_SPEED - GameManager.BASE_SPEED), 0.0, 1.0)
+			var clear_before: float = lerpf(30.0, 50.0, speed_ratio)
+			var clear_after: float = lerpf(20.0, 50.0, speed_ratio)
+			var dist_to_rock: float = slot_z - rock_z  # positive = before rock
+			if dist_to_rock > -clear_after and dist_to_rock < clear_before:
 				continue
 
 		# Decide: overhead (slide-under) or ground (jump-over / dodge)

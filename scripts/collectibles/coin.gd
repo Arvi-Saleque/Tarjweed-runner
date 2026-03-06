@@ -28,6 +28,7 @@ func setup(model_scene: PackedScene, type: String = "gold") -> void:
 	if model_scene:
 		_model = model_scene.instantiate()
 		add_child(_model)
+		_apply_coin_material(_model, coin_type)
 	else:
 		_create_placeholder()
 
@@ -119,3 +120,40 @@ func collect() -> void:
 	tween.tween_property(self, "scale", Vector3(0.01, 0.01, 0.01), 0.2).set_ease(Tween.EASE_IN)
 	tween.tween_property(self, "position:y", position.y + 1.0, 0.2)
 	tween.chain().tween_callback(queue_free)
+
+
+func _apply_coin_material(node: Node, type: String) -> void:
+	## Override coin mesh materials to look like real shiny metal coins.
+	var mat := StandardMaterial3D.new()
+	match type:
+		"gold":
+			mat.albedo_color = Color(1.0, 0.84, 0.0)  # Real gold color
+			mat.metallic = 1.0
+			mat.roughness = 0.15
+			mat.emission_enabled = true
+			mat.emission = Color(1.0, 0.78, 0.0)
+			mat.emission_energy_multiplier = 0.6
+		"silver":
+			mat.albedo_color = Color(0.85, 0.85, 0.88)
+			mat.metallic = 1.0
+			mat.roughness = 0.2
+			mat.emission_enabled = true
+			mat.emission = Color(0.8, 0.82, 0.85)
+			mat.emission_energy_multiplier = 0.3
+		"bronze":
+			mat.albedo_color = Color(0.8, 0.5, 0.2)
+			mat.metallic = 0.9
+			mat.roughness = 0.3
+			mat.emission_enabled = true
+			mat.emission = Color(0.7, 0.45, 0.15)
+			mat.emission_energy_multiplier = 0.2
+	_override_coin_meshes(node, mat)
+
+
+func _override_coin_meshes(node: Node, mat: StandardMaterial3D) -> void:
+	if node is MeshInstance3D:
+		var mi := node as MeshInstance3D
+		for i in mi.mesh.get_surface_count():
+			mi.set_surface_override_material(i, mat)
+	for child in node.get_children():
+		_override_coin_meshes(child, mat)

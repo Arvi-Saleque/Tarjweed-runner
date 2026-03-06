@@ -1579,3 +1579,37 @@ The entire road and nearby area was covered in shadow, like a plane above blocki
 - **game.tscn**: `ambient_light_energy` 0.5→0.7, `ssao_intensity` 2.0→0.8
 
 ---
+
+## Giant Rock Clearance, Gold Coins, More Scenery
+
+### 1. Giant Rock Clear Zone — 30m Before, 20m After
+- No obstacles spawn within 30m before and 20m after the giant rock
+- Gives player clear runway to see rock, double-tap spacebar, and pass safely
+
+### 2. Golden Coins — Real Metal Look
+- Applied shiny gold material override to coin GLB models
+- Gold: full metallic (1.0), low roughness (0.15), warm gold emission glow
+- Silver: full metallic, cool silver tone
+- Bronze: high metallic (0.9), warm copper tones
+- Coins now look like real shiny metal coins instead of flat colored models
+
+### 3. More Road Scenery — Denser, More Variety
+**New decoration categories added:**
+- `"roadside"` (weight 2.5): barrels, crates, crate-strong, fence-broken, fence-low-broken, hedge, hedge-corner, stones, rocks, statue_block, statue_column — placed close to path (4–8m)
+- `"ground_paths"` (weight 1.5): ground_pathRocks, ground_pathSide, ground_grass — flat ground patches (4–12m, Y=0.01)
+
+**Density increased:**
+- MIN per side: 5 → 8
+- MAX per side: 12 → 18
+- Flowers weight: 2.5 → 3.0
+- Ground cover weight: 3.0 → 4.0
+- Props weight: 1.5 → 2.5
+- Rocks_small weight: 1.5 → 2.0
+
+### Changed Files
+- **obstacle_spawner.gd**: Giant rock clearance 30m before, 20m after
+- **world_generator.gd**: Added `"roadside"` and `"ground_paths"` decoration categories with 14 new models
+- **decoration_spawner.gd**: Increased density (8–18 per side), added weights + scale + placement for new categories
+- **coin.gd**: Added `_apply_coin_material()` with gold/silver/bronze shiny metal materials
+
+---

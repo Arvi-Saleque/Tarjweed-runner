@@ -41,9 +41,6 @@ func setup(model_scene: PackedScene) -> void:
 	col.name = "RockCollision"
 	add_child(col)
 
-	# Add "DOUBLE TAP!" hint floating above rock
-	_create_hint_label()
-
 
 func _process(delta: float) -> void:
 	match state:
@@ -160,23 +157,11 @@ func _finish_destroy() -> void:
 
 
 func _create_hint_label() -> void:
-	_hint_label = Label3D.new()
-	_hint_label.text = "PRESS SPACE!"
-	_hint_label.font_size = 72
-	_hint_label.modulate = Color(1.0, 0.9, 0.2, 1.0)
-	_hint_label.outline_modulate = Color(0.0, 0.0, 0.0, 1.0)
-	_hint_label.outline_size = 8
-	_hint_label.position = Vector3(0, ROCK_HEIGHT + 1.0, 0)
-	_hint_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_hint_label.no_depth_test = true
-	_hint_label.visible = false  # Shown when player gets close
-	add_child(_hint_label)
+	pass
 
 
 func show_hint() -> void:
-	if _hint_label and state == RockState.INTACT:
-		_hint_label.text = "PRESS SPACE!"
-		_hint_label.visible = true
+	pass
 
 
 func hide_hint() -> void:
