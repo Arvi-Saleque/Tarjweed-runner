@@ -43,6 +43,13 @@ const SWIPE_MIN_DISTANCE: float = 50.0  # minimum pixels to register a swipe
 var _touch_start: Vector2 = Vector2.ZERO
 var _touch_active: bool = false
 
+# --- Giant Rock / Double-Tap Blast ---
+const DOUBLE_TAP_WINDOW: float = 1.5   # generous window between taps
+const GIANT_ROCK_DETECT_RANGE: float = 45.0  # show hint at this distance
+const GIANT_ROCK_BLAST_RANGE: float = 35.0   # can blast within this range
+var _last_space_time: float = -1.0
+var _nearby_giant_rock: Node = null
+
 # --- Node References ---
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var player_model: Node3D = $PlayerModel
@@ -126,6 +133,9 @@ func _physics_process(delta: float) -> void:
 	# Keep player at Z=0 (world moves, not player)
 	position.z = 0.0
 
+	# Detect nearby giant rocks for hint display
+	_scan_for_giant_rocks()
+
 	# Sync model tilt for lane changes
 	var lane_diff: float = target_x - position.x
 	player_model.rotation.z = lerp(player_model.rotation.z, clampf(-lane_diff * 0.15, -0.2, 0.2), delta * 10.0)
@@ -137,14 +147,22 @@ func _input(event: InputEvent) -> void:
 	if current_state == PlayerState.DEAD or not GameManager.is_playing():
 		return
 
-	# Touch input — detect swipe gestures
+	# Touch input — detect swipe gestures and taps
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			_touch_start = event.position
 			_touch_active = true
 		else:
 			if _touch_active:
-				_process_swipe(event.position)
+				var delta_v: Vector2 = event.position - _touch_start
+				if delta_v.length() < SWIPE_MIN_DISTANCE:
+					# Short tap — treat like spacebar for giant rock blast
+					if GameManager.current_theme != "quiz":
+						if not _try_giant_rock_blast():
+							if is_grounded or not coyote_timer.is_stopped():
+								_jump()
+				else:
+					_process_swipe(event.position)
 				_touch_active = false
 
 
@@ -192,7 +210,10 @@ func _handle_input() -> void:
 	# In Quiz mode, spacebar jump is disabled — use quiz_jump() from QuizManager
 	if GameManager.current_theme != "quiz":
 		if Input.is_action_just_pressed("jump"):
-			if is_grounded or not coyote_timer.is_stopped():
+			# Check for giant rock double-tap blast first
+			if _try_giant_rock_blast():
+				pass  # Blast handled, don't jump
+			elif is_grounded or not coyote_timer.is_stopped():
 				_jump()
 			else:
 				_input_buffer_jump = true
@@ -418,6 +439,123 @@ func _on_footstep_timer_timeout() -> void:
 		footstep_timer.wait_time = lerpf(0.35, 0.2, speed_ratio)
 
 
+# --- Giant Rock / Double-Tap Blast ---
+
+func _scan_for_giant_rocks() -> void:
+	## Check for nearby giant rocks and show/hide hint labels.
+	_nearby_giant_rock = null
+	var rocks := get_tree().get_nodes_in_group("giant_rocks")
+	for rock in rocks:
+		# World moves +Z toward player (at Z=0). Rocks ahead have negative global Z.
+		# As they approach, global Z increases toward 0.
+		var rock_z: float = rock.global_position.z
+		if rock_z > 2.0:
+			continue  # Rock already passed behind us
+		var abs_dist: float = absf(rock_z)
+		if abs_dist < GIANT_ROCK_DETECT_RANGE:
+			if rock.has_method("show_hint"):
+				rock.show_hint()
+			if abs_dist < GIANT_ROCK_BLAST_RANGE:
+				_nearby_giant_rock = rock
+		else:
+			if rock.has_method("hide_hint"):
+				rock.hide_hint()
+
+
+func _try_giant_rock_blast() -> bool:
+	## Returns true if the spacebar press was consumed by giant rock interaction.
+	if _nearby_giant_rock == null or not is_instance_valid(_nearby_giant_rock):
+		return false
+
+	var rock_state = _nearby_giant_rock.get("state")
+	if rock_state == null:
+		return false
+
+	# State 0 = INTACT → first hit (crack it)
+	# State 1 = SHAKING → second hit (destroy it)
+	# State 2+ = already exploding/destroyed → ignore
+	if rock_state >= 2:
+		return false
+
+	# Fire a visible blast projectile from player toward the rock
+	_fire_blast_projectile(_nearby_giant_rock)
+	return true
+
+
+func _fire_blast_projectile(target_rock: Node) -> void:
+	## Spawn a glowing energy ball that flies from the player to the rock.
+	var projectile := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 0.25
+	sphere.height = 0.5
+
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.2, 0.8, 1.0, 0.9)
+	mat.emission_enabled = true
+	mat.emission = Color(0.1, 0.6, 1.0)
+	mat.emission_energy_multiplier = 5.0
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	sphere.material = mat
+	projectile.mesh = sphere
+
+	# Add a point light to the projectile for glow
+	var light := OmniLight3D.new()
+	light.light_color = Color(0.2, 0.7, 1.0)
+	light.light_energy = 4.0
+	light.omni_range = 5.0
+	projectile.add_child(light)
+
+	# Start position: in front of player (global space)
+	projectile.position = Vector3(global_position.x, 1.2, global_position.z - 0.5)
+	# Add projectile to the scene root so it's not affected by chunk movement
+	get_tree().current_scene.add_child(projectile)
+
+	# Target: the rock's global position (center mass)
+	var target_pos := Vector3(target_rock.global_position.x, 1.5, target_rock.global_position.z)
+
+	# Determine if this is first or second hit
+	var rock_state = target_rock.get("state")
+	var is_second_hit: bool = (rock_state == 1)
+
+	# Animate the projectile flying to the rock
+	var dist: float = projectile.position.distance_to(target_pos)
+	var travel_time: float = clampf(dist / 40.0, 0.15, 0.5)  # Fast projectile
+
+	var tween := get_tree().create_tween()
+	tween.tween_property(projectile, "position", target_pos, travel_time).set_ease(Tween.EASE_IN)
+	tween.parallel().tween_property(projectile, "scale", Vector3(1.5, 1.5, 1.5), travel_time)
+
+	# On hit: trigger rock reaction and clean up projectile
+	tween.tween_callback(func():
+		# Screen flash
+		if light:
+			light.light_energy = 10.0
+
+		if is_instance_valid(target_rock):
+			if is_second_hit:
+				if target_rock.has_method("trigger_blast"):
+					target_rock.trigger_blast()
+			else:
+				if target_rock.has_method("start_charge"):
+					target_rock.start_charge()
+				AudioManager.play_impact()
+
+		# Small camera shake on first hit, bigger on second
+		var camera_rig = get_node_or_null("CameraRig")
+		if camera_rig and camera_rig.has_method("shake"):
+			if is_second_hit:
+				camera_rig.shake(0.4, 3.0)
+			else:
+				camera_rig.shake(0.15, 5.0)
+
+		# Fade and remove projectile
+		var fade_tween := get_tree().create_tween()
+		fade_tween.tween_property(projectile, "scale", Vector3(3.0, 3.0, 3.0), 0.2)
+		fade_tween.parallel().tween_callback(func(): mat.albedo_color.a = 0.0)
+		fade_tween.tween_callback(projectile.queue_free)
+	)
+
+
 func _ensure_player_visible() -> void:
 	# If PlayerModel already has children (e.g. GLB model dragged in), skip
 	if player_model.get_child_count() > 0:
@@ -437,6 +575,7 @@ func _ensure_player_visible() -> void:
 			print("=== Loaded character from animation GLB ===")
 			_debug_print_tree(model, "  ")
 			_merge_extra_animations(model)
+			_apply_nature_tint(model)
 
 			# Force-play Run
 			var ap := _find_anim_player(model)
@@ -530,6 +669,24 @@ func _find_anim_player(node: Node) -> AnimationPlayer:
 		if result:
 			return result
 	return null
+
+
+func _apply_nature_tint(node: Node) -> void:
+	## Apply a green nature-themed color to the player character mesh
+	var green_mat := StandardMaterial3D.new()
+	green_mat.albedo_color = Color(0.28, 0.62, 0.26)  # forest green
+	green_mat.roughness = 0.7
+	green_mat.metallic = 0.05
+	_override_meshes(node, green_mat)
+
+
+func _override_meshes(node: Node, mat: StandardMaterial3D) -> void:
+	if node is MeshInstance3D:
+		var mi := node as MeshInstance3D
+		for i in mi.mesh.get_surface_count():
+			mi.set_surface_override_material(i, mat)
+	for child in node.get_children():
+		_override_meshes(child, mat)
 
 
 func _debug_print_tree(node: Node, indent: String = "") -> void:

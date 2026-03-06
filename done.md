@@ -1434,3 +1434,64 @@ Added `_set_loop_modes()` in **scripts/player/player_animation.gd** that runs af
 Running animation now loops continuously as expected.
 
 ---
+
+## Green Nature Character Tint ?
+
+### Change
+Applied forest-green material override to the player character so it blends with the nature environment.
+
+### Details
+- Added `_apply_nature_tint()` and `_override_meshes()` in **player_controller.gd**
+- Color: `Color(0.28, 0.62, 0.26)` — forest green with slight roughness
+- Overrides all mesh surfaces on the loaded GLB model
+
+---
+
+## Giant Rock + Sonic Blast (Natural Mode) ?
+
+### Feature
+Giant boulders that block ALL 3 lanes — player must double-tap spacebar (or double-tap screen on mobile) to fire a sonic blast that destroys the rock. Miss the timing = death.
+
+### New Files
+- **scripts/obstacles/giant_rock.gd**: Destructible rock obstacle with states (INTACT ? SHAKING ? EXPLODING ? DESTROYED). Shows "DOUBLE TAP!" hint label. On first tap: rock shakes + glows orange. On second tap within 0.5s: collision removed, debris flies outward, sonic blast VFX triggers, camera shakes, bonus coin awarded.
+- **scripts/obstacles/sonic_blast.gd**: Expanding torus shockwave ring (cyan glow), spark burst (30 particles), rising smoke (20 particles), bright omni light flash. All procedural — no texture dependencies.
+- **assets/Obstacles/GiantRock/**: 4 GLB models (rock_tallA, rock_tallB, rock_tallC, rock_largeA) from kenney_nature-kit, scaled 3.5x to span all lanes.
+
+### Modified Files
+- **scripts/player/player_controller.gd**: Double-tap detection (_try_giant_rock_blast()), giant rock scanning (_scan_for_giant_rocks()), touch double-tap support for Android.
+- **scripts/world/obstacle_spawner.gd**: _should_spawn_giant_rock() (5% chance, min 150m apart, after 80m), _create_giant_rock(), clears regular obstacles near giant rock.
+- **scripts/world/world_generator.gd**: Preloads 4 giant rock GLBs, get_random_giant_rock_scene().
+
+### How It Works
+1. After 80m, each chunk has 5% chance to spawn a giant rock (min 150m between rocks)
+2. Rock spans all 3 lanes — no dodging possible
+3. At 35m distance: "DOUBLE TAP!" hint appears above rock
+4. At 25m distance: spacebar/tap interaction enabled
+5. First press: rock shakes, glows orange
+6. Second press within 0.5s: BOOM — sonic blast, debris scatter, camera shake
+7. Rock collision removed instantly — player passes through
+8. If too slow: collide and die
+
+---
+
+## Giant Rock Blast Fix + Projectile VFX ?
+
+### Bugs Fixed
+1. **Distance detection was inverted** — rocks ahead (negative Z) were being filtered out as "behind". Fixed coordinate check in `_scan_for_giant_rocks()`.
+2. **Detection/blast range too short** — increased from 35/25m to 45/35m.
+3. **Double-tap window too tight** — increased from 0.5s to 1.5s.
+
+### New Feature: Visible Blast Projectile
+- Press SPACE near rock ? **glowing blue energy ball** fires from player toward the rock
+- Projectile is a sphere with cyan emission glow + attached OmniLight3D
+- Animates flying from player to rock via tween (fast, ~0.15-0.5s based on distance)
+- On impact: projectile expands + fades, camera shakes
+- First hit: rock cracks + shakes, hint changes to "HIT AGAIN!"
+- Second hit: rock explodes with full debris + shockwave VFX
+- Works on Android too (screen tap fires projectile)
+
+### Changed Files
+- **player_controller.gd**: Rewrote `_scan_for_giant_rocks()` (fixed Z direction), `_try_giant_rock_blast()` (simplified), added `_fire_blast_projectile()` (visible energy ball)
+- **giant_rock.gd**: Hint text "PRESS SPACE!" / "HIT AGAIN!", hint stays visible during SHAKING state
+
+---

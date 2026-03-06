@@ -4,12 +4,18 @@ extends RefCounted
 ## Supports different spawning modes based on GameManager.current_theme.
 
 const OBSTACLE_SCRIPT: String = "res://scripts/obstacles/obstacle.gd"
+const GIANT_ROCK_SCRIPT: String = "res://scripts/obstacles/giant_rock.gd"
 
 # Natural mode settings
 const SLOT_SPACING: float = 5.0
 const MIN_SLOT_OFFSET: float = 3.0
 const OVERHEAD_CHANCE_BASE: float = 0.15   # 15% chance at low difficulty
 const OVERHEAD_CHANCE_MAX: float = 0.35    # 35% chance at high difficulty
+
+# Giant rock settings (natural mode only)
+const GIANT_ROCK_CHANCE: float = 0.20       # 20% per chunk
+const GIANT_ROCK_MIN_DISTANCE: float = 80.0   # minimum meters between giant rocks
+const GIANT_ROCK_MIN_SCORE: float = 50.0      # don't spawn until player has run 50m
 
 # Quiz mode settings — full-row blocks the player MUST jump over
 const QUIZ_MIN_ROW_GAP: float = 48.0   # ~4s at base speed (12 m/s)
@@ -40,6 +46,16 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 	var difficulty: float = GameManager.difficulty_multiplier
 	var frequency: float = GameManager.obstacle_frequency
 
+	# Try spawning a giant rock in this chunk (rare, blocks all lanes)
+	var giant_rock_spawned: bool = false
+	if _should_spawn_giant_rock():
+		var rock_z: float = -(chunk_length * 0.5)  # Place in middle of chunk
+		_create_giant_rock(chunk, Vector3(0.0, 0.0, rock_z), generator)
+		giant_rock_spawned = true
+		# Track distance for spacing
+		GameManager.set_meta("_last_giant_rock_dist", GameManager.distance)
+		print("[GiantRock] === SPAWNED at dist=%.0f ===" % GameManager.distance)
+
 	var slots: Array[float] = []
 	var z: float = -MIN_SLOT_OFFSET
 	while z > -(chunk_length - MIN_SLOT_OFFSET):
@@ -57,6 +73,10 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 		if randf() > frequency:
 			continue
 		if absf(slot_z - last_obstacle_z) < SLOT_SPACING * 0.8:
+			continue
+
+		# Don't place regular obstacles too close to giant rock
+		if giant_rock_spawned and absf(slot_z - (-(chunk_length * 0.5))) < 12.0:
 			continue
 
 		# Decide: overhead (slide-under) or ground (jump-over / dodge)
@@ -231,3 +251,50 @@ static func _create_overhead_obstacle(parent: Node3D, pos: Vector3, generator: N
 		bar_mat.roughness = 0.8
 		obstacle.call("setup_placeholder", Vector3(1.6, 0.4, 0.4), bar_mat)
 		obstacle.position.y = 0.9  # Elevate fallback
+
+
+# =============================================================================
+# GIANT ROCK — blocks all 3 lanes, destroyed by double-tap blast
+# =============================================================================
+
+static func _should_spawn_giant_rock() -> bool:
+	# Only in natural mode
+	if GameManager.current_theme != "natural":
+		return false
+
+	var last_dist: float = GameManager.get_meta("_last_giant_rock_dist", -999.0) as float
+
+	# GUARANTEED first giant rock at ~100m
+	if last_dist < 0 and GameManager.distance >= 80.0:
+		print("[GiantRock] GUARANTEED first spawn at dist=%.0f" % GameManager.distance)
+		return true
+
+	# After that, random with spacing enforced
+	if GameManager.distance - last_dist < GIANT_ROCK_MIN_DISTANCE:
+		return false
+	var roll: float = randf()
+	print("[GiantRock] dist=%.0f last=%.0f roll=%.2f need<%.2f" % [GameManager.distance, last_dist, roll, GIANT_ROCK_CHANCE])
+	return roll < GIANT_ROCK_CHANCE
+
+
+static func _create_giant_rock(parent: Node3D, pos: Vector3, generator: Node3D) -> void:
+	var rock_script: GDScript = load(GIANT_ROCK_SCRIPT) as GDScript
+	if not rock_script:
+		return
+
+	var rock := Area3D.new()
+	rock.set_script(rock_script)
+	rock.position = pos
+	rock.name = "GiantRock"
+	parent.add_child(rock)
+
+	# Pick a random giant rock model
+	var model_scene: PackedScene = null
+	if generator and generator.has_method("get_random_giant_rock_scene"):
+		model_scene = generator.get_random_giant_rock_scene()
+
+	if model_scene:
+		rock.call("setup", model_scene)
+	else:
+		# Fallback: use setup with null (will just be collision box)
+		rock.call("setup", null)

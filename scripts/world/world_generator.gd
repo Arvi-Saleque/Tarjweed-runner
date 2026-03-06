@@ -18,6 +18,7 @@ var _chunk_index: int = 0
 var decoration_scenes: Dictionary = {}
 var obstacle_scenes: Array[PackedScene] = []
 var overhead_obstacle_scenes: Array[PackedScene] = []
+var giant_rock_scenes: Array[PackedScene] = []
 var coin_scenes: Dictionary = {}  # "gold" -> PackedScene, etc.
 var obstacle_material: StandardMaterial3D
 var coin_material: StandardMaterial3D
@@ -301,6 +302,12 @@ func _preload_obstacles() -> void:
 		"res://assets/Obstacles/Overhead/log_large.glb",
 		"res://assets/Obstacles/Overhead/fence_gate.glb",
 	])
+	giant_rock_scenes = _load_scene_array([
+		"res://assets/Obstacles/GiantRock/rock_tallA.glb",
+		"res://assets/Obstacles/GiantRock/rock_tallB.glb",
+		"res://assets/Obstacles/GiantRock/rock_tallC.glb",
+		"res://assets/Obstacles/GiantRock/rock_largeA.glb",
+	])
 
 
 func _preload_coins() -> void:
@@ -330,3 +337,9 @@ func get_random_overhead_scene() -> PackedScene:
 	if overhead_obstacle_scenes.is_empty():
 		return null
 	return overhead_obstacle_scenes[randi() % overhead_obstacle_scenes.size()]
+
+
+func get_random_giant_rock_scene() -> PackedScene:
+	if giant_rock_scenes.is_empty():
+		return null
+	return giant_rock_scenes[randi() % giant_rock_scenes.size()]
