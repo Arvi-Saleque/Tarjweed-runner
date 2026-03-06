@@ -42,6 +42,9 @@ var _buffer_timer: float = 0.0
 const SWIPE_MIN_DISTANCE: float = 50.0  # minimum pixels to register a swipe
 var _touch_start: Vector2 = Vector2.ZERO
 var _touch_active: bool = false
+var _touch_start_time: float = 0.0        # When touch began (for hold detection)
+var _touch_hold_building: bool = false     # True while touch-holding to build bridge
+const TOUCH_HOLD_THRESHOLD: float = 0.3   # Seconds before touch counts as hold
 
 # --- Giant Rock / Double-Tap Blast ---
 const DOUBLE_TAP_WINDOW: float = 0.6   # window for double-tap detection
@@ -161,28 +164,31 @@ func _input(event: InputEvent) -> void:
 	if current_state == PlayerState.DEAD or not GameManager.is_playing():
 		return
 
-	# Touch input — detect swipe gestures and taps
+	# Touch input — detect swipe gestures, taps, and holds
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			_touch_start = event.position
+			_touch_start_time = Time.get_ticks_msec() / 1000.0
 			_touch_active = true
+			_touch_hold_building = false
 		else:
 			if _touch_active:
 				var delta_v: Vector2 = event.position - _touch_start
-				if delta_v.length() < SWIPE_MIN_DISTANCE:
-					# Short tap — treat like spacebar for giant rock blast
-					if GameManager.current_theme != "quiz":
-						# Near river — no jump, spacebar reserved for bridge
-						if not _near_river_no_jump:
+				var hold_duration: float = (Time.get_ticks_msec() / 1000.0) - _touch_start_time
+				if _touch_hold_building:
+					# Was holding to build bridge — already handled in _process
+					pass
+				elif delta_v.length() < SWIPE_MIN_DISTANCE:
+					# Short tap (not a hold) — double tap for blast
+					if hold_duration < TOUCH_HOLD_THRESHOLD:
+						if GameManager.current_theme != "quiz":
 							var blast_result := _try_giant_rock_blast()
 							if blast_result == 1:
-								pass  # Blast fired
-							# Always jump on tap
-							if is_grounded or not coyote_timer.is_stopped():
-								_jump()
-				else:
-					_process_swipe(event.position)
+								pass  # Blast fired via double tap
+					else:
+						_process_swipe(event.position)
 				_touch_active = false
+				_touch_hold_building = false
 
 
 func _process_swipe(end_pos: Vector2) -> void:
@@ -201,12 +207,13 @@ func _process_swipe(end_pos: Vector2) -> void:
 		# Vertical swipe — jump / slide (natural mode only, quiz uses answer buttons)
 		if GameManager.current_theme != "quiz":
 			if delta_v.y < 0:
-				# Swipe up — jump
-				if is_grounded or not coyote_timer.is_stopped():
-					_jump()
-				else:
-					_input_buffer_jump = true
-					_buffer_timer = 0.15
+				# Swipe up — jump (blocked near river)
+				if not _near_river_no_jump:
+					if is_grounded or not coyote_timer.is_stopped():
+						_jump()
+					else:
+						_input_buffer_jump = true
+						_buffer_timer = 0.15
 			else:
 				# Swipe down — slide
 				if is_grounded:
@@ -606,16 +613,28 @@ func _scan_for_rivers() -> void:
 
 
 func _update_bridge_hold(delta: float) -> void:
-	## Track spacebar hold to build bridge over river.
+	## Track spacebar/touch hold to build bridge over river.
 	if _nearby_river == null or not is_instance_valid(_nearby_river):
 		_space_hold_time = 0.0
+		_touch_hold_building = false
 		return
 
 	# Already built bridge for this river on this lane
 	if _nearby_river.has_meta("bridge_lane_%d" % current_lane):
 		return
 
-	if Input.is_action_pressed("jump"):
+	# Check keyboard hold OR touch hold
+	var is_holding: bool = Input.is_action_pressed("jump")
+
+	# Touch hold detection: finger is down, hasn't swiped, held long enough
+	if _touch_active and not _touch_hold_building:
+		var touch_dur: float = (Time.get_ticks_msec() / 1000.0) - _touch_start_time
+		if touch_dur >= TOUCH_HOLD_THRESHOLD:
+			_touch_hold_building = true
+	if _touch_hold_building:
+		is_holding = true
+
+	if is_holding:
 		_space_hold_time += delta
 		if _space_hold_time >= BRIDGE_HOLD_TIME:
 			_build_bridge(_nearby_river)
