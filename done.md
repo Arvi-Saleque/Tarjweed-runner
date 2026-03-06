@@ -972,19 +972,127 @@ Wired the real 4K HDR sky panorama (qwantani_noon_puresky_4k.exr) into the World
   - Added `_find_anim_player_recursive()` with proper type checking
   - Improved debug output (lists all animation names found)
 - **Files modified**: `scripts/player/player_controller.gd`, `scripts/player/player_animation.gd`
-- **Game start reset**: Instantly resets fog and glow to base values
-- **Signal-driven**: speed_changed → update targets, game_started → reset, game_over → mood shift
-- Finds the WorldEnvironment's Environment resource at `_ready()` and caches it
+
+### Fix 8: Animation System Rewrite v3 (Use Animation GLB as Character)
+- **Problem**: Copying animations between GLBs had track path mismatches — animations loaded but couldn't resolve skeleton bone paths on the separate mannequin model
+- **Root cause**: Mannequin GLB and animation GLBs are separate scenes. AnimationPlayer track paths are relative to GLB root. Moving animations from one GLB to another's skeleton doesn't work without remapping every track path
+- **Solution**: Load `Rig_Medium_MovementBasic.glb` (the animation GLB) directly as the character model instead of the separate `Mannequin_Medium.glb`. The animation GLB already contains:
+  - The same mesh + textures (identical look)
+  - The skeleton/armature
+  - A built-in AnimationPlayer with proper track paths
+  - Idle, Walk, Run, Sprint animations that "just work"
+- Additional animations (Jump, Slide, Death) merged from MovementAdvanced, General, CombatMelee GLBs
+- Mannequin GLB kept as secondary fallback (no animations but at least visible)
+- Capsule mesh as final fallback
+- Force-plays "Run" after loading for immediate verification
+- **Files modified**: `scripts/player/player_controller.gd`
+
+### Git Push
+- Initialized git repository, created `.gitignore` for Godot projects
+- Pushed entire project (830 files) to `https://github.com/Arvi-Saleque/Tarjweed-runner`
+- Branch: `main`
+
+---
+
+## Theme Selection Screen ✅ COMPLETE
+
+### What Was Done
+Added a theme/mode selection screen that appears when PLAY is pressed on the main menu, instead of jumping directly to the game.
+
+### Files Created
+
+#### 1. `scripts/ui/theme_select.gd` — Theme Selection UI
+- Full-screen overlay with dark background (blocks input to menu behind)
+- "CHOOSE MODE" header with subtitle
+- Two theme cards side-by-side in HBoxContainer:
+  - **Natural** (green) — "Endless forest run" — launches the current game
+  - **Quiz** (blue) — "Coming soon..." — placeholder, launches same game for now
+- Each card has: colored icon area, title, subtitle, themed PLAY button
+- Card hover animation (scale 1.0 → 1.03) for polish
+- BACK button to return to main menu
+- Animated entrance (staggered fade-in per element)
+- Animated exit (fade-out, then `queue_free`)
+- Sets `GameManager.current_theme` before launching game
+- Signals: `theme_chosen(theme_id)`, `back_pressed`
 
 ### Files Modified
 
-#### 2. `scenes/game.tscn` — HDR Sky + Enhanced Environment + EnvironmentEffects Node
-**Header & Resources:**
-- 2 new ext_resources: qwantani_noon_puresky_4k.exr (id 8), environment_effects.gd (id 9)
-- load_steps updated from 12 → 14
+#### 2. `scripts/ui/main_menu.gd`
+- `_on_play_pressed()`: Now loads `theme_select.gd` as overlay instead of going to game
+- Added `_on_theme_back()`: Re-enables PLAY/SETTINGS buttons when BACK is pressed
 
-**PanoramaSkyMaterial:**
-- Wired `panorama = ExtResource("8")` — real 4K HDR sky now renders as the skybox
+#### 3. `scripts/autoload/game_manager.gd`
+- Added `current_theme: String = "natural"` — tracks which theme/mode the player selected
+
+---
+
+## Quiz Mode: Full-Row Obstacles ✅ COMPLETE
+
+### What Was Done
+In Quiz mode, obstacles now span all 3 lanes as full-width barriers, forcing the player to jump over every one. A minimum gap between consecutive rows ensures the player always has time to land safely before the next barrier.
+
+### Files Modified
+
+#### 1. `scripts/world/obstacle_spawner.gd` — Major rewrite
+- Refactored `spawn_obstacles()` to branch on `GameManager.current_theme`
+- **Natural mode** (`_spawn_natural_obstacles`): Unchanged — original random single/double lane blocks
+- **Quiz mode** (`_spawn_quiz_obstacles`): New spawning logic:
+  - Places full-width barriers across all 3 lanes at each row
+  - `QUIZ_MIN_ROW_GAP = 12.0` meters — minimum distance between rows
+  - `QUIZ_MAX_ROW_GAP = 18.0` meters — maximum distance (random within range)
+  - Gap math: Jump duration = 2 × 13/35 ≈ 0.74s, at BASE_SPEED 12 = ~8.9m travel, so 12m min gives safe landing room
+  - Cross-chunk continuity via `GameManager.set_meta("_quiz_last_obs_z")` — tracks remaining gap to avoid back-to-back rows at chunk boundaries
+  - `_create_quiz_row()` — places 3 low orange-red blocks (one per lane) with `setup_placeholder()`
+  - Block size: 2.0×0.6×0.6 — low enough to jump over, wide enough to fill the lane
+
+#### 2. `scripts/autoload/game_manager.gd`
+- `start_game()` now resets quiz tracking meta (`_quiz_last_obs_z`) on each new run
+
+---
+
+## Quiz Mode: MCQ System ✅ COMPLETE
+
+### What Was Done
+Transformed Quiz mode into an educational game: instead of pressing spacebar to jump, players must answer math questions correctly. A question appears on screen, and pressing the correct answer (1-4) makes the player jump over the obstacle.
+
+### Files Created
+
+#### 1. `scripts/autoload/quiz_manager.gd` — Quiz Logic Autoload
+- Registered as autoload in `project.godot`
+- Generates continuous addition questions (e.g., "15 + 23 = ?")
+- 4 answer choices (1 correct, 3 wrong — shuffled)
+- Difficulty scales with game progress (numbers get larger)
+- Registers input actions `quiz_answer_1` through `quiz_answer_4` (keys 1-4)
+- On correct answer: emits `answer_result(true)`, calls player's `quiz_jump()`
+- On wrong answer: emits `answer_result(false)`, plays error sound — player doesn't jump
+- Signals: `question_changed(question)`, `answer_result(correct)`
+- Activates only when `GameManager.current_theme == "quiz"`
+
+#### 2. `scripts/ui/quiz_hud.gd` — Quiz Question Display
+- Full-screen Control overlay (mouse_filter = IGNORE)
+- Dark blue-bordered panel at top-center of screen
+- Shows question text in large font
+- 4 answer choice boxes in a row, each labeled [1], [2], [3], [4]
+- Instructions: "Press 1, 2, 3, or 4 to answer"
+- Animated entrance when question changes (scale bounce)
+- Feedback flash: "CORRECT!" (green) or "WRONG!" (red)
+- Only visible in quiz mode
+
+### Files Modified
+
+#### 3. `scripts/player/player_controller.gd`
+- `_handle_input()`: Spacebar jump now **disabled** when `GameManager.current_theme == "quiz"`
+- Slide also disabled in quiz mode
+- Left/right lane switching (A/D keys) still works
+- Added `quiz_jump()` public method — called by QuizManager when correct answer pressed
+
+#### 4. `scenes/game.tscn`
+- Added `QuizHUD` CanvasLayer (layer 5) with `QuizHUDControl` child
+- Wired to `quiz_hud.gd` script
+- load_steps: 14 → 15
+
+#### 5. `project.godot`
+- Added `QuizManager` to autoload list
 
 **Environment (major upgrade):**
 - Ambient light: color shifted to (0.75, 0.8, 0.85) cool sky tone, energy reduced to 0.5 (HDR sky provides fill)
@@ -1112,5 +1220,53 @@ scripts/
     screen_effects.gd
 assets/                        (426 files — unchanged)
 ```
+
+---
+
+## Update: Quiz Mode Android/Mobile Touch Support
+
+### Changed
+- **scripts/ui/quiz_hud.gd** — Converted answer choices from passive labels to touchable **Button** nodes
+  - Created `_create_choice_button(index)` with normal/hover/pressed StyleBoxFlat styles
+  - Each button's `pressed` signal calls `QuizManager._check_answer(index)` directly
+  - Larger touch targets: 140×90px minimum size with rounded corners
+  - Works on both desktop (click) and mobile (tap)
+  - Instructions text adapts: "Tap an answer to jump" on mobile, "Press 1-4 or tap to answer" on desktop
+  - Keyboard input (1-4 keys) still works via QuizManager — both methods supported simultaneously
+  - Hover/pressed visual feedback for better UX
+
+### Technical Details
+- Godot Button nodes natively handle touch input on Android/iOS
+- StyleBoxFlat theming matches existing quiz panel aesthetic
+- `OS.has_feature("mobile")` / `OS.has_feature("android")` detect platform for instructions
+
+---
+
+## Update: Android Swipe Gesture Controls (No UI Buttons)
+
+### Changed
+- **scripts/player/player_controller.gd** — Added touch swipe gesture detection
+  - `_input()` captures `InputEventScreenTouch` start/end positions
+  - `_process_swipe()` determines swipe direction and triggers actions:
+    - **Swipe left/right** → Change lane (works in both Natural and Quiz modes)
+    - **Swipe up** → Jump (Natural mode only; Quiz mode uses answer buttons)
+    - **Swipe down** → Slide (Natural mode only)
+  - Minimum swipe distance: 50px to avoid accidental triggers
+  - Keyboard (A/D, Space, S) still works on PC — both input methods coexist
+  - No on-screen UI buttons added — purely gesture-based
+
+- **project.godot** — Added `pointing/emulate_mouse_from_touch=true`
+  - Ensures touch events are also processed as mouse events for UI interaction
+  - Combined with existing `emulate_touch_from_mouse` for desktop testing
+
+### Controls Summary
+| Action | PC (Keyboard) | Android (Touch) |
+|--------|---------------|-----------------|
+| Move left | A / Left Arrow | Swipe left |
+| Move right | D / Right Arrow | Swipe right |
+| Jump (Natural) | Space / Up Arrow | Swipe up |
+| Slide (Natural) | S / Down Arrow | Swipe down |
+| Answer (Quiz) | Keys 1-4 | Tap answer button |
+| Lane change (Quiz) | A/D | Swipe left/right |
 
 ---

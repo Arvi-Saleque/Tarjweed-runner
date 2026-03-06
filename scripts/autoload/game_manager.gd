@@ -37,6 +37,7 @@ var distance: float = 0.0
 var current_speed: float = BASE_SPEED
 var difficulty_multiplier: float = 1.0
 var play_time: float = 0.0   # Seconds since game_started
+var current_theme: String = "natural"  # Active game theme/mode
 
 # --- Obstacle Difficulty ---
 var obstacle_frequency: float = 0.3        # Base chance per chunk slot
@@ -74,6 +75,9 @@ func _process(delta: float) -> void:
 # --- Public API ---
 func start_game() -> void:
 	_reset_run()
+	# Reset quiz mode tracking
+	if has_meta("_quiz_last_obs_z"):
+		remove_meta("_quiz_last_obs_z")
 	current_state = GameState.PLAYING
 	get_tree().paused = false
 	game_started.emit()

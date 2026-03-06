@@ -22,6 +22,7 @@ config/icon="res://assets/UI/Icons/icon_play_light.png"
 
 [audio]
 
+buses/default_bus_layout="uid://d0fkxfk3uupcw"
 bus/default_bus_layout="res://default_bus_layout.tres"
 
 [autoload]
@@ -31,6 +32,7 @@ AudioManager="*res://scripts/autoload/audio_manager.gd"
 SaveManager="*res://scripts/autoload/save_manager.gd"
 SceneManager="*res://scripts/autoload/scene_manager.gd"
 UITheme="*res://scripts/ui/ui_theme.gd"
+QuizManager="*res://scripts/autoload/quiz_manager.gd"
 
 [display]
 
@@ -74,6 +76,7 @@ pause={
 [input_devices]
 
 pointing/emulate_touch_from_mouse=true
+pointing/emulate_mouse_from_touch=true
 
 [layer_names]
 
@@ -86,5 +89,6 @@ pointing/emulate_touch_from_mouse=true
 [rendering]
 
 textures/canvas_textures/default_texture_filter=2
+textures/vram_compression/import_etc2_astc=true
 anti_aliasing/quality/msaa_3d=2
 environment/defaults/default_clear_color=Color(0.1, 0.1, 0.12, 1)

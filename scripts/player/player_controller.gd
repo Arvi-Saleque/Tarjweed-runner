@@ -38,6 +38,11 @@ var _input_buffer_jump: bool = false
 var _input_buffer_slide: bool = false
 var _buffer_timer: float = 0.0
 
+# --- Touch / Swipe ---
+const SWIPE_MIN_DISTANCE: float = 50.0  # minimum pixels to register a swipe
+var _touch_start: Vector2 = Vector2.ZERO
+var _touch_active: bool = false
+
 # --- Node References ---
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
 @onready var player_model: Node3D = $PlayerModel
@@ -128,28 +133,77 @@ func _physics_process(delta: float) -> void:
 
 # --- Input ---
 
+func _input(event: InputEvent) -> void:
+	if current_state == PlayerState.DEAD or not GameManager.is_playing():
+		return
+
+	# Touch input — detect swipe gestures
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			_touch_start = event.position
+			_touch_active = true
+		else:
+			if _touch_active:
+				_process_swipe(event.position)
+				_touch_active = false
+
+
+func _process_swipe(end_pos: Vector2) -> void:
+	var delta_v: Vector2 = end_pos - _touch_start
+	if delta_v.length() < SWIPE_MIN_DISTANCE:
+		return
+
+	# Determine primary direction
+	if absf(delta_v.x) > absf(delta_v.y):
+		# Horizontal swipe — lane change (works in both modes)
+		if delta_v.x < 0:
+			_switch_lane(-1)
+		else:
+			_switch_lane(1)
+	else:
+		# Vertical swipe — jump / slide (natural mode only, quiz uses answer buttons)
+		if GameManager.current_theme != "quiz":
+			if delta_v.y < 0:
+				# Swipe up — jump
+				if is_grounded or not coyote_timer.is_stopped():
+					_jump()
+				else:
+					_input_buffer_jump = true
+					_buffer_timer = 0.15
+			else:
+				# Swipe down — slide
+				if is_grounded:
+					_start_slide()
+				else:
+					_input_buffer_slide = true
+					_buffer_timer = 0.15
+
+
 func _handle_input() -> void:
 	if current_state == PlayerState.DEAD or current_state == PlayerState.STUMBLE:
 		return
 
+	# Keyboard lane switching (PC)
 	if Input.is_action_just_pressed("move_left"):
 		_switch_lane(-1)
 	elif Input.is_action_just_pressed("move_right"):
 		_switch_lane(1)
 
-	if Input.is_action_just_pressed("jump"):
-		if is_grounded or not coyote_timer.is_stopped():
-			_jump()
-		else:
-			_input_buffer_jump = true
-			_buffer_timer = 0.15
+	# In Quiz mode, spacebar jump is disabled — use quiz_jump() from QuizManager
+	if GameManager.current_theme != "quiz":
+		if Input.is_action_just_pressed("jump"):
+			if is_grounded or not coyote_timer.is_stopped():
+				_jump()
+			else:
+				_input_buffer_jump = true
+				_buffer_timer = 0.15
 
-	if Input.is_action_just_pressed("slide"):
-		if is_grounded:
-			_start_slide()
-		else:
-			_input_buffer_slide = true
-			_buffer_timer = 0.15
+		if Input.is_action_just_pressed("slide"):
+			if is_grounded:
+				_start_slide()
+			else:
+				_input_buffer_slide = true
+				_buffer_timer = 0.15
 
 
 func _process_input_buffer(delta: float) -> void:
@@ -191,6 +245,14 @@ func _jump() -> void:
 	is_grounded = false
 	coyote_timer.stop()
 	AudioManager.play_sfx(AudioManager.sfx_jump)
+
+
+## Called by QuizManager when player answers correctly — triggers jump
+func quiz_jump() -> void:
+	if current_state == PlayerState.DEAD or current_state == PlayerState.STUMBLE:
+		return
+	if is_grounded or not coyote_timer.is_stopped():
+		_jump()
 
 
 func _start_slide() -> void:

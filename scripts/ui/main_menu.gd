@@ -172,12 +172,24 @@ func _on_play_pressed() -> void:
 	AudioManager.play_ui_sound(AudioManager.ui_click)
 	_play_btn.disabled = true
 	_settings_btn.disabled = true
-	SceneManager.change_scene("res://scenes/game.tscn")
+
+	# Show theme selection screen
+	var ThemeSelectScript: GDScript = load("res://scripts/ui/theme_select.gd") as GDScript
+	if ThemeSelectScript:
+		var theme_screen := Control.new()
+		theme_screen.set_script(ThemeSelectScript)
+		theme_screen.back_pressed.connect(_on_theme_back)
+		add_child(theme_screen)
 
 
 func _on_quit_pressed() -> void:
 	AudioManager.play_ui_sound(AudioManager.ui_click)
 	get_tree().quit()
+
+
+func _on_theme_back() -> void:
+	_play_btn.disabled = false
+	_settings_btn.disabled = false
 
 
 func _on_settings_pressed() -> void:
