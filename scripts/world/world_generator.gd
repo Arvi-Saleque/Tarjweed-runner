@@ -275,8 +275,19 @@ func _preload_decorations() -> void:
 			"res://assets/Environment/ExtraProps/grass_leafsLarge.glb",
 		]),
 		"mountains": _load_scene_array([
-			"res://assets/Obstacles/big hills/Mountain.glb",
-			"res://assets/Obstacles/big hills/Snowy Hills.glb",
+			"res://assets/Environment/big hills/Mountain.glb",
+			"res://assets/Environment/big hills/Mountain1.glb",
+			"res://assets/Environment/big hills/Snowy Hills.glb",
+		]),
+		"animals": _load_scene_array([
+			"res://assets/Environment/animals/Alpaca.glb",
+			"res://assets/Environment/animals/Cow/Cow.fbx",
+			"res://assets/Environment/animals/Elephant.glb",
+			"res://assets/Environment/animals/Kangaroo.glb",
+			"res://assets/Environment/animals/Lion.glb",
+			"res://assets/Environment/animals/Rhinoceros.glb",
+			"res://assets/Environment/animals/Squirrel.glb",
+			"res://assets/Environment/animals/Stag.glb",
 		]),
 	}
 

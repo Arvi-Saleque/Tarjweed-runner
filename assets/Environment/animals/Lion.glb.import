@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://bqtc7f1tfgnle"
-path="res://.godot/imported/Snowy Hills.glb-4c01a698915e207974f029ae022c82f4.scn"
+uid="uid://dms1prvk23tl8"
+path="res://.godot/imported/Lion.glb-0853e5b3e5b4dfd763fe23d7edb2f948.scn"
 
 [deps]
 
-source_file="res://assets/Obstacles/big hills/Snowy Hills.glb"
-dest_files=["res://.godot/imported/Snowy Hills.glb-4c01a698915e207974f029ae022c82f4.scn"]
+source_file="res://assets/Environment/animals/Lion.glb"
+dest_files=["res://.godot/imported/Lion.glb-0853e5b3e5b4dfd763fe23d7edb2f948.scn"]
 
 [params]
 

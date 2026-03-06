@@ -2,21 +2,21 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dkc2t15o8044x"
-path.s3tc="res://.godot/imported/Mountain_LandscapeSurface_Color.png-c261954d89101919010626f2d0dd8cfa.s3tc.ctex"
-path.etc2="res://.godot/imported/Mountain_LandscapeSurface_Color.png-c261954d89101919010626f2d0dd8cfa.etc2.ctex"
+uid="uid://bq2gpoy1jlywa"
+path.s3tc="res://.godot/imported/Elephant_Elephant_BaseColor.png-59701173aa81191afbaa7fe4ecd02277.s3tc.ctex"
+path.etc2="res://.godot/imported/Elephant_Elephant_BaseColor.png-59701173aa81191afbaa7fe4ecd02277.etc2.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "50c83a2888408e090d41c5c40fa07a2e"
+"md5": "723a376774957afac2dc78d3a3195aff"
 }
 
 [deps]
 
-source_file="res://assets/Obstacles/big hills/Mountain_LandscapeSurface_Color.png"
-dest_files=["res://.godot/imported/Mountain_LandscapeSurface_Color.png-c261954d89101919010626f2d0dd8cfa.s3tc.ctex", "res://.godot/imported/Mountain_LandscapeSurface_Color.png-c261954d89101919010626f2d0dd8cfa.etc2.ctex"]
+source_file="res://assets/Environment/animals/Elephant_Elephant_BaseColor.png"
+dest_files=["res://.godot/imported/Elephant_Elephant_BaseColor.png-59701173aa81191afbaa7fe4ecd02277.s3tc.ctex", "res://.godot/imported/Elephant_Elephant_BaseColor.png-59701173aa81191afbaa7fe4ecd02277.etc2.ctex"]
 
 [params]
 

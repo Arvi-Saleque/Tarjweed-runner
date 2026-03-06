@@ -1613,3 +1613,58 @@ The entire road and nearby area was covered in shadow, like a plane above blocki
 - **coin.gd**: Added `_apply_coin_material()` with gold/silver/bronze shiny metal materials
 
 ---
+
+## No Coins Near Giant Rock
+- **chunk.gd**: Added `_has_giant_rock()` helper — checks children for "giant_rocks" group
+- `_spawn_coins()` now skips entirely if chunk has a giant rock, preventing unfair coin placements
+
+---
+
+## Mountain Path Fix + Mountain1 + Bigger Scale + Animals
+
+### Mountain Paths Fixed
+- Old path `res://assets/Obstacles/big hills/` → corrected to `res://assets/Environment/big hills/`
+- Added new **Mountain1.glb** to the mountains pool (3 mountain models now: Mountain, Mountain1, Snowy Hills)
+
+### Mountains Scaled Up
+- `MOUNTAIN_SCALE_MIN`: 4.0 → **8.0**
+- `MOUNTAIN_SCALE_MAX`: 8.0 → **15.0**
+- Mountains now look like massive imposing background hills
+
+### Animals Added as Scenery
+- New **"animals"** decoration category with 8 animal models:
+  - Alpaca, Cow, Elephant, Kangaroo, Lion, Rhinoceros, Squirrel, Stag
+- Weight: 1.5, Scale range: 0.8–1.4
+- Animals spawn randomly along roadsides mixed with other decorations
+
+### Changed Files
+- **world_generator.gd**: Fixed mountain paths, added Mountain1.glb, added "animals" category with 8 models
+- **decoration_spawner.gd**: Mountain scale 8–15x, added "animals" to CATEGORY_WEIGHTS and SCALE_RANGES
+
+---
+
+## Mountains Pushed Back + Animals Off Road + Animal Walking Animation
+
+### Mountains Further Back
+- `MOUNTAIN_X_MIN`: 30 → **70** (much further from road)
+- `MOUNTAIN_X_MAX`: 55 → **130** (deep background)
+- `MOUNTAIN_Y_OFFSET`: -1.5 → **-2.0** (sink more into ground)
+- Mountains no longer block the road view — visible as distant background hills
+
+### Animals Placed Away From Road
+- Animals now spawn at X range **10–25 units** from road (was using general 4–20)
+- Animals get shadow casting disabled (no road darkening)
+
+### Animal Walking Animation
+- New **animal_wander.gd** script — procedural walk behavior:
+  - Slow random walk speed (0.3–0.8)
+  - Gentle body bobbing (simulates walking)
+  - Changes direction every 2–5 seconds
+  - Stays within 5 units of spawn position (won't wander onto road)
+- Attached automatically to all animal instances at spawn time
+
+### Changed Files
+- **decoration_spawner.gd**: Mountain X 70–130, animals at 10–25 from road, animal animation attachment, shadow disable for animals
+- **animal_wander.gd** (NEW): Procedural walking/wandering script for roadside animals
+
+---

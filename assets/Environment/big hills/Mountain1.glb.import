@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://cj5f15qx2o7s1"
-path="res://.godot/imported/Mountain.glb-40e818f2e5a3883dfdf807c03639ad9e.scn"
+uid="uid://dpq6wv3f4tylp"
+path="res://.godot/imported/Mountain1.glb-3c7e8184242d6e8cf7af219cd7dba82a.scn"
 
 [deps]
 
-source_file="res://assets/Obstacles/big hills/Mountain.glb"
-dest_files=["res://.godot/imported/Mountain.glb-40e818f2e5a3883dfdf807c03639ad9e.scn"]
+source_file="res://assets/Environment/big hills/Mountain1.glb"
+dest_files=["res://.godot/imported/Mountain1.glb-3c7e8184242d6e8cf7af219cd7dba82a.scn"]
 
 [params]
 

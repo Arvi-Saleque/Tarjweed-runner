@@ -23,6 +23,7 @@ const CATEGORY_WEIGHTS: Dictionary = {
 	"ground_cover": 4.0,
 	"roadside": 2.5,
 	"ground_paths": 1.5,
+	"animals": 1.5,
 }
 
 # Scale ranges per category
@@ -38,16 +39,17 @@ const SCALE_RANGES: Dictionary = {
 	"ground_cover": Vector2(0.5, 1.2),
 	"roadside": Vector2(0.7, 1.2),
 	"ground_paths": Vector2(0.6, 1.0),
+	"animals": Vector2(0.8, 1.4),
 }
 
 
 # Mountain/hill background settings
 const MOUNTAIN_CHANCE_PER_SIDE: float = 0.6   # 60% chance per side per chunk
-const MOUNTAIN_X_MIN: float = 30.0            # Far from road
-const MOUNTAIN_X_MAX: float = 55.0            # Very far background
-const MOUNTAIN_SCALE_MIN: float = 4.0         # Large hills
-const MOUNTAIN_SCALE_MAX: float = 8.0         # Massive mountains
-const MOUNTAIN_Y_OFFSET: float = -1.5         # Sink slightly into ground
+const MOUNTAIN_X_MIN: float = 70.0            # Very far from road
+const MOUNTAIN_X_MAX: float = 130.0           # Deep background
+const MOUNTAIN_SCALE_MIN: float = 8.0         # Large hills
+const MOUNTAIN_SCALE_MAX: float = 15.0        # Massive mountains
+const MOUNTAIN_Y_OFFSET: float = -2.0         # Sink into ground
 
 
 static func spawn_decorations(chunk: Node3D, chunk_length: float, path_width: float, generator: Node3D) -> void:
@@ -107,9 +109,16 @@ static func spawn_decorations(chunk: Node3D, chunk_length: float, path_width: fl
 				# Ground path/grass patches — close and flat
 				instance.position.x = side * randf_range(SIDE_X_MIN, 12.0)
 				instance.position.y = 0.01
+			elif category == "animals":
+				# Animals — placed well away from the road
+				instance.position.x = side * randf_range(10.0, 25.0)
+				# Face random direction but mostly along the side
+				instance.rotation.y = randf_range(0, TAU)
+				# Attach walking animation script
+				_add_animal_animation(instance)
 
 			# Disable shadow casting on large decorations to prevent road darkening
-			if category in ["trees_large", "trees_pine", "rocks"]:
+			if category in ["trees_large", "trees_pine", "rocks", "animals"]:
 				_disable_shadows_recursive(instance)
 
 			deco_container.add_child(instance)
@@ -119,6 +128,13 @@ static func _disable_shadows_recursive(node: Node) -> void:
 	if node is GeometryInstance3D:
 		(node as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	for child in node.get_children():
+		_disable_shadows_recursive(child)
+
+
+static func _add_animal_animation(animal: Node3D) -> void:
+	## Attach a walking/wandering script to the animal.
+	var wander_script: GDScript = preload("res://scripts/world/animal_wander.gd")
+	animal.set_script(wander_script)
 		_disable_shadows_recursive(child)
 
 
