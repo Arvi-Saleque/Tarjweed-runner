@@ -181,7 +181,7 @@ func _input(event: InputEvent) -> void:
 				elif delta_v.length() < SWIPE_MIN_DISTANCE:
 					# Short tap (not a hold) — double tap for blast
 					if hold_duration < TOUCH_HOLD_THRESHOLD:
-						if GameManager.current_theme != "quiz":
+						if GameManager.current_theme != "quiz" and GameManager.current_theme != "pronunciation":
 							var blast_result := _try_giant_rock_blast()
 							if blast_result == 1:
 								pass  # Blast fired via double tap
@@ -204,8 +204,8 @@ func _process_swipe(end_pos: Vector2) -> void:
 		else:
 			_switch_lane(1)
 	else:
-		# Vertical swipe — jump / slide (natural mode only, quiz uses answer buttons)
-		if GameManager.current_theme != "quiz":
+		# Vertical swipe — jump / slide (natural mode only, quiz/pronunciation uses answer buttons)
+		if GameManager.current_theme != "quiz" and GameManager.current_theme != "pronunciation":
 			if delta_v.y < 0:
 				# Swipe up — jump (blocked near river)
 				if not _near_river_no_jump:
@@ -233,8 +233,8 @@ func _handle_input() -> void:
 	elif Input.is_action_just_pressed("move_right"):
 		_switch_lane(1)
 
-	# In Quiz mode, spacebar jump is disabled — use quiz_jump() from QuizManager
-	if GameManager.current_theme != "quiz":
+	# In Quiz/Pronunciation mode, spacebar jump is disabled — use quiz_jump() from manager
+	if GameManager.current_theme != "quiz" and GameManager.current_theme != "pronunciation":
 		if Input.is_action_just_pressed("jump"):
 			# Near a river — spacebar is reserved for bridge building, no jump
 			if _near_river_no_jump:
@@ -305,6 +305,50 @@ func quiz_jump() -> void:
 		return
 	if is_grounded or not coyote_timer.is_stopped():
 		_jump()
+
+
+## Called by QuizManager when player answers subtraction correctly — triggers slide
+func quiz_slide() -> void:
+	if current_state == PlayerState.DEAD or current_state == PlayerState.STUMBLE:
+		return
+	_start_slide()
+
+
+## Called by QuizManager when player answers multiplication correctly — triggers blast
+func quiz_blast() -> void:
+	if current_state == PlayerState.DEAD or current_state == PlayerState.STUMBLE:
+		return
+	# In quiz mode, find the nearest approaching giant rock with extended range
+	var target_rock: Node = _find_nearest_ahead("giant_rocks", 120.0)
+	if target_rock and is_instance_valid(target_rock):
+		_fire_blast_projectile(target_rock)
+
+
+## Called by QuizManager when player answers division correctly — builds bridge
+func quiz_bridge() -> void:
+	if current_state == PlayerState.DEAD or current_state == PlayerState.STUMBLE:
+		return
+	# In quiz mode, find the nearest approaching river with extended range
+	var target_river: Node = _find_nearest_ahead("river_crossings", 120.0)
+	if target_river and is_instance_valid(target_river):
+		_build_bridge(target_river)
+
+
+func _find_nearest_ahead(group_name: String, max_range: float) -> Node:
+	## Find the nearest node in a group that is AHEAD of the player (negative global Z).
+	var nodes := get_tree().get_nodes_in_group(group_name)
+	var best: Node = null
+	var best_z: float = -99999.0
+	for node in nodes:
+		var z: float = node.global_position.z
+		if z > 2.0:
+			continue  # Already passed
+		if absf(z) > max_range:
+			continue  # Too far
+		if z > best_z:
+			best_z = z
+			best = node
+	return best
 
 
 func _start_slide() -> void:

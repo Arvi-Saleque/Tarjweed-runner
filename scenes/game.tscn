@@ -1,4 +1,4 @@
-[gd_scene load_steps=15 format=3 uid="uid://game_scene"]
+[gd_scene load_steps=16 format=3 uid="uid://game_scene"]
 
 [ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="1"]
 [ext_resource type="Script" path="res://scripts/world/world_generator.gd" id="2"]
@@ -10,6 +10,7 @@
 [ext_resource type="Texture2D" path="res://assets/Environment/Sky/qwantani_noon_puresky_4k.exr" id="8"]
 [ext_resource type="Script" path="res://scripts/world/environment_effects.gd" id="9"]
 [ext_resource type="Script" path="res://scripts/ui/quiz_hud.gd" id="10"]
+[ext_resource type="Script" path="res://scripts/ui/pronunciation_hud.gd" id="11"]
 
 [sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_1"]
 panorama = ExtResource("8")
@@ -96,6 +97,19 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("10")
+
+[node name="PronunciationHUD" type="CanvasLayer" parent="."]
+layer = 5
+
+[node name="PronunciationHUDControl" type="Control" parent="PronunciationHUD"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("11")
 
 [node name="PauseMenu" type="CanvasLayer" parent="."]
 script = ExtResource("4")

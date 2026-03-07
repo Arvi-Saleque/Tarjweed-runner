@@ -18,10 +18,18 @@ const THEMES: Array[Dictionary] = [
 	{
 		"id": "quiz",
 		"title": "QUIZ",
-		"subtitle": "Coming soon...",
+		"subtitle": "Math challenges",
 		"color": Color(0.3, 0.55, 0.95),          # Blue
 		"bg_color": Color(0.12, 0.16, 0.28, 0.95),
 		"icon_color": Color(0.45, 0.65, 1.0),
+	},
+	{
+		"id": "pronunciation",
+		"title": "PRONUNCIATION",
+		"subtitle": "Word pronunciation",
+		"color": Color(0.7, 0.35, 0.9),           # Purple
+		"bg_color": Color(0.2, 0.12, 0.28, 0.95),
+		"icon_color": Color(0.8, 0.5, 1.0),
 	},
 ]
 

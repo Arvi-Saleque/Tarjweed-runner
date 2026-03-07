@@ -146,17 +146,34 @@ func _spawn_coins() -> void:
 	if not CoinPattern:
 		return
 
+	# Gather obstacle Z positions on this chunk (local space)
+	var obstacle_zs: Array[float] = _get_obstacle_z_positions()
+
 	# Pick a random lane for the coin pattern
 	var lane_idx: int = randi() % GameManager.LANE_COUNT
 
 	# Pick a pattern based on difficulty
 	var pattern: int = CoinPattern.call("pick_random_pattern", GameManager.difficulty_multiplier)
 
-	# Start position within chunk
+	# Start position within chunk — must be at least 20m from any obstacle
 	var start_z: float = randf_range(-3.0, -(chunk_length - 6.0))
-	var start_pos := Vector3(0, 0, start_z)
 
+	# Check if start_z is within 20m of any obstacle on this chunk
+	for obs_z: float in obstacle_zs:
+		if absf(start_z - obs_z) < 20.0:
+			return  # Too close to an obstacle, skip coins entirely
+
+	var start_pos := Vector3(0, 0, start_z)
 	CoinPattern.call("spawn_pattern", self, pattern, start_pos, lane_idx, _generator)
+
+
+func _get_obstacle_z_positions() -> Array[float]:
+	## Collect the local Z positions of all obstacles and quiz obstacles on this chunk.
+	var positions: Array[float] = []
+	for child in get_children():
+		if child.is_in_group("obstacles") or child.is_in_group("quiz_obstacles") or child.is_in_group("giant_rocks") or child.is_in_group("river_crossings"):
+			positions.append(child.position.z)
+	return positions
 
 
 func _has_giant_rock() -> bool:

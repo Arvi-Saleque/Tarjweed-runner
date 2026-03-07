@@ -22,6 +22,7 @@ config/icon="res://assets/UI/Icons/icon_play_light.png"
 
 [audio]
 
+driver/enable_input=true
 buses/default_bus_layout="uid://d0fkxfk3uupcw"
 bus/default_bus_layout="res://default_bus_layout.tres"
 
@@ -33,6 +34,7 @@ SaveManager="*res://scripts/autoload/save_manager.gd"
 SceneManager="*res://scripts/autoload/scene_manager.gd"
 UITheme="*res://scripts/ui/ui_theme.gd"
 QuizManager="*res://scripts/autoload/quiz_manager.gd"
+PronunciationManager="*res://scripts/autoload/pronunciation_manager.gd"
 
 [display]
 

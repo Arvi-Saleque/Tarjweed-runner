@@ -24,11 +24,16 @@ const RIVER_ROAD_WIDTH: float = 8.0           # Width to cover all 3 lanes
 const RIVER_DEPTH: float = 4.0                # River depth (Z direction)
 const RIVER_CLEARANCE: float = 20.0           # No obstacles/coins within this distance before river
 
-# Quiz mode settings — full-row blocks the player MUST jump over
-const QUIZ_MIN_ROW_GAP: float = 48.0   # ~4s at base speed (12 m/s)
-const QUIZ_MAX_ROW_GAP: float = 60.0   # ~5s at base speed (12 m/s)
+# Quiz mode settings — 4 obstacle types tied to math operations
+const QUIZ_MIN_ROW_GAP: float = 70.0   # ~6s at base speed (12 m/s)
+const QUIZ_MAX_ROW_GAP: float = 85.0   # ~7s at base speed (12 m/s)
 const QUIZ_BLOCK_HEIGHT: float = 0.6   # Low enough to jump over
 const QUIZ_BLOCK_WIDTH: float = 0.9    # Per-lane block width
+# Quiz obstacle types: 0=jump, 1=slide, 2=giant_rock, 3=river
+const QUIZ_TYPE_JUMP: int = 0
+const QUIZ_TYPE_SLIDE: int = 1
+const QUIZ_TYPE_BLAST: int = 2
+const QUIZ_TYPE_RIVER: int = 3
 
 # Scale ranges for different obstacle models
 const OBSTACLE_SCALES: Dictionary = {
@@ -41,6 +46,8 @@ const OBSTACLE_SCALES: Dictionary = {
 static func spawn_obstacles(chunk: Node3D, chunk_length: float, generator: Node3D) -> void:
 	if GameManager.current_theme == "quiz":
 		_spawn_quiz_obstacles(chunk, chunk_length, generator)
+	elif GameManager.current_theme == "pronunciation":
+		_spawn_pronunciation_obstacles(chunk, chunk_length, generator)
 	else:
 		_spawn_natural_obstacles(chunk, chunk_length, generator)
 
@@ -143,34 +150,40 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 
 
 # =============================================================================
-# QUIZ MODE — full-row barriers across all 3 lanes, must jump
+# PRONUNCIATION MODE — simple jump blocks spaced 100m apart
 # =============================================================================
 
-static func _spawn_quiz_obstacles(chunk: Node3D, chunk_length: float, generator: Node3D) -> void:
-	# Place full-width rows that span all 3 lanes.
-	# Enforce minimum gap so player always has time to land and jump again.
-	#
-	# We use a static tracking variable via GameManager metadata to maintain
-	# spacing across chunk boundaries.
+const PRONUN_ROW_GAP: float = 100.0
 
-	var last_z_key := "_quiz_last_obs_z"
+static func _spawn_pronunciation_obstacles(chunk: Node3D, chunk_length: float, generator: Node3D) -> void:
+	var last_z_key := "_pronun_last_obs_z"
 	var carry_over: float = 0.0
 	if GameManager.has_meta(last_z_key):
-		# Distance remaining from previous chunk
 		carry_over = GameManager.get_meta(last_z_key)
 
-	# Start position within this chunk (z goes negative = forward)
-	var z: float = -carry_over if carry_over > 0.0 else -QUIZ_MIN_ROW_GAP
+	var z: float = -carry_over if carry_over > 0.0 else -PRONUN_ROW_GAP
 
 	while z > -(chunk_length - 2.0):
-		# Place a full-row barrier at this z
-		_create_quiz_row(chunk, z, generator)
+		# Place jump blocks across all 3 lanes
+		for lane_idx in 3:
+			var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
+			var pos := Vector3(lane_x, 0.0, z)
+			var obs_script: GDScript = load(OBSTACLE_SCRIPT) as GDScript
+			if not obs_script:
+				return
+			var obstacle := Area3D.new()
+			obstacle.set_script(obs_script)
+			obstacle.position = pos
+			obstacle.name = "PronunJumpBlock"
+			chunk.add_child(obstacle)
+			var block_mat := StandardMaterial3D.new()
+			block_mat.albedo_color = Color(0.3, 0.5, 0.9)  # Blue for pronunciation
+			obstacle.call("setup_placeholder",
+				Vector3(QUIZ_BLOCK_WIDTH * 2.2, QUIZ_BLOCK_HEIGHT, 0.6),
+				block_mat)
 
-		# Next row at random gap within [MIN, MAX]
-		var gap: float = randf_range(QUIZ_MIN_ROW_GAP, QUIZ_MAX_ROW_GAP)
-		z -= gap
+		z -= PRONUN_ROW_GAP
 
-	# Store how much gap remains for the next chunk
 	var remaining: float = -(chunk_length) - z
 	if remaining > 0:
 		GameManager.set_meta(last_z_key, remaining)
@@ -178,30 +191,165 @@ static func _spawn_quiz_obstacles(chunk: Node3D, chunk_length: float, generator:
 		GameManager.set_meta(last_z_key, 0.0)
 
 
-static func _create_quiz_row(parent: Node3D, z_pos: float, generator: Node3D) -> void:
-	# Create a barrier across all 3 lanes
-	for lane_idx in 3:
-		var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
-		var pos := Vector3(lane_x, 0.0, z_pos)
+# =============================================================================
+# QUIZ MODE — 4 obstacle types tied to math operations
+# Type 0 (Addition): ground blocks — player must JUMP
+# Type 1 (Subtraction): overhead blocks — player must SLIDE
+# Type 2 (Multiplication): giant rock — player must BLAST
+# Type 3 (Division): river — player must BUILD BRIDGE
+# =============================================================================
 
-		var obs_script: GDScript = load(OBSTACLE_SCRIPT) as GDScript
-		if not obs_script:
-			return
+static func _spawn_quiz_obstacles(chunk: Node3D, chunk_length: float, generator: Node3D) -> void:
+	var last_z_key := "_quiz_last_obs_z"
+	var carry_over: float = 0.0
+	if GameManager.has_meta(last_z_key):
+		carry_over = GameManager.get_meta(last_z_key)
 
-		var obstacle := Area3D.new()
-		obstacle.set_script(obs_script)
-		obstacle.position = pos
-		obstacle.name = "QuizBlock"
-		parent.add_child(obstacle)
+	var z: float = -carry_over if carry_over > 0.0 else -QUIZ_MIN_ROW_GAP
 
-		# Use a low, wide block — easy to see, must jump
-		var block_mat: StandardMaterial3D = null
-		if generator and generator.get("obstacle_material"):
-			block_mat = generator.obstacle_material.duplicate() as StandardMaterial3D
-			block_mat.albedo_color = Color(0.85, 0.35, 0.2)  # Distinctive orange-red
-		obstacle.call("setup_placeholder",
-			Vector3(QUIZ_BLOCK_WIDTH * 2.2, QUIZ_BLOCK_HEIGHT, 0.6),
-			block_mat)
+	# Track quiz obstacle sequence index for cycling types
+	var seq_key := "_quiz_obstacle_seq"
+	var seq_idx: int = GameManager.get_meta(seq_key, 0) as int
+
+	while z > -(chunk_length - 2.0):
+		# Cycle through 4 types in order, then randomize
+		var obs_type: int
+		if seq_idx < 4:
+			obs_type = seq_idx  # First 4: guaranteed one of each
+		else:
+			obs_type = randi() % 4  # After that: random
+
+		_create_quiz_row_typed(chunk, z, generator, obs_type)
+		seq_idx += 1
+
+		var gap: float = randf_range(QUIZ_MIN_ROW_GAP, QUIZ_MAX_ROW_GAP)
+		z -= gap
+
+	GameManager.set_meta(seq_key, seq_idx)
+
+	var remaining: float = -(chunk_length) - z
+	if remaining > 0:
+		GameManager.set_meta(last_z_key, remaining)
+	else:
+		GameManager.set_meta(last_z_key, 0.0)
+
+
+static func _create_quiz_row_typed(parent: Node3D, z_pos: float, generator: Node3D, obs_type: int) -> void:
+	## Create a quiz obstacle row based on type.
+	## All rows block all 3 lanes. The type determines HOW to clear them.
+
+	# Store the obstacle type as metadata on a marker node so QuizManager can read it
+	var marker := Node3D.new()
+	marker.name = "QuizObstacleMarker"
+	marker.position = Vector3(0.0, 0.0, z_pos)
+	marker.set_meta("quiz_obstacle_type", obs_type)
+	marker.add_to_group("quiz_obstacles")
+	parent.add_child(marker)
+
+	match obs_type:
+		QUIZ_TYPE_JUMP:
+			# Ground blocks across all 3 lanes — answer addition to jump
+			for lane_idx in 3:
+				var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
+				var pos := Vector3(lane_x, 0.0, z_pos)
+				var obs_script: GDScript = load(OBSTACLE_SCRIPT) as GDScript
+				if not obs_script:
+					return
+				var obstacle := Area3D.new()
+				obstacle.set_script(obs_script)
+				obstacle.position = pos
+				obstacle.name = "QuizJumpBlock"
+				parent.add_child(obstacle)
+				var block_mat := StandardMaterial3D.new()
+				block_mat.albedo_color = Color(0.2, 0.7, 0.3)  # Green for addition
+				obstacle.call("setup_placeholder",
+					Vector3(QUIZ_BLOCK_WIDTH * 2.2, QUIZ_BLOCK_HEIGHT, 0.6),
+					block_mat)
+
+		QUIZ_TYPE_SLIDE:
+			# Overhead blocks across all 3 lanes — answer subtraction to slide
+			for lane_idx in 3:
+				var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
+				var pos := Vector3(lane_x, 0.0, z_pos)
+				var obs_script: GDScript = load(OBSTACLE_SCRIPT) as GDScript
+				if not obs_script:
+					return
+				var obstacle := Area3D.new()
+				obstacle.set_script(obs_script)
+				obstacle.position = pos
+				obstacle.name = "QuizSlideBlock"
+				parent.add_child(obstacle)
+				# Create overhead obstacle using placeholder
+				var block_mat := StandardMaterial3D.new()
+				block_mat.albedo_color = Color(0.85, 0.55, 0.1)  # Orange for subtraction
+				obstacle.call("setup_placeholder",
+					Vector3(QUIZ_BLOCK_WIDTH * 2.2, 0.5, 0.6),
+					block_mat)
+				# Elevate to overhead position (must slide under)
+				obstacle.position.y = 0.9
+
+		QUIZ_TYPE_BLAST:
+			# Giant rock across all 3 lanes — answer multiplication to blast
+			var rock_script: GDScript = load(GIANT_ROCK_SCRIPT) as GDScript
+			if not rock_script:
+				return
+			var rock := Area3D.new()
+			rock.set_script(rock_script)
+			rock.position = Vector3(0.0, 0.0, z_pos)
+			rock.name = "QuizGiantRock"
+			parent.add_child(rock)
+			var model_scene: PackedScene = null
+			if generator and generator.has_method("get_random_giant_rock_scene"):
+				model_scene = generator.get_random_giant_rock_scene()
+			rock.call("setup", model_scene)
+			rock.add_to_group("quiz_blast_rocks")
+
+		QUIZ_TYPE_RIVER:
+			# River across the road — answer division to build bridge
+			var river := Node3D.new()
+			river.name = "QuizRiverCrossing"
+			river.position = Vector3(0.0, 0.0, z_pos)
+			river.add_to_group("river_crossings")
+			river.add_to_group("quiz_rivers")
+
+			# Water visuals
+			var water_mesh := MeshInstance3D.new()
+			var plane := PlaneMesh.new()
+			plane.size = Vector2(RIVER_ROAD_WIDTH + 2.0, RIVER_DEPTH)
+			var water_mat := StandardMaterial3D.new()
+			water_mat.albedo_color = Color(0.05, 0.3, 0.6, 0.8)
+			water_mat.metallic = 0.4
+			water_mat.roughness = 0.05
+			water_mat.emission_enabled = true
+			water_mat.emission = Color(0.02, 0.15, 0.4)
+			water_mat.emission_energy_multiplier = 0.8
+			water_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			water_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+			plane.material = water_mat
+			water_mesh.mesh = plane
+			water_mesh.position = Vector3(0.0, 0.12, 0.0)
+			water_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			river.add_child(water_mesh)
+
+			# Per-lane kill zones
+			for lane_idx in 3:
+				var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
+				var kill_zone := Area3D.new()
+				kill_zone.name = "RiverKillZone_Lane%d" % lane_idx
+				kill_zone.position = Vector3(lane_x, 0.5, 0.0)
+				kill_zone.collision_layer = 4
+				kill_zone.collision_mask = 0
+				kill_zone.add_to_group("obstacles")
+				kill_zone.add_to_group("river_kill_zones")
+				kill_zone.set_meta("lane_index", lane_idx)
+				var col := CollisionShape3D.new()
+				var box := BoxShape3D.new()
+				box.size = Vector3(GameManager.LANE_WIDTH, 1.5, RIVER_DEPTH - 0.2)
+				col.shape = box
+				kill_zone.add_child(col)
+				river.add_child(kill_zone)
+
+			parent.add_child(river)
 
 
 # =============================================================================

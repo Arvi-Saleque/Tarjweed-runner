@@ -94,9 +94,9 @@ func _create_ui() -> void:
 	_feedback_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(_feedback_label)
 
-	# Instructions at bottom — show different text on mobile vs desktop
+	# Instructions at bottom — updated for 4 action types
 	var is_mobile: bool = OS.has_feature("mobile") or OS.has_feature("android") or OS.has_feature("ios")
-	var hint_text := "Tap an answer to jump" if is_mobile else "Press 1-4 or tap to answer"
+	var hint_text := "Answer correctly: Jump | Slide | Blast | Bridge" if is_mobile else "Press 1-4: + Jump | - Slide | × Blast | ÷ Bridge"
 	_instructions = UITheme.make_label(hint_text, UITheme.FONT_SMALL, UITheme.COLOR_TEXT_DIM)
 	_instructions.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_instructions.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -170,12 +170,16 @@ func _on_question_changed(question: Dictionary) -> void:
 		_question_label.text = ""
 		for btn in _choice_buttons:
 			btn.text = "--"
+		_instructions.text = ""
 		return
 
 	_question_label.text = question.get("text", "?")
 	var choices: Array = question.get("choices", [])
 	for i in mini(choices.size(), _choice_buttons.size()):
 		_choice_buttons[i].text = str(choices[i])
+
+	# Show generic instruction — quiz is random, action depends on obstacle
+	_instructions.text = "Answer correctly to pass the obstacle!"
 
 	# Animate panel entrance
 	_panel.scale = Vector2(0.95, 0.95)

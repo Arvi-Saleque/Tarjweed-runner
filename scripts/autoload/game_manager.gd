@@ -75,9 +75,11 @@ func _process(delta: float) -> void:
 # --- Public API ---
 func start_game() -> void:
 	_reset_run()
-	# Reset quiz mode tracking
+	# Reset quiz/pronunciation mode tracking
 	if has_meta("_quiz_last_obs_z"):
 		remove_meta("_quiz_last_obs_z")
+	if has_meta("_quiz_obstacle_seq"):
+		remove_meta("_quiz_obstacle_seq")
 	# Reset giant rock tracking
 	if has_meta("_last_giant_rock_dist"):
 		remove_meta("_last_giant_rock_dist")
