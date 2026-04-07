@@ -20,6 +20,10 @@ const STAND_HEIGHT: float = 1.8
 const STAND_RADIUS: float = 0.35
 const SLIDE_HEIGHT: float = 0.6
 const SLIDE_RADIUS: float = 0.45
+const PLAYER_VISUAL_SCALE: float = 0.58
+const PLAYER_BODY_SCENE_PATH: String = "res://assets/Characters/base_character/Superhero_Male_FullBody.gltf"
+const PLAYER_HAIR_SCENE_PATH: String = "res://assets/Characters/hairstyles/Hair_SimpleParted.gltf"
+const PLAYER_ANIM_SCENE_PATH: String = "res://assets/Characters/animations/UAL2_Standard.glb"
 
 # --- State ---
 enum PlayerState { RUNNING, JUMPING, SLIDING, STUMBLE, DEAD }
@@ -751,42 +755,12 @@ func _ensure_player_visible() -> void:
 	if player_model.get_child_count() > 0:
 		return
 
-	# APPROACH: Load the animation GLB directly as the character model.
-	# Kenney animation GLBs contain the SAME mesh + skeleton + built-in AnimationPlayer.
-	# This avoids all track-path mismatches from copying animations between GLBs.
-	var primary_glb := "res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb"
-	if ResourceLoader.exists(primary_glb):
-		var scene: PackedScene = load(primary_glb)
-		if scene:
-			var model := scene.instantiate()
-			player_model.add_child(model)
-			model.rotation.y = PI
-			model.scale = Vector3(0.55, 0.55, 0.55)
-			print("=== Loaded character from animation GLB ===")
-			_debug_print_tree(model, "  ")
-			_merge_extra_animations(model)
-			_apply_nature_tint(model)
-
-			# Force-play Run
-			var ap := _find_anim_player(model)
-			if ap:
-				print("=== AnimationPlayer found: %d anims ===" % ap.get_animation_list().size())
-				print("    Animations: %s" % ", ".join(ap.get_animation_list()))
-				if ap.has_animation("Running_A"):
-					ap.play("Running_A")
-					print("=== Force-playing 'Running_A' ===")
-			return
-
-	# Fallback: mannequin without animations
-	var mannequin_path := "res://assets/Characters/RunnerMannequin/Mannequin_Medium.glb"
-	if ResourceLoader.exists(mannequin_path):
-		var scene: PackedScene = load(mannequin_path)
-		if scene:
-			var model := scene.instantiate()
-			player_model.add_child(model)
-			model.rotation.y = PI
-			model.scale = Vector3(0.55, 0.55, 0.55)
-			return
+	var runner_visual := _build_runner_visual()
+	if runner_visual:
+		player_model.add_child(runner_visual)
+		runner_visual.rotation.y = PI
+		runner_visual.scale = Vector3.ONE * PLAYER_VISUAL_SCALE
+		return
 
 	# Last fallback: simple capsule
 	var body_mesh := MeshInstance3D.new()
@@ -814,41 +788,85 @@ func _ensure_player_visible() -> void:
 	player_model.add_child(head_mesh)
 
 
-func _merge_extra_animations(model: Node3D) -> void:
-	# Merge additional animation packs into the model's existing AnimationPlayer
-	var extra_glbs: Array[String] = [
-		"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementAdvanced.glb",
-		"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_General.glb",
-		"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_CombatMelee.glb",
-	]
+func _build_runner_visual() -> Node3D:
+	if not ResourceLoader.exists(PLAYER_BODY_SCENE_PATH):
+		return null
 
-	var dest_player := _find_anim_player(model)
-	if not dest_player:
+	var body_scene := load(PLAYER_BODY_SCENE_PATH) as PackedScene
+	if body_scene == null:
+		return null
+
+	var visual_root := body_scene.instantiate() as Node3D
+	if visual_root == null:
+		return null
+	visual_root.name = "VisualRig"
+
+	var armature := _find_node_recursive(visual_root, "Armature")
+	if armature == null:
+		return visual_root
+
+	_attach_animation_player(visual_root)
+	_attach_visual_scene_meshes(armature, PLAYER_HAIR_SCENE_PATH)
+	_apply_runner_palette(visual_root)
+	return visual_root
+
+
+func _attach_animation_player(visual_root: Node3D) -> void:
+	if not ResourceLoader.exists(PLAYER_ANIM_SCENE_PATH):
 		return
 
-	# Get or create default library on destination
-	if not dest_player.has_animation_library(""):
-		dest_player.add_animation_library("", AnimationLibrary.new())
-	var dest_lib := dest_player.get_animation_library("")
+	var anim_scene := load(PLAYER_ANIM_SCENE_PATH) as PackedScene
+	if anim_scene == null:
+		return
 
-	for path in extra_glbs:
-		if not ResourceLoader.exists(path):
-			continue
-		var anim_scene: PackedScene = load(path)
-		if not anim_scene:
-			continue
-		var anim_instance := anim_scene.instantiate()
-		var src_player := _find_anim_player(anim_instance)
-		if src_player:
-			for lib_name in src_player.get_animation_library_list():
-				var src_lib := src_player.get_animation_library(lib_name)
-				if not src_lib:
-					continue
-				for anim_name in src_lib.get_animation_list():
-					if not dest_lib.has_animation(anim_name):
-						dest_lib.add_animation(anim_name, src_lib.get_animation(anim_name))
-						print("    + Merged: %s" % anim_name)
-		anim_instance.queue_free()
+	var anim_root := anim_scene.instantiate()
+	var source_player := _find_anim_player(anim_root)
+	if source_player == null:
+		anim_root.queue_free()
+		return
+
+	var anim_clone := source_player.duplicate() as AnimationPlayer
+	if anim_clone:
+		anim_clone.name = "AnimationPlayer"
+		anim_clone.root_node = NodePath("..")
+		visual_root.add_child(anim_clone)
+
+	anim_root.queue_free()
+
+
+func _attach_visual_scene_meshes(target_armature: Node, scene_path: String) -> void:
+	if not ResourceLoader.exists(scene_path):
+		return
+
+	var source_scene := load(scene_path) as PackedScene
+	if source_scene == null:
+		return
+
+	var source_root := source_scene.instantiate()
+	var source_armature := _find_node_recursive(source_root, "Armature")
+	if source_armature == null:
+		source_root.queue_free()
+		return
+
+	for child in source_armature.get_children():
+		if child is MeshInstance3D:
+			var mesh_copy := child.duplicate() as MeshInstance3D
+			if mesh_copy == null:
+				continue
+			mesh_copy.name = "Visual_%s" % child.name
+			target_armature.add_child(mesh_copy)
+			_retarget_skinned_meshes(mesh_copy, target_armature)
+
+	source_root.queue_free()
+
+
+func _retarget_skinned_meshes(node: Node, skeleton_node: Node) -> void:
+	if node is MeshInstance3D:
+		var mesh_instance := node as MeshInstance3D
+		mesh_instance.skeleton = mesh_instance.get_path_to(skeleton_node)
+
+	for child in node.get_children():
+		_retarget_skinned_meshes(child, skeleton_node)
 
 
 func _find_anim_player(node: Node) -> AnimationPlayer:
@@ -861,25 +879,38 @@ func _find_anim_player(node: Node) -> AnimationPlayer:
 	return null
 
 
-func _apply_nature_tint(node: Node) -> void:
-	## Apply a green nature-themed color to the player character mesh
-	var green_mat := StandardMaterial3D.new()
-	green_mat.albedo_color = Color(0.28, 0.62, 0.26)  # forest green
-	green_mat.roughness = 0.7
-	green_mat.metallic = 0.05
-	_override_meshes(node, green_mat)
+func _find_node_recursive(node: Node, node_name: String) -> Node:
+	if node.name == node_name:
+		return node
+	for child in node.get_children():
+		var found := _find_node_recursive(child, node_name)
+		if found:
+			return found
+	return null
 
 
-func _override_meshes(node: Node, mat: StandardMaterial3D) -> void:
+func _apply_runner_palette(node: Node) -> void:
 	if node is MeshInstance3D:
-		var mi := node as MeshInstance3D
-		for i in mi.mesh.get_surface_count():
-			mi.set_surface_override_material(i, mat)
-	for child in node.get_children():
-		_override_meshes(child, mat)
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance.mesh:
+			var mesh_name := mesh_instance.name.to_lower()
+			for surface_idx in mesh_instance.mesh.get_surface_count():
+				var active_material := mesh_instance.get_active_material(surface_idx)
+				var tinted_material: StandardMaterial3D = null
+				if active_material is StandardMaterial3D:
+					tinted_material = (active_material as StandardMaterial3D).duplicate()
+				else:
+					tinted_material = StandardMaterial3D.new()
 
+				if mesh_name.contains("hair") or mesh_name.contains("eyebrow"):
+					tinted_material.albedo_color = Color(0.22, 0.15, 0.10, 1.0)
+					tinted_material.roughness = 0.95
+				elif mesh_name.contains("eyes"):
+					tinted_material.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
+				else:
+					tinted_material.albedo_color = Color(0.86, 0.89, 0.82, 1.0)
+					tinted_material.roughness = maxf(tinted_material.roughness, 0.9)
 
-func _debug_print_tree(node: Node, indent: String = "") -> void:
-	print("%s%s [%s]" % [indent, node.name, node.get_class()])
+				mesh_instance.set_surface_override_material(surface_idx, tinted_material)
 	for child in node.get_children():
-		_debug_print_tree(child, indent + "  ")
+		_apply_runner_palette(child)
