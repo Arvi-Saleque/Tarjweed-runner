@@ -78,14 +78,13 @@ func _check_answer(choice_index: int) -> void:
 
 
 func _trigger_player_action() -> void:
-	## If near an obstacle, perform the action matching that obstacle.
-	## If NOT near any obstacle, default to jump.
+	## Perform the action tied to the current question's obstacle type.
 	if not _player:
 		_player = get_tree().get_first_node_in_group("player") as CharacterBody3D
 	if not _player:
 		return
 
-	var obs_type: int = _detect_nearby_obstacle_type()
+	var obs_type: int = current_question.get("obstacle_type", 0) as int
 	match obs_type:
 		0:  # Jump obstacle (or no obstacle nearby)
 			if _player.has_method("quiz_jump"):
@@ -120,8 +119,8 @@ func _on_game_over() -> void:
 
 func _generate_question() -> void:
 	## Generate a RANDOM quiz question — not tied to obstacle type.
-	var q_type: QuestionType = [QuestionType.ADDITION, QuestionType.SUBTRACTION,
-		QuestionType.MULTIPLICATION, QuestionType.DIVISION].pick_random()
+	var obs_type: int = _detect_nearby_obstacle_type(true)
+	var q_type: QuestionType = OBS_TYPE_TO_QUESTION.get(obs_type, QuestionType.ADDITION) as QuestionType
 
 	var max_num: int = 10 + int(GameManager.difficulty_multiplier * 5)
 	max_num = mini(max_num, 50)
@@ -174,18 +173,15 @@ func _generate_question() -> void:
 		"correct_index": correct_index,
 		"correct_answer": correct_answer,
 		"question_type": q_type,
+		"obstacle_type": obs_type,
 	}
 
 	question_changed.emit(current_question)
 
 
-# How close the player must be to an obstacle for it to trigger its specific action
-const NEAR_OBSTACLE_RANGE: float = 40.0
-
-
-func _detect_nearby_obstacle_type() -> int:
-	## Find the nearest UPCOMING quiz obstacle marker within NEAR_OBSTACLE_RANGE.
-	## Returns the obstacle type (0-3) if one is close, or 0 (jump) if none nearby.
+func _detect_nearby_obstacle_type(mark_used: bool = false) -> int:
+	## Find the nearest UPCOMING quiz obstacle marker.
+	## Returns the obstacle type (0-3), or 0 (jump) if none remain.
 	var markers := get_tree().get_nodes_in_group("quiz_obstacles")
 	var best_marker: Node = null
 	var best_z: float = -99999.0
@@ -194,15 +190,16 @@ func _detect_nearby_obstacle_type() -> int:
 		if marker.get_meta("quiz_used", false):
 			continue
 		var z: float = marker.global_position.z
-		if z > -2.0:
-			continue  # Already at or past the player
+		if z > 2.0:
+			continue  # Already passed the player
 		if z > best_z:
 			best_z = z
 			best_marker = marker
 
 	# Check if the nearest obstacle is within range
-	if best_marker and absf(best_z) <= NEAR_OBSTACLE_RANGE:
-		best_marker.set_meta("quiz_used", true)
+	if best_marker:
+		if mark_used:
+			best_marker.set_meta("quiz_used", true)
 		return best_marker.get_meta("quiz_obstacle_type", 0) as int
 
 	# No obstacle nearby — default to jump
