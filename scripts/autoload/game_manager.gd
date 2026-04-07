@@ -32,12 +32,14 @@ const COIN_VALUES: Dictionary = {
 # --- State ---
 var current_state: GameState = GameState.MENU
 var score: int = 0
+var score_bonus: int = 0
 var coins: int = 0
 var distance: float = 0.0
 var current_speed: float = BASE_SPEED
 var difficulty_multiplier: float = 1.0
 var play_time: float = 0.0   # Seconds since game_started
 var current_theme: String = "natural"  # Active game theme/mode
+var previous_high_score: int = 0
 
 # --- Obstacle Difficulty ---
 var obstacle_frequency: float = 0.3        # Base chance per chunk slot
@@ -57,7 +59,7 @@ func _process(delta: float) -> void:
 	# Distance scoring
 	var distance_delta: float = current_speed * delta
 	distance += distance_delta
-	score = int(distance)
+	score = int(distance) + score_bonus
 	score_updated.emit(score)
 	distance_updated.emit(distance)
 
@@ -99,8 +101,8 @@ func trigger_game_over() -> void:
 	current_state = GameState.GAME_OVER
 
 	# Save high score
-	var high_score: int = SaveManager.get_high_score()
-	if score > high_score:
+	previous_high_score = SaveManager.get_high_score()
+	if score > previous_high_score:
 		SaveManager.set_high_score(score)
 
 	# Save total coins
@@ -128,7 +130,8 @@ func resume_game() -> void:
 func collect_coin(type: String = "gold") -> void:
 	var value: int = COIN_VALUES.get(type, 1)
 	coins += value
-	score += value * 10
+	score_bonus += value * 10
+	score = int(distance) + score_bonus
 	coin_collected.emit(value)
 	score_updated.emit(score)
 
@@ -150,9 +153,11 @@ func is_playing() -> bool:
 # --- Private ---
 func _reset_run() -> void:
 	score = 0
+	score_bonus = 0
 	coins = 0
 	distance = 0.0
 	current_speed = BASE_SPEED
 	difficulty_multiplier = 1.0
 	obstacle_frequency = 0.3
 	play_time = 0.0
+	previous_high_score = 0

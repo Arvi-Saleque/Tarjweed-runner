@@ -143,8 +143,9 @@ func _on_game_over() -> void:
 	var final_score: int = GameManager.score
 	var final_coins: int = GameManager.coins
 	var final_dist: float = GameManager.distance
+	var previous_best: int = GameManager.previous_high_score
 	var high_score: int = SaveManager.get_high_score()
-	var is_new_best: bool = final_score >= high_score and final_score > 0
+	var is_new_best: bool = final_score > previous_best and final_score > 0
 
 	_high_score_label.text = "BEST: %d" % high_score
 	_coins_label.text = str(final_coins)
