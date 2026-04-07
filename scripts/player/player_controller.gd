@@ -876,8 +876,8 @@ func _apply_runner_palette(node: Node) -> void:
 				elif mesh_name.contains("eyes"):
 					tinted_material.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
 				elif mesh_name.contains("mannequin"):
-					tinted_material.albedo_color = Color(0.93, 0.94, 0.96, 1.0)
-					tinted_material.roughness = maxf(tinted_material.roughness, 0.88)
+					mesh_instance.set_surface_override_material(surface_idx, _create_nature_gradient_material(tinted_material))
+					continue
 				else:
 					tinted_material.albedo_color = Color(0.86, 0.89, 0.82, 1.0)
 					tinted_material.roughness = maxf(tinted_material.roughness, 0.9)
@@ -885,3 +885,30 @@ func _apply_runner_palette(node: Node) -> void:
 				mesh_instance.set_surface_override_material(surface_idx, tinted_material)
 	for child in node.get_children():
 		_apply_runner_palette(child)
+
+
+func _create_nature_gradient_material(source_material: StandardMaterial3D) -> Material:
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode cull_back, diffuse_burley, specular_schlick_ggx;
+
+uniform vec4 bottom_color : source_color = vec4(0.26, 0.33, 0.18, 1.0);
+uniform vec4 mid_color : source_color = vec4(0.42, 0.56, 0.28, 1.0);
+uniform vec4 top_color : source_color = vec4(0.74, 0.82, 0.52, 1.0);
+uniform float gradient_height = 1.8;
+uniform float roughness_value = 0.9;
+
+void fragment() {
+	float h = clamp((VERTEX.y + 0.35) / gradient_height, 0.0, 1.0);
+	vec3 low_mid = mix(bottom_color.rgb, mid_color.rgb, smoothstep(0.0, 0.55, h));
+	vec3 final_color = mix(low_mid, top_color.rgb, smoothstep(0.45, 1.0, h));
+	ALBEDO = final_color;
+	ROUGHNESS = roughness_value;
+}
+"""
+
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	material.set_shader_parameter("roughness_value", maxf(source_material.roughness, 0.88))
+	return material
