@@ -249,7 +249,7 @@ func _handle_input() -> void:
 			# Check for giant rock double-tap blast
 			var blast_result := _try_giant_rock_blast()
 			if blast_result == 1:
-				pass  # Blast fired, jump already happened on first tap
+				return
 			# Always jump regardless of blast state
 			if is_grounded or not coyote_timer.is_stopped():
 				_jump()
