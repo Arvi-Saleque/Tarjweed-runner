@@ -14,6 +14,8 @@ const ROCK_HEIGHT: float = 3.5        # Tall enough to block everything
 
 var state: RockState = RockState.INTACT
 var _model: Node3D = null
+var _hint_root: Node3D = null
+var _hint_icon: Sprite3D = null
 var _hint_label: Label3D = null
 var _shake_timer: float = 0.0
 var _original_positions: Array[Vector3] = []
@@ -40,6 +42,8 @@ func setup(model_scene: PackedScene) -> void:
 	col.position.y = ROCK_HEIGHT / 2.0
 	col.name = "RockCollision"
 	add_child(col)
+
+	_create_hint_label()
 
 
 func _process(delta: float) -> void:
@@ -157,16 +161,43 @@ func _finish_destroy() -> void:
 
 
 func _create_hint_label() -> void:
-	pass
+	if _hint_root:
+		return
+
+	_hint_root = Node3D.new()
+	_hint_root.name = "HintRoot"
+	_hint_root.position = Vector3(0.0, ROCK_HEIGHT + 0.9, 0.0)
+	_hint_root.visible = false
+	add_child(_hint_root)
+
+	_hint_icon = Sprite3D.new()
+	_hint_icon.name = "HintIcon"
+	_hint_icon.texture = load("res://assets/UI/kenney_input_prompts/touch_tap_double.png") as Texture2D
+	_hint_icon.pixel_size = 0.006
+	_hint_icon.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_hint_icon.modulate = Color(1.0, 0.96, 0.86, 0.95)
+	_hint_root.add_child(_hint_icon)
+
+	_hint_label = Label3D.new()
+	_hint_label.text = "DOUBLE TAP"
+	_hint_label.font_size = 42
+	_hint_label.outline_size = 10
+	_hint_label.modulate = Color(0.98, 0.88, 0.45, 1.0)
+	_hint_label.position = Vector3(0.0, -0.7, 0.0)
+	_hint_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_hint_root.add_child(_hint_label)
 
 
 func show_hint() -> void:
-	pass
+	if _hint_root == null:
+		_create_hint_label()
+	if _hint_root:
+		_hint_root.visible = true
 
 
 func hide_hint() -> void:
-	if _hint_label:
-		_hint_label.visible = false
+	if _hint_root:
+		_hint_root.visible = false
 
 
 func _apply_glow_tint(node: Node, color: Color) -> void:
