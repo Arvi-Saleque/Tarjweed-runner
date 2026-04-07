@@ -19,8 +19,6 @@ var decoration_scenes: Dictionary = {}
 var obstacle_scenes: Array[PackedScene] = []
 var overhead_obstacle_scenes: Array[PackedScene] = []
 var giant_rock_scenes: Array[PackedScene] = []
-var river_scenes: Array[PackedScene] = []
-var bridge_scenes: Array[PackedScene] = []
 var coin_scenes: Dictionary = {}  # "gold" -> PackedScene, etc.
 var obstacle_material: StandardMaterial3D
 var coin_material: StandardMaterial3D
@@ -211,21 +209,6 @@ func _preload_decorations() -> void:
 		]),
 	}
 
-	# River crossing scenes (placed across the road)
-	river_scenes = _load_scene_array([
-		"res://assets/Obstacles/River/ground_riverCross.glb",
-		"res://assets/Obstacles/River/ground_riverOpen.glb",
-		"res://assets/Environment/ExtraProps/ground_riverStraight.glb",
-	])
-
-	# Bridge scenes (spawned by player to cross rivers)
-	bridge_scenes = _load_scene_array([
-		"res://assets/Obstacles/Bridge/bridge_center_wood.glb",
-		"res://assets/Obstacles/Bridge/bridge_side_wood.glb",
-		"res://assets/Obstacles/Bridge/bridge_stone.glb",
-	])
-
-
 func _load_scene_array(paths: Array) -> Array[PackedScene]:
 	var result: Array[PackedScene] = []
 	for path: String in paths:
@@ -312,13 +295,3 @@ func get_random_giant_rock_scene() -> PackedScene:
 	return giant_rock_scenes[randi() % giant_rock_scenes.size()]
 
 
-func get_random_river_scene() -> PackedScene:
-	if river_scenes.is_empty():
-		return null
-	return river_scenes[randi() % river_scenes.size()]
-
-
-func get_random_bridge_scene() -> PackedScene:
-	if bridge_scenes.is_empty():
-		return null
-	return bridge_scenes[randi() % bridge_scenes.size()]

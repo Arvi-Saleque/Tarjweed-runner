@@ -695,64 +695,8 @@ func _update_bridge_hold(delta: float) -> void:
 
 
 func _build_bridge(river: Node) -> void:
-	## Spawn a bridge on the player's current lane over the river.
+	# Spawn the stylized full-width bridge for the current river crossing.
 	_build_bridge_stylized_impl(river)
-	return
-	var lane_x: float = GameManager.LANE_POSITIONS[current_lane]
-
-	# Find the world generator to get a bridge model
-	var generator: Node = null
-	var generators := get_tree().get_nodes_in_group("world_generator")
-	if generators.size() > 0:
-		generator = generators[0]
-
-	# Mark this river as bridged (all lanes covered)
-	for l in 3:
-		river.set_meta("bridge_lane_%d" % l, true)
-	_bridge_built_for_river = river
-
-	# Remove ALL kill zones since bridge covers the full river
-	for child in river.get_children():
-		if child.is_in_group("river_kill_zones"):
-			child.remove_from_group("obstacles")
-			child.remove_from_group("river_kill_zones")
-			for sub in child.get_children():
-				if sub is CollisionShape3D:
-					sub.set_deferred("disabled", true)
-
-	# Spawn bridge model — covers the entire river
-	var bridge_node := Node3D.new()
-	bridge_node.name = "Bridge_Lane%d" % current_lane
-	bridge_node.position = Vector3(lane_x, 0.15, 0.0)  # On the player's current lane
-
-	var bridge_model: Node3D = null
-	if generator and generator.has_method("get_random_bridge_scene"):
-		var scene: PackedScene = generator.get_random_bridge_scene()
-		if scene:
-			bridge_model = scene.instantiate()
-
-	if bridge_model:
-		# Scale bridge to cover the full river
-		bridge_model.scale = Vector3(3.0, 1.5, 2.5)
-		bridge_model.rotation.y = PI * 0.5  # Rotate to span across the river
-		bridge_node.add_child(bridge_model)
-	else:
-		# Fallback: procedural wood plank bridge
-		var plank := MeshInstance3D.new()
-		var box := BoxMesh.new()
-		box.size = Vector3(10.0, 0.2, 5.0)
-		var mat := StandardMaterial3D.new()
-		mat.albedo_color = Color(0.55, 0.35, 0.15)
-		mat.roughness = 0.9
-		box.material = mat
-		plank.mesh = box
-		bridge_node.add_child(plank)
-
-	river.add_child(bridge_node)
-
-	# Play a sound effect
-	AudioManager.play_sfx(AudioManager.sfx_landing, 0.3)
-	print("[Bridge] Built on lane %d for river at Z=%.1f" % [current_lane, river.global_position.z])
 
 
 func _build_bridge_stylized_impl(river: Node) -> void:

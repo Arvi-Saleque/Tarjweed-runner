@@ -82,7 +82,7 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 	# Try spawning a river crossing (deadly water, player must build bridge)
 	var river_z_pos: float = -INF
 	if not giant_rock_spawned:
-		river_z_pos = _try_spawn_river(chunk, chunk_length, chunk_dist, generator)
+		river_z_pos = _try_spawn_river(chunk, chunk_length, chunk_dist)
 
 	var slots: Array[float] = []
 	var z: float = -MIN_SLOT_OFFSET
@@ -587,7 +587,7 @@ static func _create_giant_rock(parent: Node3D, pos: Vector3, generator: Node3D) 
 # RIVER CROSSING — deadly water, player must hold spacebar to build bridge
 # =============================================================================
 
-static func _try_spawn_river(chunk: Node3D, chunk_length: float, chunk_dist: float, generator: Node3D) -> float:
+static func _try_spawn_river(chunk: Node3D, chunk_length: float, chunk_dist: float) -> float:
 	## Returns the local Z position of the river if spawned, or -INF if not.
 	if GameManager.current_theme != "natural":
 		return -INF
@@ -603,77 +603,3 @@ static func _try_spawn_river(chunk: Node3D, chunk_length: float, chunk_dist: flo
 	if not force_spawn and randf() > RIVER_CHANCE:
 		return -INF
 	return _spawn_river_crossing(chunk, chunk_length, chunk_dist)
-
-	var river_z: float = -(chunk_length * 0.5)  # Middle of chunk
-
-	# Create the river container
-	var river := Node3D.new()
-	river.name = "RiverCrossing"
-	river.position = Vector3(0.0, 0.0, river_z)
-	river.add_to_group("river_crossings")
-
-	# Main water plane — sits on top of road
-	var water_mesh := MeshInstance3D.new()
-	var plane := PlaneMesh.new()
-	plane.size = Vector2(RIVER_ROAD_WIDTH + 2.0, RIVER_DEPTH)
-	var water_mat := StandardMaterial3D.new()
-	water_mat.albedo_color = Color(0.05, 0.3, 0.6, 0.8)
-	water_mat.metallic = 0.4
-	water_mat.roughness = 0.05
-	water_mat.emission_enabled = true
-	water_mat.emission = Color(0.02, 0.15, 0.4)
-	water_mat.emission_energy_multiplier = 0.8
-	water_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	water_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	plane.material = water_mat
-	water_mesh.mesh = plane
-	water_mesh.position = Vector3(0.0, 0.12, 0.0)
-	water_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	river.add_child(water_mesh)
-
-	# Second layer — slightly lower, darker, for depth effect
-	var depth_mesh := MeshInstance3D.new()
-	var depth_plane := PlaneMesh.new()
-	depth_plane.size = Vector2(RIVER_ROAD_WIDTH + 2.0, RIVER_DEPTH + 0.5)
-	var depth_mat := StandardMaterial3D.new()
-	depth_mat.albedo_color = Color(0.02, 0.15, 0.35, 0.9)
-	depth_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-	depth_plane.material = depth_mat
-	depth_mesh.mesh = depth_plane
-	depth_mesh.position = Vector3(0.0, 0.08, 0.0)
-	depth_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	river.add_child(depth_mesh)
-
-	# Per-lane kill zones — Area3D in "obstacles" group so player dies on contact
-	for lane_idx in 3:
-		var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
-		var kill_zone := Area3D.new()
-		kill_zone.name = "RiverKillZone_Lane%d" % lane_idx
-		kill_zone.position = Vector3(lane_x, 0.5, 0.0)
-		kill_zone.collision_layer = 4  # Obstacles layer
-		kill_zone.collision_mask = 0
-		kill_zone.add_to_group("obstacles")
-		kill_zone.add_to_group("river_kill_zones")
-		kill_zone.set_meta("lane_index", lane_idx)
-
-		var col := CollisionShape3D.new()
-		var box := BoxShape3D.new()
-		box.size = Vector3(GameManager.LANE_WIDTH, 1.5, RIVER_DEPTH - 0.2)
-		col.shape = box
-		kill_zone.add_child(col)
-		river.add_child(kill_zone)
-
-	# Also try to place a river GLB model on top for texture detail
-	if generator.has_method("get_random_river_scene"):
-		var glb_scene: PackedScene = generator.get_random_river_scene()
-		if glb_scene:
-			var glb_inst: Node3D = glb_scene.instantiate()
-			glb_inst.position = Vector3(0.0, 0.13, 0.0)
-			glb_inst.scale = Vector3(5.0, 1.0, 3.0)
-			glb_inst.rotation.y = PI * 0.5
-			river.add_child(glb_inst)
-
-	chunk.add_child(river)
-	GameManager.set_meta("_last_river_dist", chunk_dist)
-	print("[River] === SPAWNED at chunk_dist=%.0f ==" % chunk_dist)
-	return river_z
