@@ -1,13 +1,14 @@
 extends Control
 ## MainMenu — Professional main menu with animated entrance, background, and navigation.
 
-var _title_label: Label
+var _title_label: Control
 var _subtitle_label: Label
 var _play_btn: Button
 var _settings_btn: Button
 var _high_score_label: Label
 var _coins_label: Label
 var _vbox: VBoxContainer
+var _hero_panel: PanelContainer
 var _bg_gradient: ColorRect
 var _settings_popup: Control = null
 
@@ -27,30 +28,47 @@ func _ready() -> void:
 
 
 func _create_background() -> void:
-	# Gradient background
 	_bg_gradient = ColorRect.new()
 	_bg_gradient.anchors_preset = Control.PRESET_FULL_RECT
 	_bg_gradient.anchor_right = 1.0
 	_bg_gradient.anchor_bottom = 1.0
-	_bg_gradient.color = Color(0.06, 0.08, 0.12, 1.0)
+	_bg_gradient.color = Color(0.10, 0.12, 0.09, 1.0)
 	add_child(_bg_gradient)
 
-	# Decorative top accent bar
-	var accent := ColorRect.new()
-	accent.anchors_preset = Control.PRESET_TOP_WIDE
-	accent.anchor_right = 1.0
-	accent.offset_bottom = 4.0
-	accent.color = UITheme.COLOR_PRIMARY
-	add_child(accent)
+	var sun_glow := ColorRect.new()
+	sun_glow.anchor_left = 0.5
+	sun_glow.anchor_top = 0.0
+	sun_glow.anchor_right = 0.5
+	sun_glow.anchor_bottom = 0.0
+	sun_glow.offset_left = -240.0
+	sun_glow.offset_top = 40.0
+	sun_glow.offset_right = 240.0
+	sun_glow.offset_bottom = 300.0
+	sun_glow.color = Color(0.84, 0.62, 0.24, 0.14)
+	sun_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(sun_glow)
 
-	# Subtle pattern overlay
-	var pattern := ColorRect.new()
-	pattern.anchors_preset = Control.PRESET_FULL_RECT
-	pattern.anchor_right = 1.0
-	pattern.anchor_bottom = 1.0
-	pattern.color = Color(1, 1, 1, 0.02)
-	pattern.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(pattern)
+	var horizon := ColorRect.new()
+	horizon.anchors_preset = Control.PRESET_BOTTOM_WIDE
+	horizon.anchor_top = 1.0
+	horizon.anchor_right = 1.0
+	horizon.anchor_bottom = 1.0
+	horizon.offset_top = -170.0
+	horizon.color = Color(0.17, 0.20, 0.13, 0.92)
+	horizon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(horizon)
+
+	for i in 4:
+		var tree_strip := ColorRect.new()
+		tree_strip.anchor_left = 0.0
+		tree_strip.anchor_top = 1.0
+		tree_strip.anchor_right = 1.0
+		tree_strip.anchor_bottom = 1.0
+		tree_strip.offset_top = -float(150 + i * 18)
+		tree_strip.offset_bottom = -float(125 + i * 18)
+		tree_strip.color = Color(0.10 + i * 0.02, 0.12 + i * 0.02, 0.08 + i * 0.01, 0.55)
+		tree_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(tree_strip)
 
 
 func _create_layout() -> void:
@@ -61,24 +79,26 @@ func _create_layout() -> void:
 	center.anchor_bottom = 1.0
 	add_child(center)
 
-	# Main VBox
+	_hero_panel = UITheme.make_panel("dark")
+	_hero_panel.custom_minimum_size = Vector2(420, 0)
+	center.add_child(_hero_panel)
+
 	_vbox = VBoxContainer.new()
 	_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	_vbox.add_theme_constant_override("separation", 16)
-	center.add_child(_vbox)
+	_hero_panel.add_child(_vbox)
 
 	# Spacer top
 	var spacer_top := Control.new()
 	spacer_top.custom_minimum_size = Vector2(0, 40)
 	_vbox.add_child(spacer_top)
 
-	# Title
-	_title_label = UITheme.make_label("NATURE RUNNER", UITheme.FONT_TITLE, UITheme.COLOR_TEXT)
-	_title_label.modulate.a = 0.0  # Start invisible for animation
+	_title_label = UITheme.make_banner("NATURE RUNNER", UITheme.FONT_BODY, UITheme.COLOR_TEXT_INK)
+	_title_label.modulate.a = 0.0
 	_vbox.add_child(_title_label)
 
 	# Subtitle
-	_subtitle_label = UITheme.make_label("Endless Runner", UITheme.FONT_SMALL, UITheme.COLOR_TEXT_DIM)
+	_subtitle_label = UITheme.make_label("Forest runner with learning-based modes", UITheme.FONT_SMALL, UITheme.COLOR_TEXT_DIM)
 	_subtitle_label.modulate.a = 0.0
 	_vbox.add_child(_subtitle_label)
 
@@ -96,14 +116,14 @@ func _create_layout() -> void:
 	_vbox.add_child(_play_btn)
 
 	# Settings button
-	_settings_btn = UITheme.make_button("  SETTINGS", UITheme.icon_gear)
+	_settings_btn = UITheme.make_button("  SETTINGS", UITheme.icon_gear, UITheme.FONT_BODY, "secondary")
 	_settings_btn.modulate.a = 0.0
 	_settings_btn.pressed.connect(_on_settings_pressed)
 	_settings_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	_vbox.add_child(_settings_btn)
 
 	# Quit button
-	var quit_btn := UITheme.make_button("  QUIT", UITheme.icon_cross)
+	var quit_btn := UITheme.make_button("  QUIT", UITheme.icon_cross, UITheme.FONT_BODY, "danger")
 	quit_btn.modulate.a = 0.0
 	quit_btn.pressed.connect(_on_quit_pressed)
 	quit_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
@@ -116,7 +136,7 @@ func _create_layout() -> void:
 	_vbox.add_child(spacer2)
 
 	# Stats panel
-	var stats_panel := UITheme.make_panel()
+	var stats_panel := UITheme.make_panel("light")
 	stats_panel.modulate.a = 0.0
 	stats_panel.custom_minimum_size = Vector2(320, 0)
 	_vbox.add_child(stats_panel)
@@ -127,12 +147,12 @@ func _create_layout() -> void:
 
 	# High score
 	var hs_val: int = SaveManager.get_high_score()
-	_high_score_label = UITheme.make_label("BEST: %d" % hs_val, UITheme.FONT_BODY, UITheme.COLOR_ACCENT)
+	_high_score_label = UITheme.make_label("BEST: %d" % hs_val, UITheme.FONT_BODY, UITheme.COLOR_TEXT_INK)
 	stats_vbox.add_child(_high_score_label)
 
 	# Total coins
 	var coins_val: int = SaveManager.get_total_coins()
-	_coins_label = UITheme.make_label("COINS: %d" % coins_val, UITheme.FONT_SMALL, UITheme.COLOR_TEXT_DIM)
+	_coins_label = UITheme.make_label("COINS: %d" % coins_val, UITheme.FONT_SMALL, UITheme.COLOR_TEXT_INK_SOFT)
 	stats_vbox.add_child(_coins_label)
 
 	# Version / footer

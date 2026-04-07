@@ -14,6 +14,7 @@ const THEMES: Array[Dictionary] = [
 		"color": Color(0.2, 0.72, 0.33),         # Green
 		"bg_color": Color(0.12, 0.22, 0.14, 0.95),
 		"icon_color": Color(0.35, 0.85, 0.45),
+		"icon": "leaf",
 	},
 	{
 		"id": "quiz",
@@ -22,6 +23,7 @@ const THEMES: Array[Dictionary] = [
 		"color": Color(0.3, 0.55, 0.95),          # Blue
 		"bg_color": Color(0.12, 0.16, 0.28, 0.95),
 		"icon_color": Color(0.45, 0.65, 1.0),
+		"icon": "star",
 	},
 	{
 		"id": "pronunciation",
@@ -30,6 +32,7 @@ const THEMES: Array[Dictionary] = [
 		"color": Color(0.7, 0.35, 0.9),           # Purple
 		"bg_color": Color(0.2, 0.12, 0.28, 0.95),
 		"icon_color": Color(0.8, 0.5, 1.0),
+		"icon": "warning",
 	},
 ]
 
@@ -74,7 +77,7 @@ func _create_layout() -> void:
 	center.add_child(_container)
 
 	# Header
-	var header := UITheme.make_label("CHOOSE MODE", UITheme.FONT_TITLE, UITheme.COLOR_TEXT)
+	var header := UITheme.make_banner("CHOOSE MODE", UITheme.FONT_BODY, UITheme.COLOR_TEXT_INK)
 	header.modulate.a = 0.0
 	_container.add_child(header)
 	_container.set_meta("header", header)
@@ -107,7 +110,7 @@ func _create_layout() -> void:
 	_container.add_child(spacer2)
 
 	# Back button
-	_back_btn = UITheme.make_button("  BACK", UITheme.icon_cross)
+	_back_btn = UITheme.make_button("  BACK", UITheme.icon_cross, UITheme.FONT_BODY, "secondary")
 	_back_btn.custom_minimum_size = Vector2(200, 56)
 	_back_btn.modulate.a = 0.0
 	_back_btn.pressed.connect(_on_back)
@@ -116,30 +119,9 @@ func _create_layout() -> void:
 
 
 func _create_theme_card(data: Dictionary) -> PanelContainer:
-	var card := PanelContainer.new()
+	var card := UITheme.make_panel("dark")
 	card.custom_minimum_size = Vector2(300, 360)
 	card.modulate.a = 0.0
-
-	# Card style
-	var style := StyleBoxFlat.new()
-	style.bg_color = data["bg_color"]
-	style.corner_radius_top_left = 20
-	style.corner_radius_top_right = 20
-	style.corner_radius_bottom_left = 20
-	style.corner_radius_bottom_right = 20
-	style.content_margin_left = 28.0
-	style.content_margin_right = 28.0
-	style.content_margin_top = 28.0
-	style.content_margin_bottom = 28.0
-	style.border_color = data["color"].darkened(0.3)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.shadow_color = Color(0, 0, 0, 0.5)
-	style.shadow_size = 12
-	style.shadow_offset = Vector2(0, 4)
-	card.add_theme_stylebox_override("panel", style)
 
 	# Card content
 	var vbox := VBoxContainer.new()
@@ -166,7 +148,7 @@ func _create_theme_card(data: Dictionary) -> PanelContainer:
 	icon_bg.add_child(icon_label)
 
 	# Theme title
-	var title := UITheme.make_label(data["title"], UITheme.FONT_HEADING, data["color"])
+	var title := UITheme.make_label(data["title"], UITheme.FONT_HEADING, UITheme.COLOR_TEXT)
 	vbox.add_child(title)
 
 	# Theme subtitle
@@ -213,8 +195,9 @@ func _create_theme_card(data: Dictionary) -> PanelContainer:
 	btn_pressed.shadow_size = 2
 	play_btn.add_theme_stylebox_override("pressed", btn_pressed)
 
-	play_btn.add_theme_color_override("font_color", UITheme.COLOR_TEXT)
-	play_btn.add_theme_color_override("font_hover_color", Color.WHITE)
+	play_btn.add_theme_color_override("font_color", UITheme.COLOR_TEXT_INK)
+	play_btn.add_theme_color_override("font_hover_color", UITheme.COLOR_TEXT_INK)
+	play_btn.add_theme_color_override("font_pressed_color", UITheme.COLOR_TEXT_INK_SOFT)
 
 	# Capture theme_id for the lambda
 	var theme_id: String = data["id"]
@@ -237,7 +220,7 @@ func _create_theme_card(data: Dictionary) -> PanelContainer:
 
 
 func _animate_in() -> void:
-	var header: Label = _container.get_meta("header")
+	var header: Control = _container.get_meta("header")
 	var sub: Label = _container.get_meta("sub")
 
 	var items: Array[Control] = [header, sub]
