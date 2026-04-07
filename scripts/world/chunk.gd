@@ -56,25 +56,80 @@ func _create_ground() -> void:
 	mesh_inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	ground.add_child(mesh_inst)
 
-	# Lane line markers (subtle visual guide)
+	# Add layered visual details so the road reads as a custom authored runner track.
+	_create_road_surface_details()
 	_create_lane_markers()
 
 
 func _create_lane_markers() -> void:
-	var marker_material := StandardMaterial3D.new()
-	marker_material.albedo_color = Color(0.45, 0.65, 0.35, 0.6)
-	marker_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	marker_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	var marker_material: StandardMaterial3D = null
+	if _generator and _generator.get("lane_marker_material"):
+		marker_material = _generator.lane_marker_material
 
 	for lane_x: float in GameManager.LANE_POSITIONS:
 		var marker := MeshInstance3D.new()
 		var mesh := BoxMesh.new()
-		mesh.size = Vector3(0.08, 0.01, chunk_length)
-		mesh.material = marker_material
+		mesh.size = Vector3(0.06, 0.01, chunk_length)
+		if marker_material:
+			mesh.material = marker_material
 		marker.mesh = mesh
 		marker.position = Vector3(lane_x, 0.005, -chunk_length / 2.0)
 		marker.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(marker)
+
+
+func _create_road_surface_details() -> void:
+	var detail_material: StandardMaterial3D = null
+	var patch_material: StandardMaterial3D = null
+	if _generator:
+		detail_material = _generator.get("road_detail_material")
+		patch_material = _generator.get("road_patch_material")
+
+	# Central worn strip keeps the track feeling intentional and helps camera framing.
+	var center_strip := MeshInstance3D.new()
+	var center_mesh := BoxMesh.new()
+	center_mesh.size = Vector3(path_width * 0.42, 0.02, chunk_length)
+	if detail_material:
+		center_mesh.material = detail_material
+	center_strip.mesh = center_mesh
+	center_strip.position = Vector3(0.0, 0.01, -chunk_length / 2.0)
+	center_strip.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(center_strip)
+
+	# Shoulder strips make the custom road feel finished and more readable.
+	for side in [-1.0, 1.0]:
+		var shoulder := MeshInstance3D.new()
+		var shoulder_mesh := BoxMesh.new()
+		shoulder_mesh.size = Vector3(0.55, 0.03, chunk_length)
+		if patch_material:
+			shoulder_mesh.material = patch_material
+		shoulder.mesh = shoulder_mesh
+		shoulder.position = Vector3(side * (path_width * 0.5 - 0.4), 0.012, -chunk_length / 2.0)
+		shoulder.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(shoulder)
+
+	# Rotate between a few subtle chunk accents so the road is controlled but not flat.
+	match chunk_index % 3:
+		1:
+			_create_road_patch(Vector3(0.0, 0.014, -chunk_length * 0.28), Vector3(path_width * 0.34, 0.028, 2.8), patch_material)
+			_create_road_patch(Vector3(path_width * 0.18, 0.014, -chunk_length * 0.66), Vector3(1.2, 0.028, 2.2), detail_material)
+		2:
+			_create_road_patch(Vector3(-path_width * 0.18, 0.014, -chunk_length * 0.46), Vector3(1.4, 0.028, 3.0), patch_material)
+			_create_road_patch(Vector3(path_width * 0.16, 0.014, -chunk_length * 0.78), Vector3(1.0, 0.028, 1.8), detail_material)
+		_:
+			_create_road_patch(Vector3(0.0, 0.014, -chunk_length * 0.54), Vector3(path_width * 0.26, 0.028, 1.9), detail_material)
+
+
+func _create_road_patch(pos: Vector3, size: Vector3, material: StandardMaterial3D) -> void:
+	var patch := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	if material:
+		mesh.material = material
+	patch.mesh = mesh
+	patch.position = pos
+	patch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(patch)
 
 
 func _create_side_terrain() -> void:
