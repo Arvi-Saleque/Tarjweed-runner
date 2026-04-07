@@ -4,7 +4,7 @@ extends Node
 ## If no AnimationPlayer is found, falls back to code-driven transforms.
 
 const ANIM_IDLE_OPTIONS: Array[String] = ["Idle_No_Loop", "Idle_Rail_Loop", "Idle_A"]
-const ANIM_RUN_OPTIONS: Array[String] = ["Zombie_Walk_Fwd_Loop", "Walk_Carry_Loop", "Running_A"]
+const ANIM_RUN_OPTIONS: Array[String] = ["Walk_Carry_Loop", "Zombie_Walk_Fwd_Loop", "Running_A"]
 const ANIM_JUMP_UP_OPTIONS: Array[String] = ["NinjaJump_Start", "Jump_Start"]
 const ANIM_JUMP_FALL_OPTIONS: Array[String] = ["NinjaJump_Idle_Loop", "Jump_Idle"]
 const ANIM_JUMP_LAND_OPTIONS: Array[String] = ["NinjaJump_Land", "Jump_Land"]
@@ -109,7 +109,7 @@ func _determine_state() -> AnimState:
 func _sync_run_speed() -> void:
 	if _anim_player and _has_animations:
 		var speed_ratio: float = GameManager.get_speed_ratio()
-		_anim_player.speed_scale = lerpf(1.0, 1.7, speed_ratio)
+		_anim_player.speed_scale = lerpf(1.35, 2.05, speed_ratio)
 
 
 func _update_procedural_animation(delta: float) -> void:
