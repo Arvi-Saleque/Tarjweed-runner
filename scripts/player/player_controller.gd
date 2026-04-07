@@ -696,6 +696,8 @@ func _update_bridge_hold(delta: float) -> void:
 
 func _build_bridge(river: Node) -> void:
 	## Spawn a bridge on the player's current lane over the river.
+	_build_bridge_stylized_impl(river)
+	return
 	var lane_x: float = GameManager.LANE_POSITIONS[current_lane]
 
 	# Find the world generator to get a bridge model
@@ -751,6 +753,128 @@ func _build_bridge(river: Node) -> void:
 	# Play a sound effect
 	AudioManager.play_sfx(AudioManager.sfx_landing, 0.3)
 	print("[Bridge] Built on lane %d for river at Z=%.1f" % [current_lane, river.global_position.z])
+
+
+func _build_bridge_stylized_impl(river: Node) -> void:
+	for l in 3:
+		river.set_meta("bridge_lane_%d" % l, true)
+	_bridge_built_for_river = river
+
+	for child in river.get_children():
+		if child.is_in_group("river_kill_zones"):
+			child.remove_from_group("obstacles")
+			child.remove_from_group("river_kill_zones")
+			for sub in child.get_children():
+				if sub is CollisionShape3D:
+					sub.set_deferred("disabled", true)
+
+	var bridge_node := Node3D.new()
+	bridge_node.name = "Bridge_Lane%d" % current_lane
+	bridge_node.position = Vector3(0.0, 0.16, 0.0)
+	_build_stylized_bridge(bridge_node)
+	river.add_child(bridge_node)
+
+	AudioManager.play_sfx(AudioManager.sfx_landing, 0.3)
+	print("[Bridge] Built on lane %d for river at Z=%.1f" % [current_lane, river.global_position.z])
+
+
+func _build_stylized_bridge(parent: Node3D) -> void:
+	var bridge_width: float = GameManager.LANE_WIDTH * GameManager.LANE_COUNT + 1.0
+	var bridge_depth: float = 4.9
+
+	var deck := _create_bridge_box(
+		Vector3(bridge_width, 0.22, bridge_depth),
+		Color(0.79, 0.71, 0.56, 1.0),
+		0.92
+	)
+	parent.add_child(deck)
+
+	var deck_inset := _create_bridge_box(
+		Vector3(bridge_width - 0.7, 0.08, bridge_depth - 0.35),
+		Color(0.87, 0.83, 0.72, 1.0),
+		0.84
+	)
+	deck_inset.position = Vector3(0.0, 0.15, 0.0)
+	parent.add_child(deck_inset)
+
+	var left_rail := _create_bridge_box(
+		Vector3(0.18, 0.52, bridge_depth),
+		Color(0.60, 0.46, 0.31, 1.0),
+		0.95
+	)
+	left_rail.position = Vector3(-(bridge_width * 0.5) + 0.22, 0.36, 0.0)
+	parent.add_child(left_rail)
+
+	var right_rail := _create_bridge_box(
+		Vector3(0.18, 0.52, bridge_depth),
+		Color(0.60, 0.46, 0.31, 1.0),
+		0.95
+	)
+	right_rail.position = Vector3((bridge_width * 0.5) - 0.22, 0.36, 0.0)
+	parent.add_child(right_rail)
+
+	var left_cap := _create_bridge_box(
+		Vector3(0.28, 0.10, bridge_depth),
+		Color(0.49, 0.38, 0.25, 1.0),
+		0.98
+	)
+	left_cap.position = Vector3(-(bridge_width * 0.5) + 0.22, 0.63, 0.0)
+	parent.add_child(left_cap)
+
+	var right_cap := _create_bridge_box(
+		Vector3(0.28, 0.10, bridge_depth),
+		Color(0.49, 0.38, 0.25, 1.0),
+		0.98
+	)
+	right_cap.position = Vector3((bridge_width * 0.5) - 0.22, 0.63, 0.0)
+	parent.add_child(right_cap)
+
+	for z_sign in [-1.0, 1.0]:
+		var threshold := _create_bridge_box(
+			Vector3(bridge_width + 0.25, 0.12, 0.28),
+			Color(0.58, 0.46, 0.32, 1.0),
+			0.97
+		)
+		threshold.position = Vector3(0.0, 0.05, z_sign * ((bridge_depth * 0.5) - 0.18))
+		parent.add_child(threshold)
+
+	for x_sign in [-1.0, 1.0]:
+		for z_offset in [-1.8, -0.6, 0.6, 1.8]:
+			var post := _create_bridge_box(
+				Vector3(0.18, 0.56, 0.18),
+				Color(0.56, 0.43, 0.29, 1.0),
+				0.96
+			)
+			post.position = Vector3(x_sign * ((bridge_width * 0.5) - 0.22), 0.31, z_offset)
+			parent.add_child(post)
+
+	var support_left := _create_bridge_box(
+		Vector3(0.35, 0.24, bridge_depth - 0.45),
+		Color(0.40, 0.31, 0.22, 1.0),
+		0.98
+	)
+	support_left.position = Vector3(-1.45, -0.14, 0.0)
+	parent.add_child(support_left)
+
+	var support_right := _create_bridge_box(
+		Vector3(0.35, 0.24, bridge_depth - 0.45),
+		Color(0.40, 0.31, 0.22, 1.0),
+		0.98
+	)
+	support_right.position = Vector3(1.45, -0.14, 0.0)
+	parent.add_child(support_right)
+
+
+func _create_bridge_box(size: Vector3, color: Color, roughness: float) -> MeshInstance3D:
+	var mesh_instance := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = size
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = roughness
+	box.material = material
+	mesh_instance.mesh = box
+	return mesh_instance
 
 
 func _ensure_player_visible() -> void:
