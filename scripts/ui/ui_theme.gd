@@ -13,6 +13,8 @@ const COLOR_ACCENT := Color(0.98, 0.85, 0.33)          # Gold
 const COLOR_DANGER := Color(0.78, 0.25, 0.18)          # Clay red
 const COLOR_TEXT := Color(0.97, 0.95, 0.89)            # Parchment white
 const COLOR_TEXT_DIM := Color(0.76, 0.72, 0.63)        # Warm dim text
+const COLOR_TEXT_INK := Color(0.18, 0.12, 0.07)        # Dark readable text on light UI
+const COLOR_TEXT_INK_SOFT := Color(0.28, 0.19, 0.11)
 const COLOR_PANEL_BG := Color(0.18, 0.14, 0.09, 0.96) # Dark wood panel
 const COLOR_PANEL_LIGHT := Color(0.34, 0.25, 0.16, 0.92)
 const COLOR_OVERLAY := Color(0.05, 0.03, 0.02, 0.62)  # Dim overlay
@@ -162,9 +164,9 @@ func _apply_button_variant(btn: Button, variant: String) -> void:
 
 	var focus := StyleBoxEmpty.new()
 	btn.add_theme_stylebox_override("focus", focus)
-	btn.add_theme_color_override("font_color", COLOR_TEXT)
-	btn.add_theme_color_override("font_hover_color", Color.WHITE)
-	btn.add_theme_color_override("font_pressed_color", COLOR_TEXT)
+	btn.add_theme_color_override("font_color", COLOR_TEXT_INK)
+	btn.add_theme_color_override("font_hover_color", COLOR_TEXT_INK)
+	btn.add_theme_color_override("font_pressed_color", COLOR_TEXT_INK_SOFT)
 
 
 func make_panel(variant: String = "dark") -> PanelContainer:
@@ -189,9 +191,9 @@ func make_icon_button(icon: Texture2D, tooltip: String = "", variant: String = "
 
 	var focus := StyleBoxEmpty.new()
 	btn.add_theme_stylebox_override("focus", focus)
-	btn.add_theme_color_override("icon_normal_color", COLOR_TEXT)
-	btn.add_theme_color_override("icon_hover_color", Color.WHITE)
-	btn.add_theme_color_override("icon_pressed_color", COLOR_TEXT_DIM)
+	btn.add_theme_color_override("icon_normal_color", COLOR_TEXT_INK)
+	btn.add_theme_color_override("icon_hover_color", COLOR_TEXT_INK)
+	btn.add_theme_color_override("icon_pressed_color", COLOR_TEXT_INK_SOFT)
 
 	return btn
 
