@@ -25,8 +25,11 @@ var coin_scenes: Dictionary = {}  # "gold" -> PackedScene, etc.
 var obstacle_material: StandardMaterial3D
 var coin_material: StandardMaterial3D
 var ground_material: StandardMaterial3D
+var road_detail_material: StandardMaterial3D
+var road_patch_material: StandardMaterial3D
 var grass_material: StandardMaterial3D
 var path_edge_material: StandardMaterial3D
+var lane_marker_material: StandardMaterial3D
 
 
 func _ready() -> void:
@@ -128,20 +131,35 @@ func _clear_all_chunks() -> void:
 # --- Material Setup ---
 
 func _setup_materials() -> void:
-	# Dirt path material
+	# Main runner path: warm dirt/stone blend with a stable readable tone.
 	ground_material = StandardMaterial3D.new()
-	ground_material.albedo_color = Color(0.55, 0.42, 0.28, 1.0)
-	ground_material.roughness = 0.95
+	ground_material.albedo_color = Color(0.60, 0.48, 0.31, 1.0)
+	ground_material.roughness = 0.96
 
-	# Grass terrain for sides
+	# Secondary road material for worn strips and flat overlays.
+	road_detail_material = StandardMaterial3D.new()
+	road_detail_material.albedo_color = Color(0.68, 0.55, 0.36, 1.0)
+	road_detail_material.roughness = 0.98
+
+	# Darker patch material for broken/chunky road accents.
+	road_patch_material = StandardMaterial3D.new()
+	road_patch_material.albedo_color = Color(0.42, 0.34, 0.24, 1.0)
+	road_patch_material.roughness = 1.0
+
+	# Side terrain stays greener and slightly cooler than the road.
 	grass_material = StandardMaterial3D.new()
-	grass_material.albedo_color = Color(0.28, 0.50, 0.18, 1.0)
+	grass_material.albedo_color = Color(0.31, 0.47, 0.24, 1.0)
 	grass_material.roughness = 0.95
 
-	# Path border edge
+	# Path border edge separates the track from nature immediately.
 	path_edge_material = StandardMaterial3D.new()
-	path_edge_material.albedo_color = Color(0.38, 0.30, 0.20, 1.0)
+	path_edge_material.albedo_color = Color(0.33, 0.26, 0.18, 1.0)
 	path_edge_material.roughness = 0.9
+
+	lane_marker_material = StandardMaterial3D.new()
+	lane_marker_material.albedo_color = Color(0.73, 0.67, 0.50, 0.58)
+	lane_marker_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	lane_marker_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 
 	obstacle_material = StandardMaterial3D.new()
 	obstacle_material.albedo_color = Color(0.75, 0.2, 0.15, 1.0)
@@ -161,140 +179,35 @@ func _setup_materials() -> void:
 func _preload_decorations() -> void:
 	decoration_scenes = {
 		"trees_large": _load_scene_array([
-			"res://assets/Environment/Trees/tree_blocks.glb",
-			"res://assets/Environment/Trees/tree_cone.glb",
-			"res://assets/Environment/Trees/tree_default.glb",
-			"res://assets/Environment/Trees/tree_detailed.glb",
-			"res://assets/Environment/Trees/tree_oak.glb",
-			"res://assets/Environment/Trees/tree_oak_dark.glb",
-			"res://assets/Environment/Trees/tree_oak_fall.glb",
-			"res://assets/Environment/Trees/tree_fat.glb",
-			"res://assets/Environment/Trees/tree_fat_fall.glb",
-			"res://assets/Environment/Trees/tree_plateau.glb",
-			"res://assets/Environment/Trees/tree_plateau_fall.glb",
-			"res://assets/Environment/Trees/tree_simple.glb",
-			"res://assets/Environment/Trees/tree_simple_fall.glb",
+			"res://assets/world/quaternius_nature/trees/CommonTree_2.gltf",
+			"res://assets/world/quaternius_nature/trees/CommonTree_4.gltf",
 		]),
 		"trees_pine": _load_scene_array([
-			"res://assets/Environment/Trees/tree_pineRoundA.glb",
-			"res://assets/Environment/Trees/tree_pineRoundB.glb",
-			"res://assets/Environment/Trees/tree_pineRoundC.glb",
-			"res://assets/Environment/Trees/tree_pineTallA.glb",
-			"res://assets/Environment/Trees/tree_pineTallB.glb",
-		]),
-		"trees_small": _load_scene_array([
-			"res://assets/Environment/ExtraProps/tree_small.glb",
-			"res://assets/Environment/ExtraProps/tree_tall.glb",
-			"res://assets/Environment/ExtraProps/tree_thin.glb",
+			"res://assets/world/quaternius_nature/trees/Pine_2.gltf",
+			"res://assets/world/quaternius_nature/trees/Pine_4.gltf",
 		]),
 		"bushes": _load_scene_array([
-			"res://assets/Environment/Bushes/plant_bush.glb",
-			"res://assets/Environment/Bushes/plant_bushDetailed.glb",
-			"res://assets/Environment/Bushes/plant_bushSmall.glb",
-			"res://assets/Environment/Bushes/plant_bushLargeTriangle.glb",
-			"res://assets/Environment/Bushes/plant_bushTriangle.glb",
-			"res://assets/Environment/Bushes/plant_flatShort.glb",
-			"res://assets/Environment/Bushes/plant_flatTall.glb",
-			"res://assets/Environment/ExtraProps/plant_bushLarge.glb",
+			"res://assets/world/quaternius_nature/plants/Bush_Common.gltf",
+			"res://assets/world/quaternius_nature/plants/Fern_1.gltf",
 		]),
 		"flowers": _load_scene_array([
-			"res://assets/Environment/Flowers/flower_purpleA.glb",
-			"res://assets/Environment/Flowers/flower_purpleB.glb",
-			"res://assets/Environment/Flowers/flower_redA.glb",
-			"res://assets/Environment/Flowers/flower_redB.glb",
-			"res://assets/Environment/Flowers/flower_yellowA.glb",
-			"res://assets/Environment/Flowers/flower_yellowB.glb",
-			"res://assets/Environment/Flowers/mushroom_red.glb",
-			"res://assets/Environment/Flowers/mushroom_redGroup.glb",
-			"res://assets/Environment/Flowers/mushroom_tan.glb",
-			"res://assets/Environment/Flowers/mushroom_tanGroup.glb",
+			"res://assets/world/quaternius_nature/plants/Flower_4_Group.gltf",
 		]),
 		"rocks": _load_scene_array([
-			"res://assets/Environment/ExtraProps/rock_largeA.glb",
-			"res://assets/Environment/ExtraProps/rock_largeB.glb",
-			"res://assets/Environment/ExtraProps/rock_largeC.glb",
-			"res://assets/Environment/ExtraProps/rock_largeD.glb",
-			"res://assets/Environment/ExtraProps/rock_largeE.glb",
-			"res://assets/Environment/ExtraProps/rock_largeF.glb",
-			"res://assets/Environment/ExtraProps/rock_tallA.glb",
-			"res://assets/Environment/ExtraProps/rock_tallB.glb",
-			"res://assets/Environment/ExtraProps/rock_tallC.glb",
-			"res://assets/Environment/ExtraProps/rock_tallD.glb",
-			"res://assets/Environment/ExtraProps/rock_tallE.glb",
-			"res://assets/Environment/ExtraProps/rock_tallF.glb",
+			"res://assets/world/quaternius_nature/rocks/Rock_Medium_1.gltf",
+			"res://assets/world/quaternius_nature/rocks/Rock_Medium_2.gltf",
 		]),
 		"rocks_small": _load_scene_array([
-			"res://assets/Environment/ExtraProps/rock_smallA.glb",
-			"res://assets/Environment/ExtraProps/rock_smallB.glb",
-			"res://assets/Environment/ExtraProps/rock_smallC.glb",
-			"res://assets/Environment/ExtraProps/rock_smallD.glb",
-			"res://assets/Environment/ExtraProps/rock_smallE.glb",
-			"res://assets/Environment/ExtraProps/rock_smallF.glb",
-			"res://assets/Environment/ExtraProps/stone_largeA.glb",
-			"res://assets/Environment/ExtraProps/stone_largeB.glb",
-			"res://assets/Environment/ExtraProps/stone_largeC.glb",
-			"res://assets/Environment/ExtraProps/stone_tallA.glb",
-			"res://assets/Environment/ExtraProps/stone_tallB.glb",
-			"res://assets/Environment/ExtraProps/stone_tallC.glb",
-		]),
-		"props": _load_scene_array([
-			"res://assets/Environment/ExtraProps/log.glb",
-			"res://assets/Environment/ExtraProps/log_large.glb",
-			"res://assets/Environment/ExtraProps/log_stack.glb",
-			"res://assets/Environment/ExtraProps/log_stackLarge.glb",
-			"res://assets/Environment/ExtraProps/stump_old.glb",
-			"res://assets/Environment/ExtraProps/stump_oldTall.glb",
-			"res://assets/Environment/ExtraProps/stump_round.glb",
-			"res://assets/Environment/ExtraProps/stump_roundDetailed.glb",
-			"res://assets/Environment/ExtraProps/stump_square.glb",
-			"res://assets/Environment/ExtraProps/stump_squareDetailed.glb",
-			"res://assets/Environment/ExtraProps/statue_columnDamaged.glb",
-			"res://assets/Environment/ExtraProps/statue_head.glb",
-			"res://assets/Environment/ExtraProps/statue_obelisk.glb",
-			"res://assets/Environment/ExtraProps/sign.glb",
-		]),
-		"roadside": _load_scene_array([
-			"res://assets/Obstacles/ExtraObstacleProps/barrel.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/crate.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/crate-strong.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/fence-broken.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/fence-low-broken.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/hedge.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/hedge-corner.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/stones.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/rocks.glb",
-			"res://assets/Environment/ExtraProps/statue_block.glb",
-			"res://assets/Environment/ExtraProps/statue_column.glb",
-		]),
-		"ground_paths": _load_scene_array([
-			"res://assets/Environment/ExtraProps/ground_pathRocks.glb",
-			"res://assets/Environment/ExtraProps/ground_pathSide.glb",
-			"res://assets/Environment/Ground/ground_grass.glb",
-		]),
-		"ground_cover": _load_scene_array([
-			"res://assets/Environment/ExtraProps/grass_large.glb",
-			"res://assets/Environment/ExtraProps/grass.glb",
-			"res://assets/Environment/ExtraProps/grass_leafs.glb",
-			"res://assets/Environment/ExtraProps/grass_leafsLarge.glb",
+			"res://assets/world/quaternius_nature/rocks/RockPath_Round_Small_2.gltf",
+			"res://assets/world/quaternius_nature/rocks/RockPath_Round_Wide.gltf",
 		]),
 		"grass": _load_scene_array([
-			"res://assets/Environment/grass/Tuft of grass.glb",
-			"res://assets/Environment/grass/grass yellowing.glb",
-			"res://assets/Environment/grass/Grass Patch.glb",
-			"res://assets/Environment/ExtraProps/grass.glb",
-			"res://assets/Environment/ExtraProps/grass_leafs.glb",
+			"res://assets/world/quaternius_nature/plants/Grass_Common_Short.gltf",
+			"res://assets/world/quaternius_nature/plants/Grass_Common_Tall.gltf",
 		]),
-		"animals": _load_scene_array([
-			"res://assets/Environment/animals/Alpaca.glb",
-			"res://assets/Environment/animals/Elephant.glb",
-			"res://assets/Environment/animals/Kangaroo.glb",
-			"res://assets/Environment/animals/Lion.glb",
-			"res://assets/Environment/animals/Stag.glb",
-		]),
-		"mountains": _load_scene_array([
-			"res://assets/Environment/big hills/Mountain.glb",
-			"res://assets/Environment/big hills/Mountain1.glb",
-			"res://assets/Environment/big hills/Snowy Hills.glb",
+		"background": _load_scene_array([
+			"res://assets/world/quaternius_nature/background/DeadTree_3.gltf",
+			"res://assets/world/quaternius_nature/background/TwistedTree_4.gltf",
 		]),
 	}
 
