@@ -312,24 +312,7 @@ static func _create_quiz_row_typed(parent: Node3D, z_pos: float, generator: Node
 			river.add_to_group("river_crossings")
 			river.add_to_group("quiz_rivers")
 
-			# Water visuals
-			var water_mesh := MeshInstance3D.new()
-			var plane := PlaneMesh.new()
-			plane.size = Vector2(RIVER_ROAD_WIDTH + 2.0, RIVER_DEPTH)
-			var water_mat := StandardMaterial3D.new()
-			water_mat.albedo_color = Color(0.05, 0.3, 0.6, 0.8)
-			water_mat.metallic = 0.4
-			water_mat.roughness = 0.05
-			water_mat.emission_enabled = true
-			water_mat.emission = Color(0.02, 0.15, 0.4)
-			water_mat.emission_energy_multiplier = 0.8
-			water_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-			water_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
-			plane.material = water_mat
-			water_mesh.mesh = plane
-			water_mesh.position = Vector3(0.0, 0.12, 0.0)
-			water_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			river.add_child(water_mesh)
+			_add_river_visuals(river)
 
 			# Per-lane kill zones
 			for lane_idx in 3:
@@ -355,6 +338,113 @@ static func _create_quiz_row_typed(parent: Node3D, z_pos: float, generator: Node
 # =============================================================================
 # SHARED HELPERS
 # =============================================================================
+
+
+static func _add_river_visuals(river: Node3D) -> void:
+	var river_width: float = RIVER_ROAD_WIDTH + 2.0
+
+	river.add_child(_create_river_plane(
+		Vector2(river_width, RIVER_DEPTH),
+		0.11,
+		Color(0.10, 0.36, 0.28, 0.86),
+		0.18,
+		Color(0.05, 0.14, 0.11, 1.0),
+		0.35
+	))
+
+	river.add_child(_create_river_plane(
+		Vector2(river_width + 0.35, RIVER_DEPTH + 0.55),
+		0.05,
+		Color(0.03, 0.10, 0.09, 0.94),
+		0.92
+	))
+
+	river.add_child(_create_river_bank(river_width, -RIVER_DEPTH * 0.5 - 0.35))
+	river.add_child(_create_river_bank(river_width, RIVER_DEPTH * 0.5 + 0.35))
+	river.add_child(_create_foam_strip(river_width - 0.4, -RIVER_DEPTH * 0.5 + 0.18))
+	river.add_child(_create_foam_strip(river_width - 0.4, RIVER_DEPTH * 0.5 - 0.18))
+
+
+static func _create_river_plane(size: Vector2, y: float, color: Color, roughness: float, emission: Color = Color(0, 0, 0, 1), emission_energy: float = 0.0) -> MeshInstance3D:
+	var mesh_instance := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = size
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = roughness
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	if emission_energy > 0.0:
+		material.emission_enabled = true
+		material.emission = emission
+		material.emission_energy_multiplier = emission_energy
+	plane.material = material
+	mesh_instance.mesh = plane
+	mesh_instance.position = Vector3(0.0, y, 0.0)
+	mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mesh_instance
+
+
+static func _create_river_bank(width: float, z_pos: float) -> MeshInstance3D:
+	var bank := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(width, 0.22, 0.45)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.30, 0.25, 0.17, 1.0)
+	material.roughness = 0.95
+	box.material = material
+	bank.mesh = box
+	bank.position = Vector3(0.0, 0.06, z_pos)
+	return bank
+
+
+static func _create_foam_strip(width: float, z_pos: float) -> MeshInstance3D:
+	var foam := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(width, 0.28)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.78, 0.89, 0.72, 0.62)
+	material.roughness = 0.35
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	plane.material = material
+	foam.mesh = plane
+	foam.position = Vector3(0.0, 0.125, z_pos)
+	foam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return foam
+
+
+static func _spawn_river_crossing(chunk: Node3D, chunk_length: float, chunk_dist: float) -> float:
+	var river_z: float = -(chunk_length * 0.5)
+	var river := Node3D.new()
+	river.name = "RiverCrossing"
+	river.position = Vector3(0.0, 0.0, river_z)
+	river.add_to_group("river_crossings")
+	_add_river_visuals(river)
+
+	for lane_idx in 3:
+		var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
+		var kill_zone := Area3D.new()
+		kill_zone.name = "RiverKillZone_Lane%d" % lane_idx
+		kill_zone.position = Vector3(lane_x, 0.5, 0.0)
+		kill_zone.collision_layer = 4
+		kill_zone.collision_mask = 0
+		kill_zone.add_to_group("obstacles")
+		kill_zone.add_to_group("river_kill_zones")
+		kill_zone.set_meta("lane_index", lane_idx)
+
+		var col := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = Vector3(GameManager.LANE_WIDTH, 1.5, RIVER_DEPTH - 0.2)
+		col.shape = box
+		kill_zone.add_child(col)
+		river.add_child(kill_zone)
+
+	chunk.add_child(river)
+	GameManager.set_meta("_last_river_dist", chunk_dist)
+	print("[River] === SPAWNED at chunk_dist=%.0f ==" % chunk_dist)
+	return river_z
 
 
 static func _pick_pattern(difficulty: float) -> int:
@@ -512,6 +602,7 @@ static func _try_spawn_river(chunk: Node3D, chunk_length: float, chunk_dist: flo
 	var force_spawn: bool = last_river_dist < 0.0 and chunk_dist >= 60.0
 	if not force_spawn and randf() > RIVER_CHANCE:
 		return -INF
+	return _spawn_river_crossing(chunk, chunk_length, chunk_dist)
 
 	var river_z: float = -(chunk_length * 0.5)  # Middle of chunk
 
