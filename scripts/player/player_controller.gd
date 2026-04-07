@@ -21,9 +21,12 @@ const STAND_RADIUS: float = 0.35
 const SLIDE_HEIGHT: float = 0.6
 const SLIDE_RADIUS: float = 0.45
 const PLAYER_VISUAL_SCALE: float = 0.58
-const PLAYER_HAIR_SCENE_PATH: String = "res://assets/Characters/hairstyles/Hair_SimpleParted.gltf"
-const PLAYER_EYEBROW_SCENE_PATH: String = "res://assets/Characters/hairstyles/Eyebrows_Regular.gltf"
-const PLAYER_ANIM_SCENE_PATH: String = "res://assets/Characters/animations/UAL2_Standard.glb"
+const PLAYER_BASE_SCENE_PATH: String = "res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb"
+const PLAYER_EXTRA_ANIM_SCENE_PATHS: Array[String] = [
+	"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementAdvanced.glb",
+	"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_General.glb",
+	"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_CombatMelee.glb",
+]
 
 # --- State ---
 enum PlayerState { RUNNING, JUMPING, SLIDING, STUMBLE, DEAD }
@@ -789,61 +792,49 @@ func _ensure_player_visible() -> void:
 
 
 func _build_runner_visual() -> Node3D:
-	if not ResourceLoader.exists(PLAYER_ANIM_SCENE_PATH):
+	if not ResourceLoader.exists(PLAYER_BASE_SCENE_PATH):
 		return null
 
-	var anim_scene := load(PLAYER_ANIM_SCENE_PATH) as PackedScene
-	if anim_scene == null:
+	var base_scene := load(PLAYER_BASE_SCENE_PATH) as PackedScene
+	if base_scene == null:
 		return null
 
-	var visual_root := anim_scene.instantiate() as Node3D
+	var visual_root := base_scene.instantiate() as Node3D
 	if visual_root == null:
 		return null
 	visual_root.name = "VisualRig"
 
-	var armature := _find_node_recursive(visual_root, "Armature")
-	if armature == null:
-		return visual_root
-
-	_attach_visual_scene_meshes(armature, PLAYER_HAIR_SCENE_PATH)
-	_attach_visual_scene_meshes(armature, PLAYER_EYEBROW_SCENE_PATH)
+	_merge_extra_animations(visual_root)
 	_apply_runner_palette(visual_root)
 	return visual_root
 
 
-func _attach_visual_scene_meshes(target_armature: Node, scene_path: String) -> void:
-	if not ResourceLoader.exists(scene_path):
+func _merge_extra_animations(model: Node3D) -> void:
+	var dest_player := _find_anim_player(model)
+	if dest_player == null:
 		return
 
-	var source_scene := load(scene_path) as PackedScene
-	if source_scene == null:
-		return
+	if not dest_player.has_animation_library(""):
+		dest_player.add_animation_library("", AnimationLibrary.new())
+	var dest_lib := dest_player.get_animation_library("")
 
-	var source_root := source_scene.instantiate()
-	var source_armature := _find_node_recursive(source_root, "Armature")
-	if source_armature == null:
-		source_root.queue_free()
-		return
-
-	for child in source_armature.get_children():
-		if child is MeshInstance3D:
-			var mesh_copy := child.duplicate() as MeshInstance3D
-			if mesh_copy == null:
-				continue
-			mesh_copy.name = "Visual_%s" % child.name
-			target_armature.add_child(mesh_copy)
-			_retarget_skinned_meshes(mesh_copy, target_armature)
-
-	source_root.queue_free()
-
-
-func _retarget_skinned_meshes(node: Node, skeleton_node: Node) -> void:
-	if node is MeshInstance3D:
-		var mesh_instance := node as MeshInstance3D
-		mesh_instance.skeleton = mesh_instance.get_path_to(skeleton_node)
-
-	for child in node.get_children():
-		_retarget_skinned_meshes(child, skeleton_node)
+	for path in PLAYER_EXTRA_ANIM_SCENE_PATHS:
+		if not ResourceLoader.exists(path):
+			continue
+		var anim_scene := load(path) as PackedScene
+		if anim_scene == null:
+			continue
+		var anim_root := anim_scene.instantiate()
+		var src_player := _find_anim_player(anim_root)
+		if src_player:
+			for lib_name in src_player.get_animation_library_list():
+				var src_lib := src_player.get_animation_library(lib_name)
+				if src_lib == null:
+					continue
+				for anim_name in src_lib.get_animation_list():
+					if not dest_lib.has_animation(anim_name):
+						dest_lib.add_animation(anim_name, src_lib.get_animation(anim_name))
+		anim_root.queue_free()
 
 
 func _find_anim_player(node: Node) -> AnimationPlayer:
