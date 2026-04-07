@@ -35,37 +35,36 @@ func _create_hud() -> void:
 
 
 func _create_top_bar() -> void:
-	# Top bar background
-	var top_bar := PanelContainer.new()
-	top_bar.anchors_preset = Control.PRESET_TOP_WIDE
-	top_bar.anchor_right = 1.0
-	top_bar.offset_bottom = 72.0
-	top_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var bar_style := StyleBoxFlat.new()
-	bar_style.bg_color = Color(0, 0, 0, 0.45)
-	bar_style.content_margin_left = 24.0
-	bar_style.content_margin_right = 24.0
-	bar_style.content_margin_top = 8.0
-	bar_style.content_margin_bottom = 8.0
-	bar_style.corner_radius_bottom_left = 0
-	bar_style.corner_radius_bottom_right = 0
-	top_bar.add_theme_stylebox_override("panel", bar_style)
-	_root.add_child(top_bar)
+	var top_margin := MarginContainer.new()
+	top_margin.anchors_preset = Control.PRESET_TOP_WIDE
+	top_margin.anchor_right = 1.0
+	top_margin.offset_top = 12.0
+	top_margin.offset_bottom = 108.0
+	top_margin.add_theme_constant_override("margin_left", 20)
+	top_margin.add_theme_constant_override("margin_right", 20)
+	top_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(top_margin)
 
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 12)
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	top_bar.add_child(hbox)
+	top_margin.add_child(hbox)
 
 	# --- Left: Coins ---
+	var coin_panel := UITheme.make_panel("light")
+	coin_panel.custom_minimum_size = Vector2(188, 74)
+	hbox.add_child(coin_panel)
+
 	var coin_hbox := HBoxContainer.new()
 	coin_hbox.add_theme_constant_override("separation", 8)
 	coin_hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hbox.add_child(coin_hbox)
+	coin_panel.add_child(coin_hbox)
 
 	_coin_icon = TextureRect.new()
-	if UITheme.icon_trophy:
+	if UITheme.icon_coin:
+		_coin_icon.texture = UITheme.icon_coin
+	elif UITheme.icon_trophy:
 		_coin_icon.texture = UITheme.icon_trophy
 	_coin_icon.custom_minimum_size = Vector2(36, 36)
 	_coin_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -83,10 +82,14 @@ func _create_top_bar() -> void:
 	center_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hbox.add_child(center_spacer)
 
+	var score_panel := UITheme.make_panel("dark")
+	score_panel.custom_minimum_size = Vector2(232, 92)
+	hbox.add_child(score_panel)
+
 	var score_vbox := VBoxContainer.new()
 	score_vbox.add_theme_constant_override("separation", 0)
 	score_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hbox.add_child(score_vbox)
+	score_panel.add_child(score_vbox)
 
 	_score_label = UITheme.make_label("0", UITheme.FONT_HEADING, UITheme.COLOR_TEXT)
 	score_vbox.add_child(_score_label)
@@ -100,7 +103,7 @@ func _create_top_bar() -> void:
 	right_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hbox.add_child(right_spacer)
 
-	_pause_btn = UITheme.make_icon_button(UITheme.icon_pause, "Pause")
+	_pause_btn = UITheme.make_icon_button(UITheme.icon_pause, "Pause", "light")
 	_pause_btn.pressed.connect(_on_pause_pressed)
 	hbox.add_child(_pause_btn)
 
@@ -120,13 +123,8 @@ func _create_speed_indicator() -> void:
 	_speed_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# Style the speed bar
-	var bg_style := StyleBoxFlat.new()
-	bg_style.bg_color = Color(0, 0, 0, 0.3)
-	_speed_bar.add_theme_stylebox_override("background", bg_style)
-
-	var fill_style := StyleBoxFlat.new()
-	fill_style.bg_color = UITheme.COLOR_PRIMARY
-	_speed_bar.add_theme_stylebox_override("fill", fill_style)
+	_speed_bar.add_theme_stylebox_override("background", UITheme._make_texture_stylebox(UITheme.panel_dark_texture, Color(1, 1, 1, 0.9), 0.0, 0.0))
+	_speed_bar.add_theme_stylebox_override("fill", UITheme._make_texture_stylebox(UITheme.progress_green_texture, Color(1, 1, 1, 1.0), 0.0, 0.0))
 
 	_root.add_child(_speed_bar)
 
@@ -193,9 +191,15 @@ func _on_speed_changed(new_speed: float) -> void:
 
 	# Color shift from green to red as speed increases
 	var ratio: float = GameManager.get_speed_ratio()
-	var fill_style: StyleBoxFlat = _speed_bar.get_theme_stylebox("fill") as StyleBoxFlat
-	if fill_style:
-		fill_style.bg_color = UITheme.COLOR_PRIMARY.lerp(UITheme.COLOR_DANGER, ratio)
+	_speed_bar.add_theme_stylebox_override(
+		"fill",
+		UITheme._make_texture_stylebox(
+			UITheme.progress_green_texture if ratio < 0.6 else UITheme.progress_red_texture,
+			Color(1, 1, 1, 1.0),
+			0.0,
+			0.0
+		)
+	)
 
 
 func _on_pause_pressed() -> void:

@@ -39,7 +39,7 @@ func _create_screen() -> void:
 	_overlay.add_child(center)
 
 	# Main panel
-	_panel = UITheme.make_panel()
+	_panel = UITheme.make_panel("dark")
 	_panel.custom_minimum_size = Vector2(420, 0)
 	center.add_child(_panel)
 
@@ -49,7 +49,7 @@ func _create_screen() -> void:
 	_panel.add_child(vbox)
 
 	# "GAME OVER" title
-	var title := UITheme.make_label("GAME OVER", UITheme.FONT_HEADING, UITheme.COLOR_DANGER)
+	var title := UITheme.make_banner("GAME OVER", UITheme.FONT_BODY, UITheme.COLOR_TEXT)
 	vbox.add_child(title)
 
 	# Separator
@@ -127,19 +127,11 @@ func _create_screen() -> void:
 	_retry_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	btn_hbox.add_child(_retry_btn)
 
-	_menu_btn = UITheme.make_button("  HOME", UITheme.icon_home)
+	_menu_btn = UITheme.make_button("  HOME", UITheme.icon_home, UITheme.FONT_BODY, "secondary")
 	_menu_btn.custom_minimum_size = Vector2(180, 60)
 	_menu_btn.pressed.connect(_on_menu_pressed)
 	_menu_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	btn_hbox.add_child(_menu_btn)
-
-	# Style home button darker
-	var menu_normal := _menu_btn.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
-	menu_normal.bg_color = Color(0.3, 0.3, 0.35)
-	_menu_btn.add_theme_stylebox_override("normal", menu_normal)
-	var menu_hover := _menu_btn.get_theme_stylebox("hover").duplicate() as StyleBoxFlat
-	menu_hover.bg_color = Color(0.4, 0.4, 0.45)
-	_menu_btn.add_theme_stylebox_override("hover", menu_hover)
 
 
 func _on_game_over() -> void:
