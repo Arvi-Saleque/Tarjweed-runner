@@ -4,13 +4,13 @@ extends Node
 ## If no AnimationPlayer is found, falls back to code-driven transforms.
 
 const ANIM_IDLE_OPTIONS: Array[String] = ["Idle_No_Loop", "Idle_Rail_Loop", "Idle_A"]
-const ANIM_RUN_OPTIONS: Array[String] = ["Walk_Carry_Loop", "Zombie_Walk_Fwd_Loop", "Running_A"]
-const ANIM_JUMP_UP_OPTIONS: Array[String] = ["NinjaJump_Start", "Jump_Start"]
-const ANIM_JUMP_FALL_OPTIONS: Array[String] = ["NinjaJump_Idle_Loop", "Jump_Idle"]
-const ANIM_JUMP_LAND_OPTIONS: Array[String] = ["NinjaJump_Land", "Jump_Land"]
-const ANIM_SLIDE_OPTIONS: Array[String] = ["Slide_Loop", "Crouching"]
-const ANIM_DEATH_OPTIONS: Array[String] = ["Hit_Knockback", "Death_A"]
-const ANIM_STUMBLE_OPTIONS: Array[String] = ["Hit_Knockback", "Hit_A"]
+const ANIM_RUN_OPTIONS: Array[String] = ["Running_A", "Running_B", "Walk_Carry_Loop", "Zombie_Walk_Fwd_Loop"]
+const ANIM_JUMP_UP_OPTIONS: Array[String] = ["Jump_Start", "NinjaJump_Start"]
+const ANIM_JUMP_FALL_OPTIONS: Array[String] = ["Jump_Idle", "NinjaJump_Idle_Loop"]
+const ANIM_JUMP_LAND_OPTIONS: Array[String] = ["Jump_Land", "NinjaJump_Land"]
+const ANIM_SLIDE_OPTIONS: Array[String] = ["Crouching", "Slide_Loop"]
+const ANIM_DEATH_OPTIONS: Array[String] = ["Death_A", "Hit_Knockback"]
+const ANIM_STUMBLE_OPTIONS: Array[String] = ["Hit_A", "Hit_Knockback"]
 
 const XFADE: float = 0.15
 const XFADE_FAST: float = 0.08
@@ -109,7 +109,7 @@ func _determine_state() -> AnimState:
 func _sync_run_speed() -> void:
 	if _anim_player and _has_animations:
 		var speed_ratio: float = GameManager.get_speed_ratio()
-		_anim_player.speed_scale = lerpf(1.35, 2.05, speed_ratio)
+		_anim_player.speed_scale = lerpf(1.0, 1.6, speed_ratio)
 
 
 func _update_procedural_animation(delta: float) -> void:
@@ -171,6 +171,9 @@ func _find_animation_player() -> void:
 		_has_animations = _anim_player.get_animation_list().size() > 0
 		if _has_animations:
 			_set_loop_modes()
+			current_anim_state = AnimState.RUN
+			_play_first_available(ANIM_RUN_OPTIONS, 0.0)
+			_sync_run_speed()
 			print("PlayerAnimation: Found AnimationPlayer with %d animations: %s" % [
 				_anim_player.get_animation_list().size(),
 				", ".join(_anim_player.get_animation_list())
