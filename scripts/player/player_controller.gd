@@ -21,8 +21,8 @@ const STAND_RADIUS: float = 0.35
 const SLIDE_HEIGHT: float = 0.6
 const SLIDE_RADIUS: float = 0.45
 const PLAYER_VISUAL_SCALE: float = 0.58
-const PLAYER_BODY_SCENE_PATH: String = "res://assets/Characters/base_character/Superhero_Male_FullBody.gltf"
 const PLAYER_HAIR_SCENE_PATH: String = "res://assets/Characters/hairstyles/Hair_SimpleParted.gltf"
+const PLAYER_EYEBROW_SCENE_PATH: String = "res://assets/Characters/hairstyles/Eyebrows_Regular.gltf"
 const PLAYER_ANIM_SCENE_PATH: String = "res://assets/Characters/animations/UAL2_Standard.glb"
 
 # --- State ---
@@ -789,14 +789,14 @@ func _ensure_player_visible() -> void:
 
 
 func _build_runner_visual() -> Node3D:
-	if not ResourceLoader.exists(PLAYER_BODY_SCENE_PATH):
+	if not ResourceLoader.exists(PLAYER_ANIM_SCENE_PATH):
 		return null
 
-	var body_scene := load(PLAYER_BODY_SCENE_PATH) as PackedScene
-	if body_scene == null:
+	var anim_scene := load(PLAYER_ANIM_SCENE_PATH) as PackedScene
+	if anim_scene == null:
 		return null
 
-	var visual_root := body_scene.instantiate() as Node3D
+	var visual_root := anim_scene.instantiate() as Node3D
 	if visual_root == null:
 		return null
 	visual_root.name = "VisualRig"
@@ -805,33 +805,10 @@ func _build_runner_visual() -> Node3D:
 	if armature == null:
 		return visual_root
 
-	_attach_animation_player(visual_root)
 	_attach_visual_scene_meshes(armature, PLAYER_HAIR_SCENE_PATH)
+	_attach_visual_scene_meshes(armature, PLAYER_EYEBROW_SCENE_PATH)
 	_apply_runner_palette(visual_root)
 	return visual_root
-
-
-func _attach_animation_player(visual_root: Node3D) -> void:
-	if not ResourceLoader.exists(PLAYER_ANIM_SCENE_PATH):
-		return
-
-	var anim_scene := load(PLAYER_ANIM_SCENE_PATH) as PackedScene
-	if anim_scene == null:
-		return
-
-	var anim_root := anim_scene.instantiate()
-	var source_player := _find_anim_player(anim_root)
-	if source_player == null:
-		anim_root.queue_free()
-		return
-
-	var anim_clone := source_player.duplicate() as AnimationPlayer
-	if anim_clone:
-		anim_clone.name = "AnimationPlayer"
-		anim_clone.root_node = NodePath("..")
-		visual_root.add_child(anim_clone)
-
-	anim_root.queue_free()
 
 
 func _attach_visual_scene_meshes(target_armature: Node, scene_path: String) -> void:
@@ -907,6 +884,9 @@ func _apply_runner_palette(node: Node) -> void:
 					tinted_material.roughness = 0.95
 				elif mesh_name.contains("eyes"):
 					tinted_material.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
+				elif mesh_name.contains("mannequin"):
+					tinted_material.albedo_color = Color(0.93, 0.94, 0.96, 1.0)
+					tinted_material.roughness = maxf(tinted_material.roughness, 0.88)
 				else:
 					tinted_material.albedo_color = Color(0.86, 0.89, 0.82, 1.0)
 					tinted_material.roughness = maxf(tinted_material.roughness, 0.9)
