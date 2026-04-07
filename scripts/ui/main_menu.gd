@@ -156,7 +156,7 @@ func _create_layout() -> void:
 	stats_vbox.add_child(_coins_label)
 
 	# Version / footer
-	var footer := UITheme.make_label("v0.5 — Phase 5", UITheme.FONT_SMALL - 4, UITheme.COLOR_TEXT_DIM)
+	var footer := UITheme.make_label("v0.5 — Phase 8", UITheme.FONT_SMALL - 4, UITheme.COLOR_TEXT_DIM)
 	footer.modulate.a = 0.0
 	_vbox.add_child(footer)
 

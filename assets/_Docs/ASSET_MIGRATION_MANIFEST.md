@@ -209,3 +209,27 @@ These will be populated in later phases.
 2. Do not reintroduce old environment art into the active source lists.
 3. Keep the curated subset stable unless a specific gameplay readability issue requires a change.
 4. Audio remains intentionally unchanged during this phase.
+
+## Cleanup Status
+
+Completed cleanup:
+
+- removed the unused legacy river and bridge model assets after the procedural crossing system replaced them
+- removed the unused legacy UI button texture set after the Kenney Adventure theme became the active UI source
+
+Active runtime dependencies still kept intentionally:
+
+- `assets/Characters/Animations_GLTF/Rig_Medium/*`
+- `assets/Characters/RunnerMannequin/*`
+- `assets/UI/Icons/*`
+- `assets/UI/Fonts/*`
+- `assets/Environment/Sky/qwantani_noon_puresky_4k.exr`
+
+Why they remain:
+
+- the current live runner still depends on the animation-safe `Rig_Medium` path for stable runtime playback
+- the shared icons, fonts, and skybox are still referenced by the active menu, HUD, and game scene
+
+Guardrail:
+
+- do not delete the remaining runner/mannequin assets until the player is fully migrated off that fallback path without breaking animation playback
