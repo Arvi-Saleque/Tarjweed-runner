@@ -958,7 +958,7 @@ func _ensure_player_visible() -> void:
 func _build_runner_visual() -> Node3D:
 	var player_profile: Dictionary = ThemeRegistryScript.get_profile().get("player", {})
 	var scene_paths: Array[String] = [player_profile.get("base_scene_path", PLAYER_BASE_SCENE_PATH)]
-	for fallback_path in player_profile.get("fallback_scene_paths", []):
+	for fallback_path in _to_string_array(player_profile.get("fallback_scene_paths", [])):
 		scene_paths.append(fallback_path)
 
 	for scene_path in scene_paths:
@@ -974,7 +974,7 @@ func _build_runner_visual() -> Node3D:
 			continue
 		visual_root.name = "VisualRig"
 
-		var extra_paths: Array[String] = player_profile.get("extra_anim_scene_paths", PLAYER_EXTRA_ANIM_SCENE_PATHS)
+		var extra_paths: Array[String] = _to_string_array(player_profile.get("extra_anim_scene_paths", PLAYER_EXTRA_ANIM_SCENE_PATHS))
 		if scene_path == PLAYER_BASE_SCENE_PATH and extra_paths.is_empty():
 			extra_paths = PLAYER_EXTRA_ANIM_SCENE_PATHS
 		_merge_extra_animations(visual_root, extra_paths)
@@ -1046,6 +1046,14 @@ func _animation_list_has_any(anim_player: AnimationPlayer, anim_names: Array[Str
 		if anim_player.has_animation(anim_name):
 			return true
 	return false
+
+
+func _to_string_array(value: Variant) -> Array[String]:
+	var result: Array[String] = []
+	if value is Array:
+		for item in value:
+			result.append(str(item))
+	return result
 
 
 func _find_node_recursive(node: Node, node_name: String) -> Node:
