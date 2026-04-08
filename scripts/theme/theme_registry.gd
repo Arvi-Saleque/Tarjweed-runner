@@ -17,6 +17,8 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"extra_anim_scene_paths": [],
 		"visual_scale": 0.44,
 		"style": "cyber_mech",
+		"preview_scale": 1.2,
+		"preview_height": -0.9,
 	},
 	"george": {
 		"id": "george",
@@ -32,6 +34,8 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"extra_anim_scene_paths": [],
 		"visual_scale": 0.42,
 		"style": "cyber_mech",
+		"preview_scale": 1.1,
+		"preview_height": -0.95,
 	},
 	"leela": {
 		"id": "leela",
@@ -47,6 +51,8 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"extra_anim_scene_paths": [],
 		"visual_scale": 0.42,
 		"style": "cyber_mech",
+		"preview_scale": 1.1,
+		"preview_height": -0.95,
 	},
 	"mike": {
 		"id": "mike",
@@ -62,6 +68,8 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"extra_anim_scene_paths": [],
 		"visual_scale": 0.42,
 		"style": "cyber_mech",
+		"preview_scale": 1.1,
+		"preview_height": -0.95,
 	},
 	"stan": {
 		"id": "stan",
@@ -77,6 +85,8 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"extra_anim_scene_paths": [],
 		"visual_scale": 0.42,
 		"style": "cyber_mech",
+		"preview_scale": 1.1,
+		"preview_height": -0.95,
 	},
 	"bee": {
 		"id": "bee",
@@ -92,6 +102,8 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"extra_anim_scene_paths": [],
 		"visual_scale": 0.48,
 		"style": "cyber_mech",
+		"preview_scale": 1.05,
+		"preview_height": -1.0,
 	},
 	"fernando": {
 		"id": "fernando",
@@ -107,6 +119,8 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"extra_anim_scene_paths": [],
 		"visual_scale": 0.48,
 		"style": "cyber_mech",
+		"preview_scale": 1.05,
+		"preview_height": -1.0,
 	},
 	"finn": {
 		"id": "finn",
@@ -122,6 +136,8 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"extra_anim_scene_paths": [],
 		"visual_scale": 0.48,
 		"style": "cyber_mech",
+		"preview_scale": 1.05,
+		"preview_height": -1.0,
 	},
 	"rae": {
 		"id": "rae",
@@ -137,6 +153,8 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"extra_anim_scene_paths": [],
 		"visual_scale": 0.48,
 		"style": "cyber_mech",
+		"preview_scale": 1.05,
+		"preview_height": -1.0,
 	},
 }
 

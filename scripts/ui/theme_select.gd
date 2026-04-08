@@ -8,6 +8,11 @@ const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
 signal selection_confirmed(mode_id: String, theme_id: String)
 signal back_pressed
 
+const PREVIEW_IDLE_ANIMS: Array[String] = [
+	"Idle", "Idle_Neutral", "Idle_No_Loop", "Idle_A", "Idle_Gun_Pointing",
+	"Running_A", "Run", "Walk",
+]
+
 const MODES: Array[Dictionary] = [
 	{
 		"id": "normal",
@@ -63,6 +68,7 @@ var _notice: Label
 var _selection_step: String = "mode"
 var _selected_mode: String = "normal"
 var _selected_theme: String = "nature"
+var _preview_pivots: Array[Node3D] = []
 
 
 func _ready() -> void:
@@ -75,6 +81,12 @@ func _ready() -> void:
 	_create_layout()
 	_refresh_cards()
 	_animate_in()
+
+
+func _process(delta: float) -> void:
+	for pivot in _preview_pivots:
+		if is_instance_valid(pivot):
+			pivot.rotation.y += delta * 0.65
 
 
 func _create_overlay() -> void:
@@ -135,6 +147,7 @@ func _create_layout() -> void:
 
 
 func _clear_cards() -> void:
+	_preview_pivots.clear()
 	for card in _cards:
 		if is_instance_valid(card):
 			if card.get_parent():
@@ -193,44 +206,49 @@ func _refresh_cards() -> void:
 func _create_card(data: Dictionary, button_text: String, is_disabled: bool) -> PanelContainer:
 	var is_runner_card: bool = _selection_step == "runner"
 	var card := UITheme.make_panel("dark")
-	card.custom_minimum_size = Vector2(320, 250) if is_runner_card else Vector2(300, 360)
+	card.custom_minimum_size = Vector2(320, 390) if is_runner_card else Vector2(300, 360)
 	card.modulate.a = 0.0
 
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 14 if is_runner_card else 16)
+	vbox.add_theme_constant_override("separation", 10 if is_runner_card else 16)
 	card.add_child(vbox)
 
-	var icon_bg := ColorRect.new()
-	icon_bg.custom_minimum_size = Vector2(88, 88) if is_runner_card else Vector2(100, 100)
-	icon_bg.color = (data["color"] as Color).darkened(0.4)
-	icon_bg.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	vbox.add_child(icon_bg)
+	if is_runner_card:
+		vbox.add_child(_create_runner_preview(data))
+	else:
+		var icon_bg := ColorRect.new()
+		icon_bg.custom_minimum_size = Vector2(100, 100)
+		icon_bg.color = (data["color"] as Color).darkened(0.4)
+		icon_bg.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		vbox.add_child(icon_bg)
 
-	var icon_label := Label.new()
-	icon_label.text = data.get("icon_text", "?")
-	icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	icon_label.anchors_preset = Control.PRESET_FULL_RECT
-	icon_label.anchor_right = 1.0
-	icon_label.anchor_bottom = 1.0
-	icon_label.add_theme_font_size_override("font_size", 28 if is_runner_card else 32)
-	if UITheme.font_primary:
-		icon_label.add_theme_font_override("font", UITheme.font_primary)
-	icon_bg.add_child(icon_label)
+		var icon_label := Label.new()
+		icon_label.text = data.get("icon_text", "?")
+		icon_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		icon_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		icon_label.anchors_preset = Control.PRESET_FULL_RECT
+		icon_label.anchor_right = 1.0
+		icon_label.anchor_bottom = 1.0
+		icon_label.add_theme_font_size_override("font_size", 32)
+		if UITheme.font_primary:
+			icon_label.add_theme_font_override("font", UITheme.font_primary)
+		icon_bg.add_child(icon_label)
 
-	var title := UITheme.make_label(data["title"], UITheme.FONT_BODY if is_runner_card else UITheme.FONT_HEADING, UITheme.COLOR_TEXT)
+	var title_font_size: int = UITheme.FONT_SMALL if is_runner_card else UITheme.FONT_HEADING
+	var title := UITheme.make_label(data["title"], title_font_size, UITheme.COLOR_TEXT)
 	vbox.add_child(title)
 
-	var subtitle := UITheme.make_label(data["subtitle"], UITheme.FONT_SMALL, UITheme.COLOR_TEXT_DIM)
-	vbox.add_child(subtitle)
+	if not is_runner_card:
+		var subtitle := UITheme.make_label(data["subtitle"], UITheme.FONT_SMALL, UITheme.COLOR_TEXT_DIM)
+		vbox.add_child(subtitle)
 
 	if is_disabled:
 		var soon_badge := UITheme.make_label("CYBERPRANK COMING SOON", UITheme.FONT_SMALL, Color(0.95, 0.76, 0.30))
 		vbox.add_child(soon_badge)
 
 	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 8 if is_runner_card else 12)
+	spacer.custom_minimum_size = Vector2(0, 4 if is_runner_card else 12)
 	vbox.add_child(spacer)
 
 	var play_btn := Button.new()
@@ -294,6 +312,122 @@ func _create_card(data: Dictionary, button_text: String, is_disabled: bool) -> P
 	card.mouse_filter = Control.MOUSE_FILTER_PASS
 
 	return card
+
+
+func _create_runner_preview(data: Dictionary) -> Control:
+	var accent_color: Color = data.get("color", Color(0.18, 0.84, 0.98))
+	var frame := PanelContainer.new()
+	frame.custom_minimum_size = Vector2(250, 220)
+	var frame_style := StyleBoxFlat.new()
+	frame_style.bg_color = Color(0.04, 0.08, 0.12, 0.94)
+	frame_style.border_width_left = 2
+	frame_style.border_width_top = 2
+	frame_style.border_width_right = 2
+	frame_style.border_width_bottom = 2
+	frame_style.border_color = accent_color.lightened(0.18)
+	frame_style.corner_radius_top_left = 16
+	frame_style.corner_radius_top_right = 16
+	frame_style.corner_radius_bottom_left = 16
+	frame_style.corner_radius_bottom_right = 16
+	frame.add_theme_stylebox_override("panel", frame_style)
+
+	var viewport_container := SubViewportContainer.new()
+	viewport_container.stretch = true
+	viewport_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	viewport_container.custom_minimum_size = Vector2(250, 220)
+	frame.add_child(viewport_container)
+
+	var viewport := SubViewport.new()
+	viewport.size = Vector2i(500, 440)
+	viewport.transparent_bg = true
+	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	viewport_container.add_child(viewport)
+
+	var root := Node3D.new()
+	viewport.add_child(root)
+
+	var env := WorldEnvironment.new()
+	var environment := Environment.new()
+	environment.background_mode = Environment.BG_CLEAR_COLOR
+	environment.background_color = Color(0.0, 0.0, 0.0, 0.0)
+	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	environment.ambient_light_color = Color(0.58, 0.76, 0.92, 1.0)
+	environment.ambient_light_energy = 1.6
+	env.environment = environment
+	root.add_child(env)
+
+	var camera := Camera3D.new()
+	camera.position = Vector3(0.0, 1.45, 4.6)
+	camera.look_at(Vector3(0.0, 1.05, 0.0), Vector3.UP)
+	root.add_child(camera)
+
+	var key_light := DirectionalLight3D.new()
+	key_light.light_color = Color(0.72, 0.92, 1.0)
+	key_light.light_energy = 2.3
+	key_light.rotation_degrees = Vector3(-38.0, 24.0, 0.0)
+	root.add_child(key_light)
+
+	var rim_light := OmniLight3D.new()
+	rim_light.position = Vector3(-1.6, 1.6, 1.8)
+	rim_light.light_color = accent_color
+	rim_light.light_energy = 1.5
+	rim_light.omni_range = 7.0
+	root.add_child(rim_light)
+
+	var floor := MeshInstance3D.new()
+	var floor_mesh := CylinderMesh.new()
+	floor_mesh.top_radius = 1.35
+	floor_mesh.bottom_radius = 1.45
+	floor_mesh.height = 0.08
+	var floor_mat := StandardMaterial3D.new()
+	floor_mat.albedo_color = Color(0.06, 0.10, 0.16, 0.94)
+	floor_mat.emission_enabled = true
+	floor_mat.emission = accent_color.darkened(0.15)
+	floor_mat.emission_energy_multiplier = 0.45
+	floor_mesh.material = floor_mat
+	floor.mesh = floor_mesh
+	floor.position = Vector3(0.0, -1.0, 0.0)
+	root.add_child(floor)
+
+	var preview_pivot := Node3D.new()
+	preview_pivot.rotation_degrees.y = -24.0
+	root.add_child(preview_pivot)
+	_preview_pivots.append(preview_pivot)
+
+	var scene_path: String = data.get("base_scene_path", "")
+	if ResourceLoader.exists(scene_path):
+		var packed := load(scene_path) as PackedScene
+		if packed:
+			var model := packed.instantiate() as Node3D
+			if model:
+				var preview_scale: float = float(data.get("preview_scale", 1.0))
+				var preview_height: float = float(data.get("preview_height", -0.95))
+				model.scale = Vector3.ONE * preview_scale
+				model.position.y = preview_height
+				preview_pivot.add_child(model)
+				_play_preview_animation(model)
+
+	return frame
+
+
+func _play_preview_animation(node: Node) -> void:
+	var anim_player := _find_anim_player(node)
+	if anim_player == null:
+		return
+	for anim_name in PREVIEW_IDLE_ANIMS:
+		if anim_player.has_animation(anim_name):
+			anim_player.play(anim_name)
+			return
+
+
+func _find_anim_player(node: Node) -> AnimationPlayer:
+	if node is AnimationPlayer:
+		return node as AnimationPlayer
+	for child in node.get_children():
+		var found := _find_anim_player(child)
+		if found:
+			return found
+	return null
 
 
 func _animate_in() -> void:
