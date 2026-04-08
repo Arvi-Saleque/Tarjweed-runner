@@ -422,14 +422,14 @@ func _load_audio_resources() -> void:
 
 
 func _load_cyber_audio_resources() -> void:
-	cyber_sfx_jump = _try_load("res://assets/Audio/cyberprank/gameplay/thrusterFire_002.ogg")
+	cyber_sfx_jump = _try_load("res://assets/Audio/cyberprank/gameplay/laserSmall_001.ogg")
 	cyber_sfx_slide = _try_load("res://assets/Audio/cyberprank/gameplay/forceField_001.ogg")
 	cyber_sfx_lane_swoosh = _try_load("res://assets/Audio/cyberprank/gameplay/laserSmall_002.ogg")
 	cyber_sfx_landing = _try_load("res://assets/Audio/cyberprank/gameplay/impactMetal_002.ogg")
 	cyber_sfx_collision = _try_load("res://assets/Audio/cyberprank/gameplay/impactMetal_004.ogg")
 	cyber_sfx_fail = _try_load("res://assets/Audio/cyberprank/gameplay/lowFrequency_explosion_000.ogg")
-	cyber_sfx_coin_collect = _try_load("res://assets/Audio/cyberprank/gameplay/computerNoise_001.ogg")
-	cyber_sfx_coin_collect_alt = _try_load("res://assets/Audio/cyberprank/gameplay/computerNoise_003.ogg")
+	cyber_sfx_coin_collect = _try_load("res://assets/Audio/cyberprank/ui/tick_002.ogg")
+	cyber_sfx_coin_collect_alt = _try_load("res://assets/Audio/cyberprank/ui/select_006.ogg")
 	cyber_sfx_bridge = _try_load("res://assets/Audio/cyberprank/gameplay/forceField_001.ogg")
 	cyber_sfx_blast_fire = _try_load("res://assets/Audio/cyberprank/gameplay/laserLarge_001.ogg")
 	cyber_sfx_blast_impact = _try_load("res://assets/Audio/cyberprank/gameplay/explosionCrunch_003.ogg")
