@@ -11,6 +11,7 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.16, 0.86, 1.0),
 		"icon_text": "CORE",
 		"base_scene_path": "res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
+		"preview_image_path": "res://assets/UI/cyberprank/runner_previews/character.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
 		],
@@ -27,6 +28,7 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.28, 0.96, 1.0),
 		"icon_text": "GEO",
 		"base_scene_path": "res://assets/Characters/cyberprank/mech_pack/George.gltf",
+		"preview_image_path": "res://assets/UI/cyberprank/runner_previews/george.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
@@ -44,6 +46,7 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.86, 0.34, 1.0),
 		"icon_text": "LEE",
 		"base_scene_path": "res://assets/Characters/cyberprank/mech_pack/Leela.gltf",
+		"preview_image_path": "res://assets/UI/cyberprank/runner_previews/leela.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
@@ -61,6 +64,7 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.96, 0.72, 0.24),
 		"icon_text": "MIK",
 		"base_scene_path": "res://assets/Characters/cyberprank/mech_pack/Mike.gltf",
+		"preview_image_path": "res://assets/UI/cyberprank/runner_previews/mike.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
@@ -78,6 +82,7 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.98, 0.44, 0.58),
 		"icon_text": "STN",
 		"base_scene_path": "res://assets/Characters/cyberprank/mech_pack/Stan.gltf",
+		"preview_image_path": "res://assets/UI/cyberprank/runner_previews/stan.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
@@ -95,6 +100,7 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.94, 0.86, 0.22),
 		"icon_text": "BEE",
 		"base_scene_path": "res://assets/Characters/cyberprank/space_mechs/Mech_BarbaraTheBee.gltf",
+		"preview_image_path": "res://assets/UI/cyberprank/runner_previews/bee.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
@@ -112,6 +118,7 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(1.0, 0.42, 0.72),
 		"icon_text": "FER",
 		"base_scene_path": "res://assets/Characters/cyberprank/space_mechs/Mech_FernandoTheFlamingo.gltf",
+		"preview_image_path": "res://assets/UI/cyberprank/runner_previews/fernando.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
@@ -129,6 +136,7 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.34, 1.0, 0.72),
 		"icon_text": "FIN",
 		"base_scene_path": "res://assets/Characters/cyberprank/space_mechs/Mech_FinnTheFrog.gltf",
+		"preview_image_path": "res://assets/UI/cyberprank/runner_previews/finn.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
@@ -146,6 +154,7 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(1.0, 0.54, 0.26),
 		"icon_text": "RAE",
 		"base_scene_path": "res://assets/Characters/cyberprank/space_mechs/Mech_RaeTheRedPanda.gltf",
+		"preview_image_path": "res://assets/UI/cyberprank/runner_previews/rae.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",

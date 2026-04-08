@@ -331,6 +331,19 @@ func _create_runner_preview(data: Dictionary) -> Control:
 	frame_style.corner_radius_bottom_right = 16
 	frame.add_theme_stylebox_override("panel", frame_style)
 
+	var preview_image_path: String = data.get("preview_image_path", "")
+	if ResourceLoader.exists(preview_image_path):
+		var preview_tex := load(preview_image_path) as Texture2D
+		if preview_tex:
+			var tex_rect := TextureRect.new()
+			tex_rect.custom_minimum_size = Vector2(250, 220)
+			tex_rect.texture = preview_tex
+			tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			tex_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+			tex_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			frame.add_child(tex_rect)
+			return frame
+
 	var viewport_container := SubViewportContainer.new()
 	viewport_container.stretch = true
 	viewport_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
