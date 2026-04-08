@@ -40,6 +40,7 @@ var difficulty_multiplier: float = 1.0
 var play_time: float = 0.0   # Seconds since game_started
 var current_mode: String = "normal"
 var current_visual_theme: String = "nature"
+var current_player_variant: String = "nature_default"
 var previous_high_score: int = 0
 
 # --- Obstacle Difficulty ---

@@ -3,6 +3,143 @@ class_name ThemeRegistry
 ## ThemeRegistry - Centralized visual theme profiles for gameplay presentation.
 ## Gameplay mode stays in GameManager.current_mode; visuals come from current_visual_theme.
 
+const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
+	"character": {
+		"id": "character",
+		"title": "CHARACTER",
+		"subtitle": "Sleek cyber runner",
+		"color": Color(0.16, 0.86, 1.0),
+		"icon_text": "CORE",
+		"base_scene_path": "res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.44,
+		"style": "cyber_mech",
+	},
+	"george": {
+		"id": "george",
+		"title": "GEORGE",
+		"subtitle": "Heavy neon mech",
+		"color": Color(0.28, 0.96, 1.0),
+		"icon_text": "GEO",
+		"base_scene_path": "res://assets/Characters/cyberprank/mech_pack/George.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.42,
+		"style": "cyber_mech",
+	},
+	"leela": {
+		"id": "leela",
+		"title": "LEELA",
+		"subtitle": "Agile mech frame",
+		"color": Color(0.86, 0.34, 1.0),
+		"icon_text": "LEE",
+		"base_scene_path": "res://assets/Characters/cyberprank/mech_pack/Leela.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.42,
+		"style": "cyber_mech",
+	},
+	"mike": {
+		"id": "mike",
+		"title": "MIKE",
+		"subtitle": "Compact mech striker",
+		"color": Color(0.96, 0.72, 0.24),
+		"icon_text": "MIK",
+		"base_scene_path": "res://assets/Characters/cyberprank/mech_pack/Mike.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.42,
+		"style": "cyber_mech",
+	},
+	"stan": {
+		"id": "stan",
+		"title": "STAN",
+		"subtitle": "Chunky armored bot",
+		"color": Color(0.98, 0.44, 0.58),
+		"icon_text": "STN",
+		"base_scene_path": "res://assets/Characters/cyberprank/mech_pack/Stan.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.42,
+		"style": "cyber_mech",
+	},
+	"bee": {
+		"id": "bee",
+		"title": "BARBARA",
+		"subtitle": "Space bee mech",
+		"color": Color(0.94, 0.86, 0.22),
+		"icon_text": "BEE",
+		"base_scene_path": "res://assets/Characters/cyberprank/space_mechs/Mech_BarbaraTheBee.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.48,
+		"style": "cyber_mech",
+	},
+	"fernando": {
+		"id": "fernando",
+		"title": "FERNANDO",
+		"subtitle": "Flamingo mech glide",
+		"color": Color(1.0, 0.42, 0.72),
+		"icon_text": "FER",
+		"base_scene_path": "res://assets/Characters/cyberprank/space_mechs/Mech_FernandoTheFlamingo.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.48,
+		"style": "cyber_mech",
+	},
+	"finn": {
+		"id": "finn",
+		"title": "FINN",
+		"subtitle": "Frog mech sprinter",
+		"color": Color(0.34, 1.0, 0.72),
+		"icon_text": "FIN",
+		"base_scene_path": "res://assets/Characters/cyberprank/space_mechs/Mech_FinnTheFrog.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.48,
+		"style": "cyber_mech",
+	},
+	"rae": {
+		"id": "rae",
+		"title": "RAE",
+		"subtitle": "Red panda mech ace",
+		"color": Color(1.0, 0.54, 0.26),
+		"icon_text": "RAE",
+		"base_scene_path": "res://assets/Characters/cyberprank/space_mechs/Mech_RaeTheRedPanda.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.48,
+		"style": "cyber_mech",
+	},
+}
+
 const NATURE_PROFILE: Dictionary = {
 	"id": "nature",
 	"road": {
@@ -197,13 +334,12 @@ const CYBERPRANK_PROFILE: Dictionary = {
 		],
 	},
 	"player": {
-		"base_scene_path": "res://assets/Characters/cyberprank/mech_pack/George.gltf",
+		"base_scene_path": "res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
 		"fallback_scene_paths": [
-			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
 		],
 		"extra_anim_scene_paths": [],
-		"visual_scale": 0.42,
+		"visual_scale": 0.44,
 		"style": "cyber_mech",
 	},
 	"ui": {
@@ -219,6 +355,35 @@ static func get_profile(theme_id: String = "") -> Dictionary:
 
 	match resolved_theme:
 		"cyberprank":
-			return CYBERPRANK_PROFILE
+			var cyber_profile: Dictionary = CYBERPRANK_PROFILE.duplicate(true)
+			cyber_profile["player"] = get_player_profile(resolved_theme)
+			return cyber_profile
 		_:
-			return NATURE_PROFILE
+			return NATURE_PROFILE.duplicate(true)
+
+
+static func get_player_profile(theme_id: String = "", variant_id: String = "") -> Dictionary:
+	var resolved_theme: String = theme_id if not theme_id.is_empty() else GameManager.current_visual_theme
+	if resolved_theme != "cyberprank":
+		return NATURE_PROFILE.get("player", {}).duplicate(true)
+
+	var resolved_variant: String = variant_id if not variant_id.is_empty() else GameManager.current_player_variant
+	if resolved_variant.is_empty() or not CYBERPRANK_PLAYER_VARIANTS.has(resolved_variant):
+		resolved_variant = "character"
+	return CYBERPRANK_PLAYER_VARIANTS[resolved_variant].duplicate(true)
+
+
+static func get_player_options(theme_id: String = "") -> Array[Dictionary]:
+	var resolved_theme: String = theme_id if not theme_id.is_empty() else GameManager.current_visual_theme
+	if resolved_theme != "cyberprank":
+		return []
+
+	var order: Array[String] = [
+		"character", "george", "leela", "mike", "stan",
+		"bee", "fernando", "finn", "rae",
+	]
+	var options: Array[Dictionary] = []
+	for variant_id in order:
+		if CYBERPRANK_PLAYER_VARIANTS.has(variant_id):
+			options.append(CYBERPRANK_PLAYER_VARIANTS[variant_id].duplicate(true))
+	return options

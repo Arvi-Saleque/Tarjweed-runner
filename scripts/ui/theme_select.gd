@@ -1,6 +1,9 @@
 extends Control
-## ThemeSelect - Two-step mode and theme selection screen shown after pressing PLAY.
-## Step 1: choose gameplay mode. Step 2: choose visual theme for normal mode.
+## ThemeSelect - Multi-step mode/theme/player selection shown after pressing PLAY.
+## Step 1: choose gameplay mode. Step 2: choose theme for normal mode.
+## Step 3: if Cyberprank, choose the runner variant.
+
+const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
 
 signal selection_confirmed(mode_id: String, theme_id: String)
 signal back_pressed
@@ -50,7 +53,8 @@ const VISUAL_THEMES: Array[Dictionary] = [
 
 var _overlay: ColorRect
 var _container: VBoxContainer
-var _cards_row: HBoxContainer
+var _cards_scroll: ScrollContainer
+var _cards_grid: GridContainer
 var _cards: Array[PanelContainer] = []
 var _back_btn: Button
 var _header: Control
@@ -58,6 +62,7 @@ var _sub: Label
 var _notice: Label
 var _selection_step: String = "mode"
 var _selected_mode: String = "normal"
+var _selected_theme: String = "nature"
 
 
 func _ready() -> void:
@@ -91,7 +96,8 @@ func _create_layout() -> void:
 
 	_container = VBoxContainer.new()
 	_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	_container.add_theme_constant_override("separation", 24)
+	_container.add_theme_constant_override("separation", 18)
+	_container.custom_minimum_size = Vector2(1100, 0)
 	center.add_child(_container)
 
 	_header = UITheme.make_banner("CHOOSE MODE", UITheme.FONT_BODY, UITheme.COLOR_TEXT_INK)
@@ -102,23 +108,23 @@ func _create_layout() -> void:
 	_sub.modulate.a = 0.0
 	_container.add_child(_sub)
 
-	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 16)
-	_container.add_child(spacer)
+	_cards_scroll = ScrollContainer.new()
+	_cards_scroll.custom_minimum_size = Vector2(1140, 650)
+	_cards_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_cards_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
+	_cards_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
+	_container.add_child(_cards_scroll)
 
-	_cards_row = HBoxContainer.new()
-	_cards_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	_cards_row.add_theme_constant_override("separation", 32)
-	_container.add_child(_cards_row)
+	_cards_grid = GridContainer.new()
+	_cards_grid.columns = 3
+	_cards_grid.add_theme_constant_override("h_separation", 24)
+	_cards_grid.add_theme_constant_override("v_separation", 24)
+	_cards_scroll.add_child(_cards_grid)
 
 	_notice = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.COLOR_ACCENT)
 	_notice.visible = false
 	_notice.modulate.a = 0.0
 	_container.add_child(_notice)
-
-	var spacer2 := Control.new()
-	spacer2.custom_minimum_size = Vector2(0, 12)
-	_container.add_child(spacer2)
 
 	_back_btn = UITheme.make_button("  BACK", UITheme.icon_cross, UITheme.FONT_BODY, "secondary")
 	_back_btn.custom_minimum_size = Vector2(200, 56)
@@ -138,48 +144,65 @@ func _clear_cards() -> void:
 
 
 func _get_entries_for_step() -> Array[Dictionary]:
-	return MODES if _selection_step == "mode" else VISUAL_THEMES
+	match _selection_step:
+		"mode":
+			return MODES
+		"runner":
+			return ThemeRegistryScript.get_player_options("cyberprank")
+		_:
+			return VISUAL_THEMES
 
 
 func _refresh_cards() -> void:
 	_clear_cards()
-
-	var header_label := _header.get_child(1) as Label
-	if _selection_step == "mode":
-		header_label.text = "CHOOSE MODE"
-		_sub.text = "Select a game mode to play"
-	else:
-		header_label.text = "CHOOSE THEME"
-		_sub.text = "Pick the visual theme for %s mode" % _selected_mode.capitalize()
-
+	_cards_scroll.scroll_vertical = 0
 	_notice.visible = false
 	_notice.modulate.a = 0.0
+
+	var header_label := _header.get_child(1) as Label
+	match _selection_step:
+		"mode":
+			header_label.text = "CHOOSE MODE"
+			_sub.text = "Select a game mode to play"
+			_cards_grid.columns = 3
+		"theme":
+			header_label.text = "CHOOSE THEME"
+			_sub.text = "Pick the visual theme for %s mode" % _selected_mode.capitalize()
+			_cards_grid.columns = 2
+		"runner":
+			header_label.text = "CHOOSE RUNNER"
+			_sub.text = "Pick your Cyberprank player"
+			_cards_grid.columns = 3
 
 	for data in _get_entries_for_step():
 		var is_disabled := false
 		var button_text := "  PLAY"
+
 		if _selection_step == "theme":
 			var available_modes: Array = data.get("available_modes", [])
 			is_disabled = _selected_mode not in available_modes
 			button_text = "  START" if not is_disabled else "  SOON"
+		elif _selection_step == "runner":
+			button_text = "  SELECT"
 
 		var card := _create_card(data, button_text, is_disabled)
-		_cards_row.add_child(card)
+		_cards_grid.add_child(card)
 		_cards.append(card)
 
 
 func _create_card(data: Dictionary, button_text: String, is_disabled: bool) -> PanelContainer:
+	var is_runner_card: bool = _selection_step == "runner"
 	var card := UITheme.make_panel("dark")
-	card.custom_minimum_size = Vector2(300, 360)
+	card.custom_minimum_size = Vector2(320, 250) if is_runner_card else Vector2(300, 360)
 	card.modulate.a = 0.0
 
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 16)
+	vbox.add_theme_constant_override("separation", 14 if is_runner_card else 16)
 	card.add_child(vbox)
 
 	var icon_bg := ColorRect.new()
-	icon_bg.custom_minimum_size = Vector2(100, 100)
+	icon_bg.custom_minimum_size = Vector2(88, 88) if is_runner_card else Vector2(100, 100)
 	icon_bg.color = (data["color"] as Color).darkened(0.4)
 	icon_bg.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	vbox.add_child(icon_bg)
@@ -191,28 +214,28 @@ func _create_card(data: Dictionary, button_text: String, is_disabled: bool) -> P
 	icon_label.anchors_preset = Control.PRESET_FULL_RECT
 	icon_label.anchor_right = 1.0
 	icon_label.anchor_bottom = 1.0
-	icon_label.add_theme_font_size_override("font_size", 32)
+	icon_label.add_theme_font_size_override("font_size", 28 if is_runner_card else 32)
 	if UITheme.font_primary:
 		icon_label.add_theme_font_override("font", UITheme.font_primary)
 	icon_bg.add_child(icon_label)
 
-	var title := UITheme.make_label(data["title"], UITheme.FONT_HEADING, UITheme.COLOR_TEXT)
+	var title := UITheme.make_label(data["title"], UITheme.FONT_BODY if is_runner_card else UITheme.FONT_HEADING, UITheme.COLOR_TEXT)
 	vbox.add_child(title)
 
 	var subtitle := UITheme.make_label(data["subtitle"], UITheme.FONT_SMALL, UITheme.COLOR_TEXT_DIM)
 	vbox.add_child(subtitle)
 
-	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 8)
-	vbox.add_child(spacer)
-
 	if is_disabled:
 		var soon_badge := UITheme.make_label("CYBERPRANK COMING SOON", UITheme.FONT_SMALL, Color(0.95, 0.76, 0.30))
 		vbox.add_child(soon_badge)
 
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 8 if is_runner_card else 12)
+	vbox.add_child(spacer)
+
 	var play_btn := Button.new()
 	play_btn.text = button_text
-	play_btn.custom_minimum_size = Vector2(220, 56)
+	play_btn.custom_minimum_size = Vector2(220, 52)
 	play_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	play_btn.disabled = is_disabled
 	if UITheme.font_primary:
@@ -285,30 +308,46 @@ func _animate_in() -> void:
 		var item := items[i]
 		item.modulate.a = 0.0 if item != _notice else item.modulate.a
 		var tw := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-		tw.tween_property(item, "modulate:a", 1.0, 0.3).set_delay(i * 0.08)
+		tw.tween_property(item, "modulate:a", 1.0, 0.28).set_delay(i * 0.04)
 
 
 func _on_entry_selected(entry_id: String) -> void:
 	AudioManager.play_ui_sound(AudioManager.ui_click)
-	if _selection_step == "mode":
-		_selected_mode = entry_id
-		GameManager.current_mode = entry_id
-		if entry_id == "normal":
-			_selection_step = "theme"
-			_refresh_cards()
-			_animate_in()
-		else:
-			_start_mode_with_nature_notice(entry_id)
-		return
 
-	GameManager.current_visual_theme = entry_id
-	selection_confirmed.emit(GameManager.current_mode, entry_id)
-	SceneManager.change_scene("res://scenes/game.tscn")
+	match _selection_step:
+		"mode":
+			_selected_mode = entry_id
+			GameManager.current_mode = entry_id
+			if entry_id == "normal":
+				_selection_step = "theme"
+				_refresh_cards()
+				_animate_in()
+			else:
+				_start_mode_with_nature_notice(entry_id)
+			return
+		"theme":
+			_selected_theme = entry_id
+			GameManager.current_visual_theme = entry_id
+			if entry_id == "cyberprank":
+				_selection_step = "runner"
+				_refresh_cards()
+				_animate_in()
+				return
+			GameManager.current_player_variant = "nature_default"
+			selection_confirmed.emit(GameManager.current_mode, entry_id)
+			SceneManager.change_scene("res://scenes/game.tscn")
+			return
+		"runner":
+			GameManager.current_player_variant = entry_id
+			selection_confirmed.emit(GameManager.current_mode, _selected_theme)
+			SceneManager.change_scene("res://scenes/game.tscn")
+			return
 
 
 func _start_mode_with_nature_notice(mode_id: String) -> void:
 	GameManager.current_mode = mode_id
 	GameManager.current_visual_theme = "nature"
+	GameManager.current_player_variant = "nature_default"
 	_notice.text = "Cyberprank for %s mode is coming soon. Starting in Nature." % mode_id.capitalize()
 	_notice.visible = true
 	_notice.modulate.a = 1.0
@@ -319,11 +358,17 @@ func _start_mode_with_nature_notice(mode_id: String) -> void:
 
 func _on_back() -> void:
 	AudioManager.play_ui_sound(AudioManager.ui_click)
-	if _selection_step == "theme":
-		_selection_step = "mode"
-		_refresh_cards()
-		_animate_in()
-		return
+	match _selection_step:
+		"runner":
+			_selection_step = "theme"
+			_refresh_cards()
+			_animate_in()
+			return
+		"theme":
+			_selection_step = "mode"
+			_refresh_cards()
+			_animate_in()
+			return
 
 	back_pressed.emit()
 	var tw := create_tween().set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
