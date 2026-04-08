@@ -640,6 +640,7 @@ func _fire_blast_projectile(target_rock: Node) -> void:
 	var tween := get_tree().create_tween()
 	tween.tween_property(projectile, "position", target_pos, travel_time).set_ease(Tween.EASE_IN)
 	tween.parallel().tween_property(projectile, "scale", Vector3(1.5, 1.5, 1.5), travel_time)
+	AudioManager.play_blast_fire()
 
 	# On hit: instantly destroy the rock
 	tween.tween_callback(func():
@@ -650,7 +651,7 @@ func _fire_blast_projectile(target_rock: Node) -> void:
 		if is_instance_valid(target_rock):
 			if target_rock.has_method("trigger_blast"):
 				target_rock.trigger_blast()
-			AudioManager.play_impact()
+			AudioManager.play_blast_impact()
 
 		# Fade and remove projectile
 		var fade_tween := get_tree().create_tween()
@@ -738,7 +739,7 @@ func _build_bridge_stylized_impl(river: Node) -> void:
 	_build_stylized_bridge(bridge_node)
 	river.add_child(bridge_node)
 
-	AudioManager.play_sfx(AudioManager.sfx_landing, 0.3)
+	AudioManager.play_bridge_build()
 	print("[Bridge] Built on lane %d for river at Z=%.1f" % [current_lane, river.global_position.z])
 
 

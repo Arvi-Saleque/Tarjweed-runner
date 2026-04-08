@@ -498,13 +498,14 @@ func _start_mode_with_nature_notice(mode_id: String) -> void:
 	_notice.text = "Cyberprank for %s mode is coming soon. Starting in Nature." % mode_id.capitalize()
 	_notice.visible = true
 	_notice.modulate.a = 1.0
+	AudioManager.play_notice_sound()
 	selection_confirmed.emit(GameManager.current_mode, GameManager.current_visual_theme)
 	await get_tree().create_timer(0.8).timeout
 	SceneManager.change_scene("res://scenes/game.tscn")
 
 
 func _on_back() -> void:
-	AudioManager.play_ui_sound(AudioManager.ui_click)
+	AudioManager.play_back_sound()
 	match _selection_step:
 		"runner":
 			_selection_step = "theme"

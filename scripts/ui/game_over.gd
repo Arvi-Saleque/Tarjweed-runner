@@ -175,7 +175,7 @@ func _on_game_over() -> void:
 	if is_new_best:
 		_animate_new_best()
 
-	AudioManager.play_sfx(AudioManager.sfx_fail)
+	AudioManager.play_fail_sound()
 
 
 func _animate_score_count(target: int) -> void:
