@@ -1,16 +1,26 @@
-﻿Nature-themed Runner Asset Pack
+Nature Runner Migration Notes
 
-UI Theme chosen:
-- kenney_ui-pack -> Green/Default buttons
-- kenney_game-icons -> White/2x icons (clear on green buttons)
-- kenney_ui-audio -> click/hover sounds
-- kenney_ui-pack font -> Kenney Future
+This folder tracks the current post-migration asset state.
 
-Folders:
-Characters\Animations
-Environment\Ground Trees Bushes Sky
-Obstacles\RocksSmall RocksBig River Bridge
-Collectibles\Coins
-Enemies\Placeholder
-UI\Buttons Icons Fonts
-Audio\UI
+Active visual pipeline:
+- World: Quaternius nature subset under `assets/world/quaternius_nature`
+- UI: Kenney Adventure + Kenney Input Prompts
+- River and bridge crossings: procedural themed presentation
+- Player: current live build still uses the animation-safe `Rig_Medium` path
+
+Important retained legacy dependencies:
+- `assets/Characters/Animations_GLTF/Rig_Medium`
+- `assets/Characters/RunnerMannequin`
+- `assets/UI/Icons`
+- `assets/UI/Fonts`
+- `assets/Environment/Sky/qwantani_noon_puresky_4k.exr`
+
+Important removed legacy dependencies:
+- old river and bridge model assets
+- old UI button texture set
+- unused Kenney mobile helper assets
+- unused extra `Rig_Medium` clip packs
+
+For the curated retained runtime set, see:
+- `ASSET_MIGRATION_MANIFEST.md`
+

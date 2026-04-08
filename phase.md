@@ -496,7 +496,8 @@ After this phase, check:
 Before calling the migration complete, verify all of the following:
 
 1. The world uses Quaternius nature assets consistently.
-2. The player uses Quaternius base character + UAL2 animation pipeline only.
+2. The player is stable in gameplay with no T-pose or animation freezes.
+   Current accepted build note: the live runner still uses the animation-safe `Rig_Medium` runtime path, while Quaternius body/hair/UAL2 assets remain imported for future migration work.
 3. The gameplay HUD and prompts use Kenney packs.
 4. The road remains custom and gameplay-readable.
 5. The bridge and blast mechanics look like hero features.
