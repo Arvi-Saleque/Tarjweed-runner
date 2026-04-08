@@ -9,6 +9,7 @@ var _coin_icon: TextureRect
 var _pause_btn: Button
 var _root: Control
 var _skin: String = "nature"
+var _speed_label: Label
 
 # Coin collect flash
 var _coin_flash_tween: Tween
@@ -37,6 +38,25 @@ func _create_hud() -> void:
 
 
 func _create_top_bar() -> void:
+	if _skin == "cyberprank":
+		var top_glass := ColorRect.new()
+		top_glass.anchors_preset = Control.PRESET_TOP_WIDE
+		top_glass.anchor_right = 1.0
+		top_glass.offset_top = 0.0
+		top_glass.offset_bottom = 104.0
+		top_glass.color = Color(0.01, 0.05, 0.09, 0.56)
+		top_glass.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_root.add_child(top_glass)
+
+		var top_line := ColorRect.new()
+		top_line.anchors_preset = Control.PRESET_TOP_WIDE
+		top_line.anchor_right = 1.0
+		top_line.offset_top = 100.0
+		top_line.offset_bottom = 104.0
+		top_line.color = Color(0.18, 0.90, 1.0, 0.72)
+		top_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_root.add_child(top_line)
+
 	var top_margin := MarginContainer.new()
 	top_margin.anchors_preset = Control.PRESET_TOP_WIDE
 	top_margin.anchor_right = 1.0
@@ -111,6 +131,17 @@ func _create_top_bar() -> void:
 
 
 func _create_speed_indicator() -> void:
+	if _skin == "cyberprank":
+		_speed_label = UITheme.make_label("NEON DRIVE 0%", UITheme.FONT_SMALL, UITheme.get_color("accent", _skin), _skin)
+		_speed_label.anchors_preset = Control.PRESET_BOTTOM_WIDE
+		_speed_label.anchor_top = 1.0
+		_speed_label.anchor_right = 1.0
+		_speed_label.anchor_bottom = 1.0
+		_speed_label.offset_top = -34.0
+		_speed_label.offset_bottom = -8.0
+		_speed_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_root.add_child(_speed_label)
+
 	# Speed bar at bottom of screen
 	_speed_bar = ProgressBar.new()
 	_speed_bar.anchors_preset = Control.PRESET_BOTTOM_WIDE
@@ -146,6 +177,8 @@ func _on_game_started() -> void:
 	_score_label.text = "0"
 	_distance_label.text = "0m"
 	_speed_bar.value = 0.0
+	if _speed_label:
+		_speed_label.text = "NEON DRIVE 0%"
 
 	# Slide in animation
 	_root.modulate.a = 0.0
@@ -193,6 +226,9 @@ func _on_speed_changed(new_speed: float) -> void:
 
 	# Color shift from green to red as speed increases
 	var ratio: float = GameManager.get_speed_ratio()
+	if _speed_label:
+		_speed_label.text = "NEON DRIVE %d%%" % int(ratio * 100.0)
+		_speed_label.modulate = UITheme.get_color("accent" if ratio < 0.65 else "danger", _skin)
 	_speed_bar.add_theme_stylebox_override(
 		"fill",
 			UITheme.make_progress_stylebox("fill" if ratio < 0.6 else "alert_fill", _skin)
