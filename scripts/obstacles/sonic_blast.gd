@@ -52,9 +52,14 @@ func _create_shockwave_ring() -> void:
 	torus.ring_segments = 24
 
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.3, 0.9, 1.0, 0.9)
+	var ring_color := Color(0.3, 0.9, 1.0, 0.9)
+	var emission_color := Color(0.2, 0.7, 1.0)
+	if GameManager.is_cyberprank_theme():
+		ring_color = Color(0.86, 0.28, 1.0, 0.92)
+		emission_color = Color(0.16, 0.92, 1.0)
+	mat.albedo_color = ring_color
 	mat.emission_enabled = true
-	mat.emission = Color(0.2, 0.7, 1.0)
+	mat.emission = emission_color
 	mat.emission_energy_multiplier = 4.0
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.no_depth_test = true
@@ -82,7 +87,7 @@ func _create_sparks() -> void:
 	mat.gravity = Vector3(0, -8, 0)
 	mat.scale_min = 0.05
 	mat.scale_max = 0.15
-	mat.color = Color(1.0, 0.8, 0.3)
+	mat.color = Color(1.0, 0.8, 0.3) if not GameManager.is_cyberprank_theme() else Color(0.20, 0.96, 1.0)
 
 	_sparks.process_material = mat
 
@@ -90,9 +95,9 @@ func _create_sparks() -> void:
 	var draw_mesh := QuadMesh.new()
 	draw_mesh.size = Vector2(0.2, 0.2)
 	var draw_mat := StandardMaterial3D.new()
-	draw_mat.albedo_color = Color(1.0, 0.85, 0.3)
+	draw_mat.albedo_color = Color(1.0, 0.85, 0.3) if not GameManager.is_cyberprank_theme() else Color(0.18, 0.95, 1.0)
 	draw_mat.emission_enabled = true
-	draw_mat.emission = Color(1.0, 0.7, 0.2)
+	draw_mat.emission = Color(1.0, 0.7, 0.2) if not GameManager.is_cyberprank_theme() else Color(0.82, 0.24, 1.0)
 	draw_mat.emission_energy_multiplier = 3.0
 	draw_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
 	draw_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
@@ -123,8 +128,12 @@ func _create_smoke() -> void:
 
 	var color_ramp := GradientTexture1D.new()
 	var gradient := Gradient.new()
-	gradient.set_color(0, Color(0.6, 0.55, 0.45, 0.8))
-	gradient.set_color(1, Color(0.4, 0.38, 0.35, 0.0))
+	if GameManager.is_cyberprank_theme():
+		gradient.set_color(0, Color(0.18, 0.70, 0.92, 0.55))
+		gradient.set_color(1, Color(0.56, 0.12, 0.82, 0.0))
+	else:
+		gradient.set_color(0, Color(0.6, 0.55, 0.45, 0.8))
+		gradient.set_color(1, Color(0.4, 0.38, 0.35, 0.0))
 	color_ramp.gradient = gradient
 	mat.color_ramp = color_ramp
 
@@ -133,7 +142,7 @@ func _create_smoke() -> void:
 	var draw_mesh := QuadMesh.new()
 	draw_mesh.size = Vector2(1.0, 1.0)
 	var draw_mat := StandardMaterial3D.new()
-	draw_mat.albedo_color = Color(0.55, 0.5, 0.42, 0.7)
+	draw_mat.albedo_color = Color(0.55, 0.5, 0.42, 0.7) if not GameManager.is_cyberprank_theme() else Color(0.15, 0.34, 0.46, 0.50)
 	draw_mat.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
 	draw_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	draw_mesh.material = draw_mat
@@ -145,7 +154,7 @@ func _create_smoke() -> void:
 func _create_flash() -> void:
 	## Bright flash of light on impact
 	_flash = OmniLight3D.new()
-	_flash.light_color = Color(0.3, 0.8, 1.0)
+	_flash.light_color = Color(0.3, 0.8, 1.0) if not GameManager.is_cyberprank_theme() else Color(0.72, 0.26, 1.0)
 	_flash.light_energy = 8.0
 	_flash.omni_range = 15.0
 	_flash.omni_attenuation = 2.0

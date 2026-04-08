@@ -341,6 +341,10 @@ static func _create_quiz_row_typed(parent: Node3D, z_pos: float, generator: Node
 
 
 static func _add_river_visuals(river: Node3D) -> void:
+	if GameManager.is_cyberprank_theme():
+		_add_cyber_trench_visuals(river)
+		return
+
 	var river_width: float = RIVER_ROAD_WIDTH + 2.0
 
 	river.add_child(_create_river_plane(
@@ -363,6 +367,57 @@ static func _add_river_visuals(river: Node3D) -> void:
 	river.add_child(_create_river_bank(river_width, RIVER_DEPTH * 0.5 + 0.35))
 	river.add_child(_create_foam_strip(river_width - 0.4, -RIVER_DEPTH * 0.5 + 0.18))
 	river.add_child(_create_foam_strip(river_width - 0.4, RIVER_DEPTH * 0.5 - 0.18))
+
+
+static func _add_cyber_trench_visuals(river: Node3D) -> void:
+	var trench_width: float = RIVER_ROAD_WIDTH + 2.2
+
+	river.add_child(_create_river_plane(
+		Vector2(trench_width, RIVER_DEPTH + 0.8),
+		0.02,
+		Color(0.02, 0.03, 0.07, 0.98),
+		0.18,
+		Color(0.04, 0.12, 0.20, 1.0),
+		0.35
+	))
+
+	river.add_child(_create_river_plane(
+		Vector2(trench_width - 0.5, RIVER_DEPTH - 0.35),
+		-0.20,
+		Color(0.04, 0.10, 0.18, 0.92),
+		0.06,
+		Color(0.12, 0.84, 1.0, 1.0),
+		3.8
+	))
+
+	river.add_child(_create_river_plane(
+		Vector2(trench_width - 1.0, RIVER_DEPTH - 1.0),
+		-0.28,
+		Color(0.30, 0.08, 0.44, 0.76),
+		0.08,
+		Color(0.86, 0.18, 1.0, 1.0),
+		2.1
+	))
+
+	river.add_child(_create_trench_wall(trench_width, -RIVER_DEPTH * 0.5 - 0.38))
+	river.add_child(_create_trench_wall(trench_width, RIVER_DEPTH * 0.5 + 0.38))
+	river.add_child(_create_trench_glow_strip(trench_width - 0.5, -RIVER_DEPTH * 0.5 + 0.16))
+	river.add_child(_create_trench_glow_strip(trench_width - 0.5, RIVER_DEPTH * 0.5 - 0.16))
+
+	for x_sign in [-1.0, 1.0]:
+		var side_column := MeshInstance3D.new()
+		var mesh := BoxMesh.new()
+		mesh.size = Vector3(0.22, 0.55, RIVER_DEPTH + 0.2)
+		var material := StandardMaterial3D.new()
+		material.albedo_color = Color(0.07, 0.12, 0.18, 1.0)
+		material.roughness = 0.22
+		material.emission_enabled = true
+		material.emission = Color(0.08, 0.70, 0.96, 1.0)
+		material.emission_energy_multiplier = 0.7
+		mesh.material = material
+		side_column.mesh = mesh
+		side_column.position = Vector3(x_sign * (trench_width * 0.5 - 0.1), 0.2, 0.0)
+		river.add_child(side_column)
 
 
 static func _create_river_plane(size: Vector2, y: float, color: Color, roughness: float, emission: Color = Color(0, 0, 0, 1), emission_energy: float = 0.0) -> MeshInstance3D:
@@ -413,6 +468,43 @@ static func _create_foam_strip(width: float, z_pos: float) -> MeshInstance3D:
 	foam.position = Vector3(0.0, 0.125, z_pos)
 	foam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return foam
+
+
+static func _create_trench_wall(width: float, z_pos: float) -> MeshInstance3D:
+	var wall := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(width, 0.24, 0.38)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.09, 0.11, 0.16, 1.0)
+	material.roughness = 0.24
+	material.metallic = 0.45
+	material.emission_enabled = true
+	material.emission = Color(0.06, 0.56, 0.82, 1.0)
+	material.emission_energy_multiplier = 0.55
+	box.material = material
+	wall.mesh = box
+	wall.position = Vector3(0.0, 0.05, z_pos)
+	return wall
+
+
+static func _create_trench_glow_strip(width: float, z_pos: float) -> MeshInstance3D:
+	var glow := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(width, 0.18)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.44, 0.96, 1.0, 0.82)
+	material.roughness = 0.05
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.emission_enabled = true
+	material.emission = Color(0.18, 0.86, 1.0, 1.0)
+	material.emission_energy_multiplier = 3.0
+	plane.material = material
+	glow.mesh = plane
+	glow.position = Vector3(0.0, 0.125, z_pos)
+	glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return glow
 
 
 static func _spawn_river_crossing(chunk: Node3D, chunk_length: float, chunk_dist: float) -> float:

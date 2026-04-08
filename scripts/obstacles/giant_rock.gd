@@ -110,8 +110,16 @@ func _explode_model() -> void:
 		box_mesh.size = Vector3(size, size, size)
 
 		var mat := StandardMaterial3D.new()
-		mat.albedo_color = Color(0.5, 0.45, 0.4).lerp(Color(0.35, 0.3, 0.25), randf())
-		mat.roughness = 0.9
+		if GameManager.is_cyberprank_theme():
+			mat.albedo_color = Color(0.10, 0.18, 0.24).lerp(Color(0.72, 0.26, 1.0), randf() * 0.45)
+			mat.roughness = 0.24
+			mat.metallic = 0.55
+			mat.emission_enabled = true
+			mat.emission = Color(0.14, 0.86, 1.0)
+			mat.emission_energy_multiplier = 1.2
+		else:
+			mat.albedo_color = Color(0.5, 0.45, 0.4).lerp(Color(0.35, 0.3, 0.25), randf())
+			mat.roughness = 0.9
 		box_mesh.material = mat
 
 		debris.mesh = box_mesh
@@ -175,14 +183,14 @@ func _create_hint_label() -> void:
 	_hint_icon.texture = load("res://assets/UI/kenney_input_prompts/touch_tap_double.png") as Texture2D
 	_hint_icon.pixel_size = 0.006
 	_hint_icon.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_hint_icon.modulate = Color(1.0, 0.96, 0.86, 0.95)
+	_hint_icon.modulate = Color(0.18, 0.92, 1.0, 0.98) if GameManager.is_cyberprank_theme() else Color(1.0, 0.96, 0.86, 0.95)
 	_hint_root.add_child(_hint_icon)
 
 	_hint_label = Label3D.new()
 	_hint_label.text = "DOUBLE TAP"
 	_hint_label.font_size = 42
 	_hint_label.outline_size = 10
-	_hint_label.modulate = Color(0.98, 0.88, 0.45, 1.0)
+	_hint_label.modulate = Color(0.82, 0.34, 1.0, 1.0) if GameManager.is_cyberprank_theme() else Color(0.98, 0.88, 0.45, 1.0)
 	_hint_label.position = Vector3(0.0, -0.7, 0.0)
 	_hint_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_hint_root.add_child(_hint_label)

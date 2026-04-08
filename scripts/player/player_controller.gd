@@ -590,9 +590,16 @@ func _fire_blast_projectile(target_rock: Node) -> void:
 	sphere.height = 0.5
 
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.2, 0.8, 1.0, 0.9)
+	var blast_color := Color(0.2, 0.8, 1.0, 0.9)
+	var emission_color := Color(0.1, 0.6, 1.0)
+	var light_color := Color(0.2, 0.7, 1.0)
+	if GameManager.is_cyberprank_theme():
+		blast_color = Color(0.72, 0.26, 1.0, 0.92)
+		emission_color = Color(0.18, 0.95, 1.0)
+		light_color = Color(0.42, 0.92, 1.0)
+	mat.albedo_color = blast_color
 	mat.emission_enabled = true
-	mat.emission = Color(0.1, 0.6, 1.0)
+	mat.emission = emission_color
 	mat.emission_energy_multiplier = 5.0
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	sphere.material = mat
@@ -600,7 +607,7 @@ func _fire_blast_projectile(target_rock: Node) -> void:
 
 	# Add a point light to the projectile for glow
 	var light := OmniLight3D.new()
-	light.light_color = Color(0.2, 0.7, 1.0)
+	light.light_color = light_color
 	light.light_energy = 4.0
 	light.omni_range = 5.0
 	projectile.add_child(light)
@@ -723,6 +730,10 @@ func _build_bridge_stylized_impl(river: Node) -> void:
 
 
 func _build_stylized_bridge(parent: Node3D) -> void:
+	if GameManager.is_cyberprank_theme():
+		_build_hologram_bridge(parent)
+		return
+
 	var bridge_width: float = GameManager.LANE_WIDTH * GameManager.LANE_COUNT + 1.0
 	var bridge_depth: float = 4.9
 
@@ -809,6 +820,59 @@ func _build_stylized_bridge(parent: Node3D) -> void:
 	parent.add_child(support_right)
 
 
+func _build_hologram_bridge(parent: Node3D) -> void:
+	var bridge_width: float = GameManager.LANE_WIDTH * GameManager.LANE_COUNT + 1.05
+	var bridge_depth: float = 4.9
+
+	var deck := _create_holo_bridge_part(
+		Vector3(bridge_width, 0.18, bridge_depth),
+		Color(0.12, 0.86, 1.0, 0.30),
+		Color(0.14, 0.78, 1.0, 1.0),
+		3.4
+	)
+	parent.add_child(deck)
+
+	var deck_core := _create_holo_bridge_part(
+		Vector3(bridge_width - 0.7, 0.06, bridge_depth - 0.25),
+		Color(0.86, 0.24, 1.0, 0.22),
+		Color(0.86, 0.24, 1.0, 1.0),
+		2.4
+	)
+	deck_core.position = Vector3(0.0, 0.05, 0.0)
+	parent.add_child(deck_core)
+
+	for side in [-1.0, 1.0]:
+		var rail := _create_holo_bridge_part(
+			Vector3(0.12, 0.60, bridge_depth),
+			Color(0.10, 0.22, 0.30, 0.82),
+			Color(0.12, 0.90, 1.0, 1.0),
+			2.2
+		)
+		rail.position = Vector3(side * (bridge_width * 0.5 - 0.16), 0.34, 0.0)
+		parent.add_child(rail)
+
+	for z_sign in [-1.0, 1.0]:
+		var gate := _create_holo_bridge_part(
+			Vector3(bridge_width + 0.12, 0.10, 0.16),
+			Color(0.12, 0.24, 0.34, 0.86),
+			Color(0.18, 0.98, 1.0, 1.0),
+			2.6
+		)
+		gate.position = Vector3(0.0, 0.05, z_sign * ((bridge_depth * 0.5) - 0.12))
+		parent.add_child(gate)
+
+	for x_sign in [-1.0, 1.0]:
+		for z_offset in [-1.6, -0.55, 0.55, 1.6]:
+			var post := _create_holo_bridge_part(
+				Vector3(0.14, 0.44, 0.14),
+				Color(0.10, 0.18, 0.24, 0.92),
+				Color(0.82, 0.30, 1.0, 1.0),
+				1.8
+			)
+			post.position = Vector3(x_sign * ((bridge_width * 0.5) - 0.16), 0.23, z_offset)
+			parent.add_child(post)
+
+
 func _create_bridge_box(size: Vector3, color: Color, roughness: float) -> MeshInstance3D:
 	var mesh_instance := MeshInstance3D.new()
 	var box := BoxMesh.new()
@@ -818,6 +882,24 @@ func _create_bridge_box(size: Vector3, color: Color, roughness: float) -> MeshIn
 	material.roughness = roughness
 	box.material = material
 	mesh_instance.mesh = box
+	return mesh_instance
+
+
+func _create_holo_bridge_part(size: Vector3, color: Color, emission: Color, energy: float) -> MeshInstance3D:
+	var mesh_instance := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = size
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.roughness = 0.08
+	material.metallic = 0.18
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.emission_enabled = true
+	material.emission = emission
+	material.emission_energy_multiplier = energy
+	box.material = material
+	mesh_instance.mesh = box
+	mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return mesh_instance
 
 
