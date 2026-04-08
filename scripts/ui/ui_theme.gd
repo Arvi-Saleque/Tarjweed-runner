@@ -229,7 +229,7 @@ func make_panel(variant: String = "dark", skin_override: String = "") -> PanelCo
 	var tex := panel_dark_texture if variant == "dark" else panel_texture
 	if skin_id == "cyberprank":
 		tex = cyber_panel_dark_texture if variant == "dark" else cyber_panel_texture
-	var tint := colors["panel_bg"] if variant == "dark" else colors["panel_light"]
+	var tint: Color = colors["panel_bg"] if variant == "dark" else colors["panel_light"]
 	var style := _make_texture_stylebox(tex, tint, 28.0, 26.0)
 	panel.add_theme_stylebox_override("panel", style)
 	return panel
