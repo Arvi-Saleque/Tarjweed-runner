@@ -138,6 +138,19 @@ Usage intent:
 
 - this becomes the single incoming source for the replacement gameplay animation pipeline
 
+### Active Rig-Medium Runtime Clips
+
+Kept in `assets/Characters/Animations_GLTF/Rig_Medium`
+
+- `Rig_Medium_MovementBasic.glb`
+- `Rig_Medium_MovementAdvanced.glb`
+- `Rig_Medium_General.glb`
+- `Rig_Medium_CombatMelee.glb`
+
+Reason:
+
+- these are the only animation scene files still referenced by the current live runner
+
 ## Imported Kenney UI Subset
 
 ### Adventure UI
@@ -176,20 +189,6 @@ Usage intent:
 - action teaching
 - gesture callouts for bridge, blast, jump, and movement
 
-### Mobile Controls
-
-Imported to `assets/UI/kenney_mobile_controls`
-
-- gameplay helper icons
-- a small button subset
-- one joystick subset
-- one dpad helper
-
-Usage intent:
-
-- optional tutorial and accessibility overlay
-- not permanent default HUD chrome
-
 ## Reserved But Not Yet Built
 
 These folders exist but do not have authored content yet:
@@ -216,11 +215,16 @@ Completed cleanup:
 
 - removed the unused legacy river and bridge model assets after the procedural crossing system replaced them
 - removed the unused legacy UI button texture set after the Kenney Adventure theme became the active UI source
+- removed the unused Kenney mobile helper asset pack because no active scene or script references it
+- removed unused `Rig_Medium` animation packs that were never loaded by the live player
 
 Active runtime dependencies still kept intentionally:
 
 - `assets/Characters/Animations_GLTF/Rig_Medium/*`
 - `assets/Characters/RunnerMannequin/*`
+- `assets/Characters/base_character/*`
+- `assets/Characters/hairstyles/*`
+- `assets/Characters/animations/UAL2_Standard.glb`
 - `assets/UI/Icons/*`
 - `assets/UI/Fonts/*`
 - `assets/Environment/Sky/qwantani_noon_puresky_4k.exr`
@@ -228,6 +232,7 @@ Active runtime dependencies still kept intentionally:
 Why they remain:
 
 - the current live runner still depends on the animation-safe `Rig_Medium` path for stable runtime playback
+- the imported Quaternius body, hairstyle, and `UAL2_Standard` assets are still kept as source assets for future player migration work
 - the shared icons, fonts, and skybox are still referenced by the active menu, HUD, and game scene
 
 Guardrail:
