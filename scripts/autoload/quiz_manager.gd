@@ -45,7 +45,7 @@ func _register_input_actions() -> void:
 func _process(_delta: float) -> void:
 	if not _is_active:
 		return
-	if GameManager.current_theme != "quiz":
+	if not GameManager.is_quiz_mode():
 		return
 	_handle_answer_input()
 
@@ -101,7 +101,7 @@ func _trigger_player_action() -> void:
 
 
 func _on_game_started() -> void:
-	if GameManager.current_theme == "quiz":
+	if GameManager.is_quiz_mode():
 		_is_active = true
 		_player = null
 		await get_tree().create_timer(0.5).timeout

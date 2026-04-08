@@ -93,12 +93,12 @@ func _create_layout() -> void:
 	spacer_top.custom_minimum_size = Vector2(0, 40)
 	_vbox.add_child(spacer_top)
 
-	_title_label = UITheme.make_banner("NATURE RUNNER", UITheme.FONT_BODY, UITheme.COLOR_TEXT_INK)
+	_title_label = UITheme.make_banner("RUNNER REALMS", UITheme.FONT_BODY, UITheme.COLOR_TEXT_INK)
 	_title_label.modulate.a = 0.0
 	_vbox.add_child(_title_label)
 
 	# Subtitle
-	_subtitle_label = UITheme.make_label("Forest runner with learning-based modes", UITheme.FONT_SMALL, UITheme.COLOR_TEXT_DIM)
+	_subtitle_label = UITheme.make_label("Choose a mode, then launch into Nature or Cyberprank", UITheme.FONT_SMALL, UITheme.COLOR_TEXT_DIM)
 	_subtitle_label.modulate.a = 0.0
 	_vbox.add_child(_subtitle_label)
 

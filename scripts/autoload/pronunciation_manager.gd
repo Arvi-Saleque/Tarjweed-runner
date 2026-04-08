@@ -119,7 +119,7 @@ func _send_reset() -> void:
 func _process(delta: float) -> void:
 	_poll_websocket()
 
-	if not _is_active or GameManager.current_theme != "pronunciation":
+	if not _is_active or not GameManager.is_pronunciation_mode():
 		return
 
 	if _cooldown_timer > 0.0:
@@ -302,8 +302,8 @@ func _do_player_jump() -> void:
 
 
 func _on_game_started() -> void:
-	print("PronunciationManager: game_started, theme = ", GameManager.current_theme)
-	if GameManager.current_theme == "pronunciation":
+	print("PronunciationManager: game_started, mode = ", GameManager.current_mode, ", visual_theme = ", GameManager.current_visual_theme)
+	if GameManager.is_pronunciation_mode():
 		_is_active = true
 		_player = null
 		_cooldown_timer = 0.0

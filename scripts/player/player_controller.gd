@@ -188,7 +188,7 @@ func _input(event: InputEvent) -> void:
 				elif delta_v.length() < SWIPE_MIN_DISTANCE:
 					# Short tap (not a hold) — double tap for blast
 					if hold_duration < TOUCH_HOLD_THRESHOLD:
-						if GameManager.current_theme != "quiz" and GameManager.current_theme != "pronunciation":
+						if GameManager.is_normal_mode():
 							var blast_result := _try_giant_rock_blast()
 							if blast_result == 1:
 								pass  # Blast fired via double tap
@@ -212,7 +212,7 @@ func _process_swipe(end_pos: Vector2) -> void:
 			_switch_lane(1)
 	else:
 		# Vertical swipe — jump / slide (natural mode only, quiz/pronunciation uses answer buttons)
-		if GameManager.current_theme != "quiz" and GameManager.current_theme != "pronunciation":
+		if GameManager.is_normal_mode():
 			if delta_v.y < 0:
 				# Swipe up — jump (blocked near river)
 				if not _near_river_no_jump:
@@ -241,7 +241,7 @@ func _handle_input() -> void:
 		_switch_lane(1)
 
 	# In Quiz/Pronunciation mode, spacebar jump is disabled — use quiz_jump() from manager
-	if GameManager.current_theme != "quiz" and GameManager.current_theme != "pronunciation":
+	if GameManager.is_normal_mode():
 		if Input.is_action_just_pressed("jump"):
 			# Near a river — spacebar is reserved for bridge building, no jump
 			if _near_river_no_jump:

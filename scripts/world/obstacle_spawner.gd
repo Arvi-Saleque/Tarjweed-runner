@@ -1,7 +1,7 @@
 extends RefCounted
 ## ObstacleSpawner — Static utility for placing obstacles on chunks.
 ## Uses real GLB models via obstacle.gd script for collision and visuals.
-## Supports different spawning modes based on GameManager.current_theme.
+## Supports different spawning modes based on GameManager.current_mode.
 
 const OBSTACLE_SCRIPT: String = "res://scripts/obstacles/obstacle.gd"
 const GIANT_ROCK_SCRIPT: String = "res://scripts/obstacles/giant_rock.gd"
@@ -44,9 +44,9 @@ const OBSTACLE_SCALES: Dictionary = {
 
 
 static func spawn_obstacles(chunk: Node3D, chunk_length: float, generator: Node3D) -> void:
-	if GameManager.current_theme == "quiz":
+	if GameManager.is_quiz_mode():
 		_spawn_quiz_obstacles(chunk, chunk_length, generator)
-	elif GameManager.current_theme == "pronunciation":
+	elif GameManager.is_pronunciation_mode():
 		_spawn_pronunciation_obstacles(chunk, chunk_length, generator)
 	else:
 		_spawn_natural_obstacles(chunk, chunk_length, generator)
@@ -541,8 +541,8 @@ static func _create_overhead_obstacle(parent: Node3D, pos: Vector3, generator: N
 # =============================================================================
 
 static func _should_spawn_giant_rock(chunk_dist: float) -> bool:
-	# Only in natural mode
-	if GameManager.current_theme != "natural":
+	# Only in normal mode
+	if not GameManager.is_normal_mode():
 		return false
 
 	var last_dist: float = GameManager.get_meta("_last_giant_rock_dist", -999.0) as float
@@ -589,7 +589,7 @@ static func _create_giant_rock(parent: Node3D, pos: Vector3, generator: Node3D) 
 
 static func _try_spawn_river(chunk: Node3D, chunk_length: float, chunk_dist: float) -> float:
 	## Returns the local Z position of the river if spawned, or -INF if not.
-	if GameManager.current_theme != "natural":
+	if not GameManager.is_normal_mode():
 		return -INF
 	if chunk_dist < 30.0:
 		return -INF

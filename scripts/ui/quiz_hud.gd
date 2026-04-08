@@ -13,7 +13,7 @@ var _instructions: Label
 
 func _ready() -> void:
 	# Only active in quiz mode
-	if GameManager.current_theme != "quiz":
+	if not GameManager.is_quiz_mode():
 		visible = false
 		return
 

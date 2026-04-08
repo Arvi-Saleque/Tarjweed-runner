@@ -38,7 +38,8 @@ var distance: float = 0.0
 var current_speed: float = BASE_SPEED
 var difficulty_multiplier: float = 1.0
 var play_time: float = 0.0   # Seconds since game_started
-var current_theme: String = "natural"  # Active game theme/mode
+var current_mode: String = "normal"
+var current_visual_theme: String = "nature"
 var previous_high_score: int = 0
 
 # --- Obstacle Difficulty ---
@@ -150,6 +151,26 @@ func get_speed_ratio() -> float:
 
 func is_playing() -> bool:
 	return current_state == GameState.PLAYING
+
+
+func is_normal_mode() -> bool:
+	return current_mode == "normal"
+
+
+func is_quiz_mode() -> bool:
+	return current_mode == "quiz"
+
+
+func is_pronunciation_mode() -> bool:
+	return current_mode == "pronunciation"
+
+
+func is_nature_theme() -> bool:
+	return current_visual_theme == "nature"
+
+
+func is_cyberprank_theme() -> bool:
+	return current_visual_theme == "cyberprank"
 
 
 # --- Private ---

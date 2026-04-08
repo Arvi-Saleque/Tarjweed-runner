@@ -14,8 +14,8 @@ var _instructions: Label
 
 
 func _ready() -> void:
-	print("PronunciationHUD: _ready() called, theme = ", GameManager.current_theme)
-	if GameManager.current_theme != "pronunciation":
+	print("PronunciationHUD: _ready() called, mode = ", GameManager.current_mode, ", visual_theme = ", GameManager.current_visual_theme)
+	if not GameManager.is_pronunciation_mode():
 		visible = false
 		return
 
