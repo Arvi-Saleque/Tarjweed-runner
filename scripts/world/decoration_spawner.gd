@@ -56,6 +56,8 @@ static func spawn_decorations(chunk: Node3D, chunk_length: float, path_width: fl
 
 static func _spawn_near_band(container: Node3D, chunk_length: float, path_width: float, generator: Node3D, side: float) -> void:
 	var near_categories: Array[String] = ["grass", "grass", "grass", "bushes", "bushes", "rocks_small", "flowers"]
+	if _is_cyber_theme(generator):
+		near_categories = ["grass", "grass", "rocks_small", "bushes", "flowers", "flowers"]
 	var count: int = randi_range(NEAR_MIN_PER_SIDE, NEAR_MAX_PER_SIDE)
 
 	for i in count:
@@ -70,7 +72,7 @@ static func _spawn_near_band(container: Node3D, chunk_length: float, path_width:
 		instance.position = Vector3(x, 0.0, z)
 		instance.rotation.y = randf_range(0.0, TAU)
 
-		var scale_range: Vector2 = NEAR_SCALE.get(category, Vector2(0.9, 1.1))
+		var scale_range: Vector2 = _get_near_scale(generator, category)
 		var s: float = randf_range(scale_range.x, scale_range.y)
 		instance.scale = Vector3(s, s, s)
 
@@ -87,6 +89,8 @@ static func _spawn_near_band(container: Node3D, chunk_length: float, path_width:
 
 static func _spawn_mid_band(container: Node3D, chunk_length: float, generator: Node3D, side: float) -> void:
 	var mid_categories: Array[String] = ["bushes", "bushes", "rocks", "trees_large", "trees_pine"]
+	if _is_cyber_theme(generator):
+		mid_categories = ["bushes", "rocks", "trees_pine", "trees_pine", "flowers"]
 	var count: int = randi_range(MID_MIN_PER_SIDE, MID_MAX_PER_SIDE)
 
 	for i in count:
@@ -103,7 +107,7 @@ static func _spawn_mid_band(container: Node3D, chunk_length: float, generator: N
 		)
 		instance.rotation.y = randf_range(0.0, TAU)
 
-		var scale_range: Vector2 = MID_SCALE.get(category, Vector2(0.95, 1.2))
+		var scale_range: Vector2 = _get_mid_scale(generator, category)
 		var s: float = randf_range(scale_range.x, scale_range.y)
 		instance.scale = Vector3(s, s, s)
 
@@ -115,6 +119,8 @@ static func _spawn_mid_band(container: Node3D, chunk_length: float, generator: N
 
 static func _spawn_far_band(container: Node3D, chunk_length: float, generator: Node3D, side: float) -> void:
 	var far_categories: Array[String] = ["trees_large", "trees_pine", "background", "background"]
+	if _is_cyber_theme(generator):
+		far_categories = ["trees_large", "background", "background", "background"]
 	var count: int = randi_range(FAR_MIN_PER_SIDE, FAR_MAX_PER_SIDE)
 
 	for i in count:
@@ -131,12 +137,14 @@ static func _spawn_far_band(container: Node3D, chunk_length: float, generator: N
 		)
 		instance.rotation.y = randf_range(-0.15, 0.15)
 
-		var scale_range: Vector2 = FAR_SCALE.get(category, Vector2(1.2, 1.8))
+		var scale_range: Vector2 = _get_far_scale(generator, category)
 		var s: float = randf_range(scale_range.x, scale_range.y)
 		var y_scale: float = s
 		if category == "background":
 			y_scale *= randf_range(1.0, 1.2)
 			instance.position.y = -0.1
+		elif _is_cyber_theme(generator) and category == "trees_large":
+			instance.position.y = -0.05
 		instance.scale = Vector3(s, y_scale, s)
 
 		_disable_shadows_recursive(instance)
@@ -148,6 +156,52 @@ static func _pick_scene(generator: Node3D, category: String) -> PackedScene:
 	if scenes.is_empty():
 		return null
 	return scenes[randi() % scenes.size()]
+
+
+static func _is_cyber_theme(generator: Node3D) -> bool:
+	return generator != null and generator.get("theme_id") == "cyberprank"
+
+
+static func _get_near_scale(generator: Node3D, category: String) -> Vector2:
+	if _is_cyber_theme(generator):
+		match category:
+			"grass":
+				return Vector2(0.70, 1.15)
+			"flowers":
+				return Vector2(0.80, 1.12)
+			"rocks_small":
+				return Vector2(0.65, 1.05)
+			"bushes":
+				return Vector2(0.75, 1.15)
+	return NEAR_SCALE.get(category, Vector2(0.9, 1.1))
+
+
+static func _get_mid_scale(generator: Node3D, category: String) -> Vector2:
+	if _is_cyber_theme(generator):
+		match category:
+			"bushes":
+				return Vector2(0.75, 1.05)
+			"rocks":
+				return Vector2(1.0, 1.4)
+			"trees_large":
+				return Vector2(1.2, 1.8)
+			"trees_pine":
+				return Vector2(1.15, 1.95)
+			"flowers":
+				return Vector2(0.9, 1.35)
+	return MID_SCALE.get(category, Vector2(0.95, 1.2))
+
+
+static func _get_far_scale(generator: Node3D, category: String) -> Vector2:
+	if _is_cyber_theme(generator):
+		match category:
+			"trees_large":
+				return Vector2(1.8, 2.8)
+			"trees_pine":
+				return Vector2(1.5, 2.3)
+			"background":
+				return Vector2(2.0, 3.0)
+	return FAR_SCALE.get(category, Vector2(1.2, 1.8))
 
 
 static func _disable_shadows_recursive(node: Node) -> void:

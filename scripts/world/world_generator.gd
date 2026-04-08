@@ -2,6 +2,8 @@ extends Node3D
 ## WorldGenerator — Manages infinite procedural chunk spawning and world scrolling.
 ## The world moves toward the player (player stays at Z=0).
 
+const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
+
 const CHUNK_LENGTH: float = 20.0
 const PATH_WIDTH: float = 8.0
 const VIEW_DISTANCE: float = 120.0
@@ -13,6 +15,8 @@ var _next_chunk_z: float = 0.0
 var _chunk_container: Node3D
 var _is_generating: bool = false
 var _chunk_index: int = 0
+var theme_id: String = "nature"
+var theme_profile: Dictionary = {}
 
 # Preloaded resources (passed to chunk spawners)
 var decoration_scenes: Dictionary = {}
@@ -36,6 +40,8 @@ func _ready() -> void:
 	_chunk_container.name = "ChunkContainer"
 	add_child(_chunk_container)
 
+	theme_id = GameManager.current_visual_theme
+	theme_profile = ThemeRegistryScript.get_profile(theme_id)
 	_setup_materials()
 	_preload_decorations()
 	_preload_obstacles()
@@ -129,39 +135,52 @@ func _clear_all_chunks() -> void:
 # --- Material Setup ---
 
 func _setup_materials() -> void:
-	# Main runner path: warm dirt/stone blend with a stable readable tone.
+	var road_profile: Dictionary = theme_profile.get("road", {})
+
 	ground_material = StandardMaterial3D.new()
-	ground_material.albedo_color = Color(0.60, 0.48, 0.31, 1.0)
-	ground_material.roughness = 0.96
+	ground_material.albedo_color = road_profile.get("ground", Color(0.60, 0.48, 0.31, 1.0))
+	ground_material.roughness = road_profile.get("ground_roughness", 0.96)
 
-	# Secondary road material for worn strips and flat overlays.
 	road_detail_material = StandardMaterial3D.new()
-	road_detail_material.albedo_color = Color(0.68, 0.55, 0.36, 1.0)
-	road_detail_material.roughness = 0.98
+	road_detail_material.albedo_color = road_profile.get("detail", Color(0.68, 0.55, 0.36, 1.0))
+	road_detail_material.roughness = road_profile.get("detail_roughness", 0.98)
 
-	# Darker patch material for broken/chunky road accents.
 	road_patch_material = StandardMaterial3D.new()
-	road_patch_material.albedo_color = Color(0.42, 0.34, 0.24, 1.0)
-	road_patch_material.roughness = 1.0
+	road_patch_material.albedo_color = road_profile.get("patch", Color(0.42, 0.34, 0.24, 1.0))
+	road_patch_material.roughness = road_profile.get("patch_roughness", 1.0)
+	if theme_id == "cyberprank":
+		road_patch_material.emission_enabled = true
+		road_patch_material.emission = Color(0.05, 0.52, 0.72, 1.0)
+		road_patch_material.emission_energy_multiplier = 0.85
 
-	# Side terrain stays greener and slightly cooler than the road.
 	grass_material = StandardMaterial3D.new()
-	grass_material.albedo_color = Color(0.31, 0.47, 0.24, 1.0)
-	grass_material.roughness = 0.95
+	grass_material.albedo_color = road_profile.get("side", Color(0.31, 0.47, 0.24, 1.0))
+	grass_material.roughness = road_profile.get("side_roughness", 0.95)
 
-	# Path border edge separates the track from nature immediately.
 	path_edge_material = StandardMaterial3D.new()
-	path_edge_material.albedo_color = Color(0.33, 0.26, 0.18, 1.0)
-	path_edge_material.roughness = 0.9
+	path_edge_material.albedo_color = road_profile.get("edge", Color(0.33, 0.26, 0.18, 1.0))
+	path_edge_material.roughness = road_profile.get("edge_roughness", 0.9)
+	if road_profile.has("edge_emission_energy") and road_profile.get("edge_emission_energy", 0.0) > 0.0:
+		path_edge_material.emission_enabled = true
+		path_edge_material.emission = road_profile.get("edge_emission", Color(0.0, 0.0, 0.0, 1.0))
+		path_edge_material.emission_energy_multiplier = road_profile.get("edge_emission_energy", 0.0)
 
 	lane_marker_material = StandardMaterial3D.new()
-	lane_marker_material.albedo_color = Color(0.73, 0.67, 0.50, 0.58)
+	lane_marker_material.albedo_color = road_profile.get("lane_marker", Color(0.73, 0.67, 0.50, 0.58))
 	lane_marker_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	lane_marker_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	if road_profile.get("lane_marker_emission_energy", 0.0) > 0.0:
+		lane_marker_material.emission_enabled = true
+		lane_marker_material.emission = road_profile.get("lane_marker_emission", Color(0.0, 0.0, 0.0, 1.0))
+		lane_marker_material.emission_energy_multiplier = road_profile.get("lane_marker_emission_energy", 0.0)
 
 	obstacle_material = StandardMaterial3D.new()
-	obstacle_material.albedo_color = Color(0.75, 0.2, 0.15, 1.0)
-	obstacle_material.roughness = 0.7
+	obstacle_material.albedo_color = Color(0.75, 0.2, 0.15, 1.0) if theme_id != "cyberprank" else Color(0.15, 0.85, 0.95, 1.0)
+	obstacle_material.roughness = 0.7 if theme_id != "cyberprank" else 0.28
+	if theme_id == "cyberprank":
+		obstacle_material.emission_enabled = true
+		obstacle_material.emission = Color(0.08, 0.62, 0.94, 1.0)
+		obstacle_material.emission_energy_multiplier = 1.35
 
 	coin_material = StandardMaterial3D.new()
 	coin_material.albedo_color = Color(1.0, 0.85, 0.1, 1.0)
@@ -175,39 +194,10 @@ func _setup_materials() -> void:
 # --- Decoration Preloading ---
 
 func _preload_decorations() -> void:
-	decoration_scenes = {
-		"trees_large": _load_scene_array([
-			"res://assets/world/quaternius_nature/trees/CommonTree_2.gltf",
-			"res://assets/world/quaternius_nature/trees/CommonTree_4.gltf",
-		]),
-		"trees_pine": _load_scene_array([
-			"res://assets/world/quaternius_nature/trees/Pine_2.gltf",
-			"res://assets/world/quaternius_nature/trees/Pine_4.gltf",
-		]),
-		"bushes": _load_scene_array([
-			"res://assets/world/quaternius_nature/plants/Bush_Common.gltf",
-			"res://assets/world/quaternius_nature/plants/Fern_1.gltf",
-		]),
-		"flowers": _load_scene_array([
-			"res://assets/world/quaternius_nature/plants/Flower_4_Group.gltf",
-		]),
-		"rocks": _load_scene_array([
-			"res://assets/world/quaternius_nature/rocks/Rock_Medium_1.gltf",
-			"res://assets/world/quaternius_nature/rocks/Rock_Medium_2.gltf",
-		]),
-		"rocks_small": _load_scene_array([
-			"res://assets/world/quaternius_nature/rocks/RockPath_Round_Small_2.gltf",
-			"res://assets/world/quaternius_nature/rocks/RockPath_Round_Wide.gltf",
-		]),
-		"grass": _load_scene_array([
-			"res://assets/world/quaternius_nature/plants/Grass_Common_Short.gltf",
-			"res://assets/world/quaternius_nature/plants/Grass_Common_Tall.gltf",
-		]),
-		"background": _load_scene_array([
-			"res://assets/world/quaternius_nature/background/DeadTree_3.gltf",
-			"res://assets/world/quaternius_nature/background/TwistedTree_4.gltf",
-		]),
-	}
+	decoration_scenes.clear()
+	var decoration_profile: Dictionary = theme_profile.get("decorations", {})
+	for category in decoration_profile.keys():
+		decoration_scenes[category] = _load_scene_array(decoration_profile.get(category, []))
 
 func _load_scene_array(paths: Array) -> Array[PackedScene]:
 	var result: Array[PackedScene] = []
@@ -222,42 +212,10 @@ func _load_scene_array(paths: Array) -> Array[PackedScene]:
 # --- Obstacle & Coin Preloading ---
 
 func _preload_obstacles() -> void:
-	obstacle_scenes = _load_scene_array([
-		"res://assets/Obstacles/ExtraObstacleProps/barrel.glb",
-		"res://assets/Obstacles/ExtraObstacleProps/crate.glb",
-		"res://assets/Obstacles/ExtraObstacleProps/crate-strong.glb",
-		"res://assets/Obstacles/ExtraObstacleProps/fence-broken.glb",
-		"res://assets/Obstacles/ExtraObstacleProps/fence-low-broken.glb",
-		"res://assets/Obstacles/ExtraObstacleProps/trap-spikes.glb",
-		"res://assets/Obstacles/ExtraObstacleProps/trap-spikes-large.glb",
-		"res://assets/Obstacles/ExtraObstacleProps/bomb.glb",
-		"res://assets/Obstacles/ExtraObstacleProps/spike-block.glb",
-		"res://assets/Obstacles/ExtraObstacleProps/spike-block-wide.glb",
-		"res://assets/Obstacles/ExtraObstacleProps/rocks.glb",
-		"res://assets/Obstacles/ExtraObstacleProps/stones.glb",
-		"res://assets/Obstacles/ExtraObstacleProps/hedge.glb",
-		"res://assets/Obstacles/ExtraObstacleProps/hedge-corner.glb",
-		"res://assets/Obstacles/ExtraObstacleProps/cliff_block_stone.glb",
-		"res://assets/Obstacles/ExtraObstacleProps/cliff_blockHalf_stone.glb",
-		"res://assets/Obstacles/ExtraObstacleProps/cliff_blockQuarter_stone.glb",
-		"res://assets/Obstacles/RocksSmall/cliff_blockHalf_rock.glb",
-		"res://assets/Obstacles/RocksSmall/cliff_blockQuarter_rock.glb",
-		"res://assets/Obstacles/RocksBig/cliff_block_rock.glb",
-	])
-	overhead_obstacle_scenes = _load_scene_array([
-		"res://assets/Obstacles/Overhead/fence-rope.glb",
-		"res://assets/Obstacles/Overhead/pipe.glb",
-		"res://assets/Obstacles/Overhead/poles.glb",
-		"res://assets/Obstacles/Overhead/saw.glb",
-		"res://assets/Obstacles/Overhead/log_large.glb",
-		"res://assets/Obstacles/Overhead/fence_gate.glb",
-	])
-	giant_rock_scenes = _load_scene_array([
-		"res://assets/Obstacles/GiantRock/rock_tallA.glb",
-		"res://assets/Obstacles/GiantRock/rock_tallB.glb",
-		"res://assets/Obstacles/GiantRock/rock_tallC.glb",
-		"res://assets/Obstacles/GiantRock/rock_largeA.glb",
-	])
+	var obstacle_profile: Dictionary = theme_profile.get("obstacles", {})
+	obstacle_scenes = _load_scene_array(obstacle_profile.get("ground", []))
+	overhead_obstacle_scenes = _load_scene_array(obstacle_profile.get("overhead", []))
+	giant_rock_scenes = _load_scene_array(obstacle_profile.get("giant", []))
 
 
 func _preload_coins() -> void:
