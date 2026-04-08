@@ -10,12 +10,14 @@ var _coins_label: Label
 var _distance_label: Label
 var _retry_btn: Button
 var _menu_btn: Button
+var _skin: String = "nature"
 
 
 func _ready() -> void:
 	layer = 25
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
+	_skin = UITheme.get_gameplay_skin()
 
 	_create_screen()
 	GameManager.game_over_triggered.connect(_on_game_over)
@@ -27,7 +29,7 @@ func _create_screen() -> void:
 	_overlay.anchors_preset = Control.PRESET_FULL_RECT
 	_overlay.anchor_right = 1.0
 	_overlay.anchor_bottom = 1.0
-	_overlay.color = Color(0.0, 0.0, 0.0, 0.7)
+	_overlay.color = UITheme.get_color("overlay", _skin)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_overlay)
 
@@ -39,7 +41,7 @@ func _create_screen() -> void:
 	_overlay.add_child(center)
 
 	# Main panel
-	_panel = UITheme.make_panel("dark")
+	_panel = UITheme.make_panel("dark", _skin)
 	_panel.custom_minimum_size = Vector2(420, 0)
 	center.add_child(_panel)
 
@@ -49,32 +51,32 @@ func _create_screen() -> void:
 	_panel.add_child(vbox)
 
 	# "GAME OVER" title
-	var title := UITheme.make_banner("GAME OVER", UITheme.FONT_BODY, UITheme.COLOR_TEXT)
+	var title := UITheme.make_banner("GAME OVER", UITheme.FONT_BODY, UITheme.get_color("text", _skin), _skin)
 	vbox.add_child(title)
 
 	# Separator
 	var sep := HSeparator.new()
 	var sep_style := StyleBoxFlat.new()
-	sep_style.bg_color = Color(1, 1, 1, 0.1)
+	sep_style.bg_color = UITheme.get_color("panel_line", _skin)
 	sep_style.content_margin_top = 1.0
 	sep_style.content_margin_bottom = 8.0
 	sep.add_theme_stylebox_override("separator", sep_style)
 	vbox.add_child(sep)
 
 	# Score section
-	var score_label := UITheme.make_label("SCORE", UITheme.FONT_SMALL, UITheme.COLOR_TEXT_DIM)
+	var score_label := UITheme.make_label("SCORE", UITheme.FONT_SMALL, UITheme.get_color("text_dim", _skin), _skin)
 	vbox.add_child(score_label)
 
-	_score_value = UITheme.make_label("0", UITheme.FONT_TITLE, UITheme.COLOR_TEXT)
+	_score_value = UITheme.make_label("0", UITheme.FONT_TITLE, UITheme.get_color("text", _skin), _skin)
 	vbox.add_child(_score_value)
 
 	# NEW BEST label (hidden by default)
-	_new_best_label = UITheme.make_label("NEW BEST!", UITheme.FONT_BODY, UITheme.COLOR_ACCENT)
+	_new_best_label = UITheme.make_label("NEW BEST!", UITheme.FONT_BODY, UITheme.get_color("accent", _skin), _skin)
 	_new_best_label.visible = false
 	vbox.add_child(_new_best_label)
 
 	# High score
-	_high_score_label = UITheme.make_label("BEST: 0", UITheme.FONT_SMALL, UITheme.COLOR_TEXT_DIM)
+	_high_score_label = UITheme.make_label("BEST: 0", UITheme.FONT_SMALL, UITheme.get_color("text_dim", _skin), _skin)
 	vbox.add_child(_high_score_label)
 
 	# Spacer
@@ -92,24 +94,24 @@ func _create_screen() -> void:
 	var coins_vbox := VBoxContainer.new()
 	coins_vbox.add_theme_constant_override("separation", 4)
 	stats_hbox.add_child(coins_vbox)
-	var coins_title := UITheme.make_label("COINS", UITheme.FONT_SMALL - 4, UITheme.COLOR_TEXT_DIM)
+	var coins_title := UITheme.make_label("COINS", UITheme.FONT_SMALL - 4, UITheme.get_color("text_dim", _skin), _skin)
 	coins_vbox.add_child(coins_title)
-	_coins_label = UITheme.make_label("0", UITheme.FONT_HUD, UITheme.COLOR_ACCENT)
+	_coins_label = UITheme.make_label("0", UITheme.FONT_HUD, UITheme.get_color("accent", _skin), _skin)
 	coins_vbox.add_child(_coins_label)
 
 	# Distance
 	var dist_vbox := VBoxContainer.new()
 	dist_vbox.add_theme_constant_override("separation", 4)
 	stats_hbox.add_child(dist_vbox)
-	var dist_title := UITheme.make_label("DISTANCE", UITheme.FONT_SMALL - 4, UITheme.COLOR_TEXT_DIM)
+	var dist_title := UITheme.make_label("DISTANCE", UITheme.FONT_SMALL - 4, UITheme.get_color("text_dim", _skin), _skin)
 	dist_vbox.add_child(dist_title)
-	_distance_label = UITheme.make_label("0m", UITheme.FONT_HUD, UITheme.COLOR_TEXT)
+	_distance_label = UITheme.make_label("0m", UITheme.FONT_HUD, UITheme.get_color("text", _skin), _skin)
 	dist_vbox.add_child(_distance_label)
 
 	# Separator
 	var sep2 := HSeparator.new()
 	var sep2_style := StyleBoxFlat.new()
-	sep2_style.bg_color = Color(1, 1, 1, 0.1)
+	sep2_style.bg_color = UITheme.get_color("panel_line", _skin)
 	sep2_style.content_margin_top = 8.0
 	sep2_style.content_margin_bottom = 4.0
 	sep2.add_theme_stylebox_override("separator", sep2_style)
@@ -121,13 +123,13 @@ func _create_screen() -> void:
 	btn_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_child(btn_hbox)
 
-	_retry_btn = UITheme.make_button("  RETRY", UITheme.icon_play)
+	_retry_btn = UITheme.make_button("  RETRY", UITheme.icon_play, UITheme.FONT_BODY, "primary", _skin)
 	_retry_btn.custom_minimum_size = Vector2(180, 60)
 	_retry_btn.pressed.connect(_on_retry_pressed)
 	_retry_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	btn_hbox.add_child(_retry_btn)
 
-	_menu_btn = UITheme.make_button("  HOME", UITheme.icon_home, UITheme.FONT_BODY, "secondary")
+	_menu_btn = UITheme.make_button("  HOME", UITheme.icon_home, UITheme.FONT_BODY, "secondary", _skin)
 	_menu_btn.custom_minimum_size = Vector2(180, 60)
 	_menu_btn.pressed.connect(_on_menu_pressed)
 	_menu_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
@@ -160,7 +162,7 @@ func _on_game_over() -> void:
 	var tween := create_tween()
 	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	tween.tween_property(_overlay, "color:a", 0.7, 0.3)
+	tween.tween_property(_overlay, "color:a", UITheme.get_color("overlay", _skin).a, 0.3)
 	tween.parallel().tween_property(_panel, "scale", Vector2.ONE, 0.4)
 	tween.parallel().tween_property(_panel, "modulate:a", 1.0, 0.3)
 

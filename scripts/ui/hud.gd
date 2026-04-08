@@ -8,6 +8,7 @@ var _speed_bar: ProgressBar
 var _coin_icon: TextureRect
 var _pause_btn: Button
 var _root: Control
+var _skin: String = "nature"
 
 # Coin collect flash
 var _coin_flash_tween: Tween
@@ -16,6 +17,7 @@ var _coin_flash_tween: Tween
 func _ready() -> void:
 	layer = 10
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	_skin = UITheme.get_gameplay_skin()
 
 	_create_hud()
 	_connect_signals()
@@ -52,7 +54,7 @@ func _create_top_bar() -> void:
 	top_margin.add_child(hbox)
 
 	# --- Left: Coins ---
-	var coin_panel := UITheme.make_panel("light")
+	var coin_panel := UITheme.make_panel("light", _skin)
 	coin_panel.custom_minimum_size = Vector2(188, 74)
 	hbox.add_child(coin_panel)
 
@@ -71,7 +73,7 @@ func _create_top_bar() -> void:
 	_coin_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	coin_hbox.add_child(_coin_icon)
 
-	_coins_label = UITheme.make_label("0", UITheme.FONT_HUD, UITheme.COLOR_ACCENT)
+	_coins_label = UITheme.make_label("0", UITheme.FONT_HUD, UITheme.get_color("accent", _skin), _skin)
 	_coins_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_coins_label.custom_minimum_size = Vector2(80, 0)
 	coin_hbox.add_child(_coins_label)
@@ -82,7 +84,7 @@ func _create_top_bar() -> void:
 	center_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hbox.add_child(center_spacer)
 
-	var score_panel := UITheme.make_panel("dark")
+	var score_panel := UITheme.make_panel("dark", _skin)
 	score_panel.custom_minimum_size = Vector2(232, 92)
 	hbox.add_child(score_panel)
 
@@ -91,10 +93,10 @@ func _create_top_bar() -> void:
 	score_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	score_panel.add_child(score_vbox)
 
-	_score_label = UITheme.make_label("0", UITheme.FONT_HEADING, UITheme.COLOR_TEXT)
+	_score_label = UITheme.make_label("0", UITheme.FONT_HEADING, UITheme.get_color("text", _skin), _skin)
 	score_vbox.add_child(_score_label)
 
-	_distance_label = UITheme.make_label("0m", UITheme.FONT_SMALL, UITheme.COLOR_TEXT_DIM)
+	_distance_label = UITheme.make_label("0m", UITheme.FONT_SMALL, UITheme.get_color("text_dim", _skin), _skin)
 	score_vbox.add_child(_distance_label)
 
 	# --- Right spacer + Pause ---
@@ -103,7 +105,7 @@ func _create_top_bar() -> void:
 	right_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hbox.add_child(right_spacer)
 
-	_pause_btn = UITheme.make_icon_button(UITheme.icon_pause, "Pause", "light")
+	_pause_btn = UITheme.make_icon_button(UITheme.icon_pause, "Pause", "light", _skin)
 	_pause_btn.pressed.connect(_on_pause_pressed)
 	hbox.add_child(_pause_btn)
 
@@ -123,8 +125,8 @@ func _create_speed_indicator() -> void:
 	_speed_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# Style the speed bar
-	_speed_bar.add_theme_stylebox_override("background", UITheme._make_texture_stylebox(UITheme.panel_dark_texture, Color(1, 1, 1, 0.9), 0.0, 0.0))
-	_speed_bar.add_theme_stylebox_override("fill", UITheme._make_texture_stylebox(UITheme.progress_green_texture, Color(1, 1, 1, 1.0), 0.0, 0.0))
+	_speed_bar.add_theme_stylebox_override("background", UITheme.make_progress_stylebox("background", _skin))
+	_speed_bar.add_theme_stylebox_override("fill", UITheme.make_progress_stylebox("fill", _skin))
 
 	_root.add_child(_speed_bar)
 
@@ -171,7 +173,7 @@ func _on_coin_collected(value: int) -> void:
 	# Flash the coin icon gold
 	if _coin_flash_tween and _coin_flash_tween.is_valid():
 		_coin_flash_tween.kill()
-	_coin_icon.modulate = UITheme.COLOR_ACCENT * 2.0
+	_coin_icon.modulate = UITheme.get_color("accent", _skin) * 2.0
 	_coin_flash_tween = create_tween()
 	_coin_flash_tween.tween_property(_coin_icon, "modulate", Color.WHITE, 0.3)
 
@@ -193,12 +195,7 @@ func _on_speed_changed(new_speed: float) -> void:
 	var ratio: float = GameManager.get_speed_ratio()
 	_speed_bar.add_theme_stylebox_override(
 		"fill",
-		UITheme._make_texture_stylebox(
-			UITheme.progress_green_texture if ratio < 0.6 else UITheme.progress_red_texture,
-			Color(1, 1, 1, 1.0),
-			0.0,
-			0.0
-		)
+			UITheme.make_progress_stylebox("fill" if ratio < 0.6 else "alert_fill", _skin)
 	)
 
 

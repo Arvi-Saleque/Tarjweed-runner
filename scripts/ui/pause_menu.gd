@@ -8,12 +8,14 @@ var _resume_btn: Button
 var _settings_btn: Button
 var _menu_btn: Button
 var _settings_popup: Control = null
+var _skin: String = "nature"
 
 
 func _ready() -> void:
 	layer = 20
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	visible = false
+	_skin = UITheme.get_gameplay_skin()
 
 	_create_overlay()
 	_connect_signals()
@@ -25,7 +27,7 @@ func _create_overlay() -> void:
 	_overlay.anchors_preset = Control.PRESET_FULL_RECT
 	_overlay.anchor_right = 1.0
 	_overlay.anchor_bottom = 1.0
-	_overlay.color = UITheme.COLOR_OVERLAY
+	_overlay.color = UITheme.get_color("overlay", _skin)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP  # Block clicks
 	add_child(_overlay)
 
@@ -37,7 +39,7 @@ func _create_overlay() -> void:
 	_overlay.add_child(center)
 
 	# Panel
-	_panel = UITheme.make_panel("dark")
+	_panel = UITheme.make_panel("dark", _skin)
 	_panel.custom_minimum_size = Vector2(360, 0)
 	center.add_child(_panel)
 
@@ -47,7 +49,7 @@ func _create_overlay() -> void:
 	_panel.add_child(vbox)
 
 	# Title
-	var title := UITheme.make_banner("PAUSED", UITheme.FONT_BODY, UITheme.COLOR_TEXT)
+	var title := UITheme.make_banner("PAUSED", UITheme.FONT_BODY, UITheme.get_color("text", _skin), _skin)
 	vbox.add_child(title)
 
 	# Separator
@@ -55,25 +57,25 @@ func _create_overlay() -> void:
 	sep.add_theme_stylebox_override("separator", StyleBoxFlat.new())
 	var sep_style := sep.get_theme_stylebox("separator") as StyleBoxFlat
 	if sep_style:
-		sep_style.bg_color = Color(1, 1, 1, 0.1)
+		sep_style.bg_color = UITheme.get_color("panel_line", _skin)
 		sep_style.content_margin_top = 1.0
 		sep_style.content_margin_bottom = 8.0
 	vbox.add_child(sep)
 
 	# Resume button
-	_resume_btn = UITheme.make_button("  RESUME", UITheme.icon_play)
+	_resume_btn = UITheme.make_button("  RESUME", UITheme.icon_play, UITheme.FONT_BODY, "primary", _skin)
 	_resume_btn.pressed.connect(_on_resume_pressed)
 	_resume_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	vbox.add_child(_resume_btn)
 
 	# Settings button
-	_settings_btn = UITheme.make_button("  SETTINGS", UITheme.icon_gear, UITheme.FONT_BODY, "secondary")
+	_settings_btn = UITheme.make_button("  SETTINGS", UITheme.icon_gear, UITheme.FONT_BODY, "secondary", _skin)
 	_settings_btn.pressed.connect(_on_settings_pressed)
 	_settings_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	vbox.add_child(_settings_btn)
 
 	# Main menu button
-	_menu_btn = UITheme.make_button("  MAIN MENU", UITheme.icon_home, UITheme.FONT_BODY, "danger")
+	_menu_btn = UITheme.make_button("  MAIN MENU", UITheme.icon_home, UITheme.FONT_BODY, "danger", _skin)
 	_menu_btn.pressed.connect(_on_menu_pressed)
 	_menu_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	vbox.add_child(_menu_btn)
@@ -102,7 +104,7 @@ func _on_game_paused() -> void:
 	var tween := create_tween()
 	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	tween.tween_property(_overlay, "color:a", UITheme.COLOR_OVERLAY.a, 0.2)
+	tween.tween_property(_overlay, "color:a", UITheme.get_color("overlay", _skin).a, 0.2)
 	tween.parallel().tween_property(_panel, "scale", Vector2.ONE, 0.3)
 	tween.parallel().tween_property(_panel, "modulate:a", 1.0, 0.2)
 
