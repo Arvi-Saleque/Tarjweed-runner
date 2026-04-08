@@ -59,6 +59,8 @@ func _create_ground() -> void:
 	# Add layered visual details so the road reads as a custom authored runner track.
 	_create_road_surface_details()
 	_create_lane_markers()
+	if _is_cyber_theme():
+		_create_cyber_track_accents()
 
 
 func _create_lane_markers() -> void:
@@ -132,6 +134,54 @@ func _create_road_patch(pos: Vector3, size: Vector3, material: StandardMaterial3
 	add_child(patch)
 
 
+func _create_cyber_track_accents() -> void:
+	var rail_material := StandardMaterial3D.new()
+	rail_material.albedo_color = Color(0.05, 0.12, 0.18, 1.0)
+	rail_material.roughness = 0.18
+	rail_material.metallic = 0.55
+	rail_material.emission_enabled = true
+	rail_material.emission = Color(0.12, 0.86, 1.0, 1.0)
+	rail_material.emission_energy_multiplier = 1.2
+
+	var pulse_material := StandardMaterial3D.new()
+	pulse_material.albedo_color = Color(0.14, 0.24, 0.36, 0.96)
+	pulse_material.roughness = 0.08
+	pulse_material.metallic = 0.4
+	pulse_material.emission_enabled = true
+	pulse_material.emission = Color(0.86, 0.22, 1.0, 1.0)
+	pulse_material.emission_energy_multiplier = 1.6
+
+	for side in [-1.0, 1.0]:
+		var rail := MeshInstance3D.new()
+		var rail_mesh := BoxMesh.new()
+		rail_mesh.size = Vector3(0.10, 0.05, chunk_length)
+		rail_mesh.material = rail_material
+		rail.mesh = rail_mesh
+		rail.position = Vector3(side * (path_width * 0.5 - 0.18), 0.06, -chunk_length / 2.0)
+		rail.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(rail)
+
+	var pulse_count: int = int(chunk_length / 4.0)
+	for idx in pulse_count:
+		var pulse := MeshInstance3D.new()
+		var pulse_mesh := BoxMesh.new()
+		pulse_mesh.size = Vector3(path_width * 0.18, 0.028, 0.55)
+		pulse_mesh.material = pulse_material
+		pulse.mesh = pulse_mesh
+		pulse.position = Vector3(0.0, 0.03, -(idx * 4.0) - 2.0)
+		pulse.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(pulse)
+
+		var side_pad := MeshInstance3D.new()
+		var side_mesh := BoxMesh.new()
+		side_mesh.size = Vector3(0.42, 0.024, 0.65)
+		side_mesh.material = rail_material
+		side_pad.mesh = side_mesh
+		side_pad.position = Vector3(path_width * 0.24 * (-1.0 if idx % 2 == 0 else 1.0), 0.026, -(idx * 4.0) - 2.0)
+		side_pad.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(side_pad)
+
+
 func _create_side_terrain() -> void:
 	if not _generator:
 		return
@@ -161,6 +211,10 @@ func _create_path_edges() -> void:
 		edge.position = Vector3(side * path_width / 2.0, -0.08, -chunk_length / 2.0)
 		edge.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(edge)
+
+
+func _is_cyber_theme() -> bool:
+	return _generator != null and _generator.get("theme_id") == "cyberprank"
 
 
 # --- Obstacles ---

@@ -55,12 +55,12 @@ func _create_shockwave_ring() -> void:
 	var ring_color := Color(0.3, 0.9, 1.0, 0.9)
 	var emission_color := Color(0.2, 0.7, 1.0)
 	if GameManager.is_cyberprank_theme():
-		ring_color = Color(0.86, 0.28, 1.0, 0.92)
+		ring_color = Color(0.86, 0.28, 1.0, 0.74)
 		emission_color = Color(0.16, 0.92, 1.0)
 	mat.albedo_color = ring_color
 	mat.emission_enabled = true
 	mat.emission = emission_color
-	mat.emission_energy_multiplier = 4.0
+	mat.emission_energy_multiplier = 5.2 if GameManager.is_cyberprank_theme() else 4.0
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.no_depth_test = true
 	mat.billboard_mode = BaseMaterial3D.BILLBOARD_DISABLED
@@ -73,7 +73,7 @@ func _create_shockwave_ring() -> void:
 
 func _create_sparks() -> void:
 	_sparks = GPUParticles3D.new()
-	_sparks.amount = 30
+	_sparks.amount = 44 if GameManager.is_cyberprank_theme() else 30
 	_sparks.lifetime = 0.8
 	_sparks.one_shot = true
 	_sparks.explosiveness = 1.0
@@ -82,8 +82,8 @@ func _create_sparks() -> void:
 	var mat := ParticleProcessMaterial.new()
 	mat.direction = Vector3(0, 1, 0)
 	mat.spread = 180.0
-	mat.initial_velocity_min = 6.0
-	mat.initial_velocity_max = 14.0
+	mat.initial_velocity_min = 8.0 if GameManager.is_cyberprank_theme() else 6.0
+	mat.initial_velocity_max = 16.0 if GameManager.is_cyberprank_theme() else 14.0
 	mat.gravity = Vector3(0, -8, 0)
 	mat.scale_min = 0.05
 	mat.scale_max = 0.15
@@ -109,7 +109,7 @@ func _create_sparks() -> void:
 
 func _create_smoke() -> void:
 	_smoke = GPUParticles3D.new()
-	_smoke.amount = 20
+	_smoke.amount = 28 if GameManager.is_cyberprank_theme() else 20
 	_smoke.lifetime = 1.5
 	_smoke.one_shot = true
 	_smoke.explosiveness = 0.9
@@ -155,7 +155,7 @@ func _create_flash() -> void:
 	## Bright flash of light on impact
 	_flash = OmniLight3D.new()
 	_flash.light_color = Color(0.3, 0.8, 1.0) if not GameManager.is_cyberprank_theme() else Color(0.72, 0.26, 1.0)
-	_flash.light_energy = 8.0
-	_flash.omni_range = 15.0
+	_flash.light_energy = 10.0 if GameManager.is_cyberprank_theme() else 8.0
+	_flash.omni_range = 18.0 if GameManager.is_cyberprank_theme() else 15.0
 	_flash.omni_attenuation = 2.0
 	add_child(_flash)

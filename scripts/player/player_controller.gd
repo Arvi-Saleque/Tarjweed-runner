@@ -854,6 +854,16 @@ func _build_hologram_bridge(parent: Node3D) -> void:
 	deck_core.position = Vector3(0.0, 0.05, 0.0)
 	parent.add_child(deck_core)
 
+	for lane_x in GameManager.LANE_POSITIONS:
+		var guide_line := _create_holo_bridge_part(
+			Vector3(0.10, 0.04, bridge_depth - 0.35),
+			Color(0.10, 0.18, 0.24, 0.35),
+			Color(0.14, 0.92, 1.0, 1.0),
+			2.1
+		)
+		guide_line.position = Vector3(lane_x, 0.11, 0.0)
+		parent.add_child(guide_line)
+
 	for side in [-1.0, 1.0]:
 		var rail := _create_holo_bridge_part(
 			Vector3(0.12, 0.60, bridge_depth),
@@ -885,6 +895,17 @@ func _build_hologram_bridge(parent: Node3D) -> void:
 			post.position = Vector3(x_sign * ((bridge_width * 0.5) - 0.16), 0.23, z_offset)
 			parent.add_child(post)
 
+	for x_sign in [-1.0, 1.0]:
+		for z_sign in [-1.0, 1.0]:
+			parent.add_child(_create_bridge_beacon(
+				Vector3(
+					x_sign * ((bridge_width * 0.5) - 0.20),
+					0.18,
+					z_sign * ((bridge_depth * 0.5) - 0.24)
+				),
+				x_sign < 0.0
+			))
+
 
 func _create_bridge_box(size: Vector3, color: Color, roughness: float) -> MeshInstance3D:
 	var mesh_instance := MeshInstance3D.new()
@@ -914,6 +935,37 @@ func _create_holo_bridge_part(size: Vector3, color: Color, emission: Color, ener
 	mesh_instance.mesh = box
 	mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return mesh_instance
+
+
+func _create_bridge_beacon(pos: Vector3, use_magenta: bool) -> Node3D:
+	var beacon := Node3D.new()
+	beacon.position = pos
+
+	var base := _create_holo_bridge_part(
+		Vector3(0.16, 0.16, 0.16),
+		Color(0.08, 0.14, 0.20, 0.92),
+		Color(0.12, 0.84, 1.0, 1.0),
+		1.8
+	)
+	beacon.add_child(base)
+
+	var pillar := _create_holo_bridge_part(
+		Vector3(0.07, 0.56, 0.07),
+		Color(0.14, 0.20, 0.28, 0.68),
+		Color(0.86, 0.24, 1.0, 1.0) if use_magenta else Color(0.12, 0.94, 1.0, 1.0),
+		2.4
+	)
+	pillar.position.y = 0.30
+	beacon.add_child(pillar)
+
+	var light := OmniLight3D.new()
+	light.light_color = Color(0.86, 0.24, 1.0, 1.0) if use_magenta else Color(0.12, 0.94, 1.0, 1.0)
+	light.light_energy = 1.1
+	light.omni_range = 3.8
+	light.position.y = 0.42
+	beacon.add_child(light)
+
+	return beacon
 
 
 func _ensure_player_visible() -> void:
@@ -1067,6 +1119,9 @@ func _find_node_recursive(node: Node, node_name: String) -> Node:
 
 
 func _apply_runner_palette(node: Node, style: String = "nature_gradient") -> void:
+	var cyber_palette: Dictionary = {}
+	if style == "cyber_mech":
+		cyber_palette = _get_cyber_runner_palette()
 	if node is MeshInstance3D:
 		var mesh_instance := node as MeshInstance3D
 		if mesh_instance.mesh:
@@ -1082,9 +1137,9 @@ func _apply_runner_palette(node: Node, style: String = "nature_gradient") -> voi
 				match style:
 					"cyber_mech":
 						if mesh_name.contains("mannequin"):
-							mesh_instance.set_surface_override_material(surface_idx, _create_cyber_gradient_material(tinted_material))
+							mesh_instance.set_surface_override_material(surface_idx, _create_cyber_gradient_material(tinted_material, cyber_palette))
 							continue
-						_apply_cyber_material_tint(tinted_material, mesh_name)
+						_apply_cyber_material_tint(tinted_material, mesh_name, cyber_palette)
 					_:
 						if mesh_name.contains("hair") or mesh_name.contains("eyebrow"):
 							tinted_material.albedo_color = Color(0.22, 0.15, 0.10, 1.0)
@@ -1103,20 +1158,49 @@ func _apply_runner_palette(node: Node, style: String = "nature_gradient") -> voi
 		_apply_runner_palette(child, style)
 
 
-func _apply_cyber_material_tint(material: StandardMaterial3D, mesh_name: String) -> void:
-	material.albedo_color = Color(0.82, 0.95, 1.0, 1.0)
-	material.roughness = minf(material.roughness, 0.36)
-	material.metallic = maxf(material.metallic, 0.55)
+func _apply_cyber_material_tint(material: StandardMaterial3D, mesh_name: String, cyber_palette: Dictionary = {}) -> void:
+	var accent: Color = cyber_palette.get("accent", Color(0.72, 0.26, 1.0, 1.0))
+	var glow: Color = cyber_palette.get("glow", Color(0.16, 0.96, 1.0, 1.0))
+	var metal_light: Color = cyber_palette.get("metal_light", Color(0.82, 0.95, 1.0, 1.0))
+	var metal_mid: Color = cyber_palette.get("metal_mid", Color(0.34, 0.54, 0.68, 1.0))
+	var metal_dark: Color = cyber_palette.get("metal_dark", Color(0.08, 0.12, 0.18, 1.0))
+	var has_albedo_texture: bool = material.albedo_texture != null
+
+	material.roughness = minf(material.roughness if material.roughness > 0.0 else 0.42, 0.34)
+	material.metallic = maxf(material.metallic, 0.62)
 
 	if mesh_name.contains("eye") or mesh_name.contains("visor") or mesh_name.contains("glass"):
-		material.albedo_color = Color(0.72, 0.26, 1.0, 1.0)
+		material.albedo_color = accent.lightened(0.15)
 		material.emission_enabled = true
-		material.emission = Color(0.16, 0.96, 1.0)
-		material.emission_energy_multiplier = 3.2
+		material.emission = glow
+		material.emission_energy_multiplier = 3.6
+		return
+
+	if mesh_name.contains("weapon") or mesh_name.contains("blade") or mesh_name.contains("gun"):
+		material.albedo_color = accent.darkened(0.15)
+		material.emission_enabled = true
+		material.emission = glow
+		material.emission_energy_multiplier = 0.95
+		return
+
+	if mesh_name.contains("joint") or mesh_name.contains("wheel") or mesh_name.contains("hinge") or mesh_name.contains("engine"):
+		material.albedo_color = metal_dark.lightened(0.10)
+		material.emission_enabled = true
+		material.emission = glow.darkened(0.35)
+		material.emission_energy_multiplier = 0.18
+		return
+
+	if has_albedo_texture:
+		material.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
 	else:
-		material.emission_enabled = true
-		material.emission = Color(0.08, 0.42, 0.58)
-		material.emission_energy_multiplier = 0.28
+		var body_color := metal_light
+		if mesh_name.contains("arm") or mesh_name.contains("leg") or mesh_name.contains("body") or mesh_name.contains("torso") or mesh_name.contains("shoulder") or mesh_name.contains("chest"):
+			body_color = metal_mid.lerp(metal_light, 0.45)
+		material.albedo_color = body_color
+
+	material.emission_enabled = true
+	material.emission = glow.lerp(accent, 0.25)
+	material.emission_energy_multiplier = 0.34 if has_albedo_texture else 0.56
 
 
 func _create_nature_gradient_material(source_material: StandardMaterial3D) -> Material:
@@ -1146,7 +1230,7 @@ void fragment() {
 	return material
 
 
-func _create_cyber_gradient_material(source_material: StandardMaterial3D) -> Material:
+func _create_cyber_gradient_material(source_material: StandardMaterial3D, cyber_palette: Dictionary = {}) -> Material:
 	var shader := Shader.new()
 	shader.code = """
 shader_type spatial;
@@ -1174,8 +1258,25 @@ void fragment() {
 
 	var material := ShaderMaterial.new()
 	material.shader = shader
+	material.set_shader_parameter("bottom_color", cyber_palette.get("metal_dark", Color(0.05, 0.10, 0.18, 1.0)))
+	material.set_shader_parameter("mid_color", cyber_palette.get("metal_mid", Color(0.10, 0.55, 0.72, 1.0)))
+	material.set_shader_parameter("top_color", cyber_palette.get("accent", Color(0.78, 0.24, 1.0, 1.0)))
+	material.set_shader_parameter("glow_color", cyber_palette.get("glow", Color(0.18, 0.94, 1.0, 1.0)))
 	material.set_shader_parameter("roughness_value", minf(source_material.roughness, 0.28))
 	return material
+
+
+func _get_cyber_runner_palette() -> Dictionary:
+	var player_profile: Dictionary = ThemeRegistryScript.get_profile().get("player", {})
+	var accent: Color = player_profile.get("color", Color(0.72, 0.26, 1.0, 1.0))
+	var glow: Color = accent.lerp(Color(0.12, 0.96, 1.0, 1.0), 0.58)
+	return {
+		"accent": accent,
+		"glow": glow,
+		"metal_light": Color(0.86, 0.94, 1.0, 1.0),
+		"metal_mid": Color(0.20, 0.34, 0.46, 1.0).lerp(accent, 0.18),
+		"metal_dark": Color(0.04, 0.08, 0.12, 1.0).lerp(accent, 0.06),
+	}
 
 
 func _get_player_visual_scale() -> float:

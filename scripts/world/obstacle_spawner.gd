@@ -403,6 +403,7 @@ static func _add_cyber_trench_visuals(river: Node3D) -> void:
 	river.add_child(_create_trench_wall(trench_width, RIVER_DEPTH * 0.5 + 0.38))
 	river.add_child(_create_trench_glow_strip(trench_width - 0.5, -RIVER_DEPTH * 0.5 + 0.16))
 	river.add_child(_create_trench_glow_strip(trench_width - 0.5, RIVER_DEPTH * 0.5 - 0.16))
+	river.add_child(_create_trench_core_strip(trench_width - 1.4))
 
 	for x_sign in [-1.0, 1.0]:
 		var side_column := MeshInstance3D.new()
@@ -418,6 +419,13 @@ static func _add_cyber_trench_visuals(river: Node3D) -> void:
 		side_column.mesh = mesh
 		side_column.position = Vector3(x_sign * (trench_width * 0.5 - 0.1), 0.2, 0.0)
 		river.add_child(side_column)
+
+	for side in [-1.0, 1.0]:
+		for z_sign in [-1.0, 1.0]:
+			river.add_child(_create_trench_pylon(
+				Vector3(side * (trench_width * 0.5 - 0.18), 0.18, z_sign * ((RIVER_DEPTH * 0.5) - 0.22)),
+				side < 0.0
+			))
 
 
 static func _create_river_plane(size: Vector2, y: float, color: Color, roughness: float, emission: Color = Color(0, 0, 0, 1), emission_energy: float = 0.0) -> MeshInstance3D:
@@ -505,6 +513,63 @@ static func _create_trench_glow_strip(width: float, z_pos: float) -> MeshInstanc
 	glow.position = Vector3(0.0, 0.125, z_pos)
 	glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return glow
+
+
+static func _create_trench_core_strip(width: float) -> MeshInstance3D:
+	var core := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(width, 0.22)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.82, 0.26, 1.0, 0.50)
+	material.roughness = 0.02
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.cull_mode = BaseMaterial3D.CULL_DISABLED
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.emission_enabled = true
+	material.emission = Color(0.14, 0.96, 1.0, 1.0)
+	material.emission_energy_multiplier = 4.6
+	plane.material = material
+	core.mesh = plane
+	core.position = Vector3(0.0, -0.12, 0.0)
+	core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return core
+
+
+static func _create_trench_pylon(pos: Vector3, use_magenta: bool) -> Node3D:
+	var pylon := Node3D.new()
+	pylon.position = pos
+
+	var base := MeshInstance3D.new()
+	var base_mesh := BoxMesh.new()
+	base_mesh.size = Vector3(0.24, 0.42, 0.24)
+	var base_material := StandardMaterial3D.new()
+	base_material.albedo_color = Color(0.05, 0.10, 0.14, 1.0)
+	base_material.roughness = 0.18
+	base_material.metallic = 0.58
+	base_material.emission_enabled = true
+	base_material.emission = Color(0.08, 0.66, 0.92, 1.0)
+	base_material.emission_energy_multiplier = 0.55
+	base_mesh.material = base_material
+	base.mesh = base_mesh
+	pylon.add_child(base)
+
+	var beam := MeshInstance3D.new()
+	var beam_mesh := BoxMesh.new()
+	beam_mesh.size = Vector3(0.08, 0.86, 0.08)
+	var beam_material := StandardMaterial3D.new()
+	beam_material.albedo_color = Color(0.12, 0.20, 0.26, 0.84)
+	beam_material.roughness = 0.04
+	beam_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	beam_material.emission_enabled = true
+	beam_material.emission = Color(0.86, 0.24, 1.0, 1.0) if use_magenta else Color(0.12, 0.92, 1.0, 1.0)
+	beam_material.emission_energy_multiplier = 2.6
+	beam_mesh.material = beam_material
+	beam.mesh = beam_mesh
+	beam.position.y = 0.38
+	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	pylon.add_child(beam)
+
+	return pylon
 
 
 static func _spawn_river_crossing(chunk: Node3D, chunk_length: float, chunk_dist: float) -> float:
