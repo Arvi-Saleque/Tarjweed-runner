@@ -98,6 +98,7 @@ const NATURE_PROFILE: Dictionary = {
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_General.glb",
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_CombatMelee.glb",
 		],
+		"fallback_scene_paths": [],
 		"visual_scale": 0.58,
 		"style": "nature_gradient",
 	},
@@ -197,8 +198,12 @@ const CYBERPRANK_PROFILE: Dictionary = {
 	},
 	"player": {
 		"base_scene_path": "res://assets/Characters/cyberprank/mech_pack/George.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/cyberprank/cyberpunk_kit/Character.gltf",
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
 		"extra_anim_scene_paths": [],
-		"visual_scale": 0.34,
+		"visual_scale": 0.42,
 		"style": "cyber_mech",
 	},
 	"ui": {

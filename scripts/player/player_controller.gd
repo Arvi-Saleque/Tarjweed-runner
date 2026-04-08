@@ -2,6 +2,8 @@ extends CharacterBody3D
 ## Player Controller — Handles lane switching, jumping, sliding, and collision.
 ## The player stays at Z=0; the world moves toward them.
 
+const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
+
 # --- Signals ---
 signal hit_obstacle
 signal landed
@@ -26,6 +28,17 @@ const PLAYER_EXTRA_ANIM_SCENE_PATHS: Array[String] = [
 	"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementAdvanced.glb",
 	"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_General.glb",
 	"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_CombatMelee.glb",
+]
+const PLAYER_IDLE_ANIM_OPTIONS: Array[String] = [
+	"Idle_No_Loop", "Idle_Rail_Loop", "Idle_A", "Idle", "Idle_Neutral",
+	"Idle_Gun_Pointing", "Idle_Gun_Shoot",
+]
+const PLAYER_RUN_ANIM_OPTIONS: Array[String] = [
+	"Running_A", "Running_B", "Run", "Walk_Carry_Loop", "Zombie_Walk_Fwd_Loop",
+	"Walk", "Run_Holding", "Run_Tall",
+]
+const PLAYER_JUMP_ANIM_OPTIONS: Array[String] = [
+	"Jump_Start", "NinjaJump_Start", "Jump", "Jump_Idle", "NinjaJump_Idle_Loop",
 ]
 
 # --- State ---
@@ -908,11 +921,12 @@ func _ensure_player_visible() -> void:
 	if player_model.get_child_count() > 0:
 		return
 
+	var visual_scale: float = _get_player_visual_scale()
 	var runner_visual := _build_runner_visual()
 	if runner_visual:
 		player_model.add_child(runner_visual)
 		runner_visual.rotation.y = PI
-		runner_visual.scale = Vector3.ONE * PLAYER_VISUAL_SCALE
+		runner_visual.scale = Vector3.ONE * visual_scale
 		return
 
 	# Last fallback: simple capsule
@@ -942,24 +956,40 @@ func _ensure_player_visible() -> void:
 
 
 func _build_runner_visual() -> Node3D:
-	if not ResourceLoader.exists(PLAYER_BASE_SCENE_PATH):
-		return null
+	var player_profile: Dictionary = ThemeRegistryScript.get_profile().get("player", {})
+	var scene_paths: Array[String] = [player_profile.get("base_scene_path", PLAYER_BASE_SCENE_PATH)]
+	for fallback_path in player_profile.get("fallback_scene_paths", []):
+		scene_paths.append(fallback_path)
 
-	var base_scene := load(PLAYER_BASE_SCENE_PATH) as PackedScene
-	if base_scene == null:
-		return null
+	for scene_path in scene_paths:
+		if not ResourceLoader.exists(scene_path):
+			continue
 
-	var visual_root := base_scene.instantiate() as Node3D
-	if visual_root == null:
-		return null
-	visual_root.name = "VisualRig"
+		var base_scene := load(scene_path) as PackedScene
+		if base_scene == null:
+			continue
 
-	_merge_extra_animations(visual_root)
-	_apply_runner_palette(visual_root)
-	return visual_root
+		var visual_root := base_scene.instantiate() as Node3D
+		if visual_root == null:
+			continue
+		visual_root.name = "VisualRig"
+
+		var extra_paths: Array[String] = player_profile.get("extra_anim_scene_paths", PLAYER_EXTRA_ANIM_SCENE_PATHS)
+		if scene_path == PLAYER_BASE_SCENE_PATH and extra_paths.is_empty():
+			extra_paths = PLAYER_EXTRA_ANIM_SCENE_PATHS
+		_merge_extra_animations(visual_root, extra_paths)
+
+		if not _candidate_supports_gameplay_animation(visual_root):
+			visual_root.queue_free()
+			continue
+
+		_apply_runner_palette(visual_root, player_profile.get("style", "nature_gradient"))
+		return visual_root
+
+	return null
 
 
-func _merge_extra_animations(model: Node3D) -> void:
+func _merge_extra_animations(model: Node3D, extra_paths: Array = PLAYER_EXTRA_ANIM_SCENE_PATHS) -> void:
 	var dest_player := _find_anim_player(model)
 	if dest_player == null:
 		return
@@ -968,7 +998,7 @@ func _merge_extra_animations(model: Node3D) -> void:
 		dest_player.add_animation_library("", AnimationLibrary.new())
 	var dest_lib := dest_player.get_animation_library("")
 
-	for path in PLAYER_EXTRA_ANIM_SCENE_PATHS:
+	for path in extra_paths:
 		if not ResourceLoader.exists(path):
 			continue
 		var anim_scene := load(path) as PackedScene
@@ -997,6 +1027,27 @@ func _find_anim_player(node: Node) -> AnimationPlayer:
 	return null
 
 
+func _candidate_supports_gameplay_animation(node: Node3D) -> bool:
+	var anim_player := _find_anim_player(node)
+	if anim_player == null:
+		return false
+	if anim_player.get_animation_list().is_empty():
+		return false
+
+	return (
+		_animation_list_has_any(anim_player, PLAYER_IDLE_ANIM_OPTIONS)
+		and _animation_list_has_any(anim_player, PLAYER_RUN_ANIM_OPTIONS)
+		and _animation_list_has_any(anim_player, PLAYER_JUMP_ANIM_OPTIONS)
+	)
+
+
+func _animation_list_has_any(anim_player: AnimationPlayer, anim_names: Array[String]) -> bool:
+	for anim_name in anim_names:
+		if anim_player.has_animation(anim_name):
+			return true
+	return false
+
+
 func _find_node_recursive(node: Node, node_name: String) -> Node:
 	if node.name == node_name:
 		return node
@@ -1007,7 +1058,7 @@ func _find_node_recursive(node: Node, node_name: String) -> Node:
 	return null
 
 
-func _apply_runner_palette(node: Node) -> void:
+func _apply_runner_palette(node: Node, style: String = "nature_gradient") -> void:
 	if node is MeshInstance3D:
 		var mesh_instance := node as MeshInstance3D
 		if mesh_instance.mesh:
@@ -1020,21 +1071,44 @@ func _apply_runner_palette(node: Node) -> void:
 				else:
 					tinted_material = StandardMaterial3D.new()
 
-				if mesh_name.contains("hair") or mesh_name.contains("eyebrow"):
-					tinted_material.albedo_color = Color(0.22, 0.15, 0.10, 1.0)
-					tinted_material.roughness = 0.95
-				elif mesh_name.contains("eyes"):
-					tinted_material.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
-				elif mesh_name.contains("mannequin"):
-					mesh_instance.set_surface_override_material(surface_idx, _create_nature_gradient_material(tinted_material))
-					continue
-				else:
-					tinted_material.albedo_color = Color(0.86, 0.89, 0.82, 1.0)
-					tinted_material.roughness = maxf(tinted_material.roughness, 0.9)
+				match style:
+					"cyber_mech":
+						if mesh_name.contains("mannequin"):
+							mesh_instance.set_surface_override_material(surface_idx, _create_cyber_gradient_material(tinted_material))
+							continue
+						_apply_cyber_material_tint(tinted_material, mesh_name)
+					_:
+						if mesh_name.contains("hair") or mesh_name.contains("eyebrow"):
+							tinted_material.albedo_color = Color(0.22, 0.15, 0.10, 1.0)
+							tinted_material.roughness = 0.95
+						elif mesh_name.contains("eyes"):
+							tinted_material.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
+						elif mesh_name.contains("mannequin"):
+							mesh_instance.set_surface_override_material(surface_idx, _create_nature_gradient_material(tinted_material))
+							continue
+						else:
+							tinted_material.albedo_color = Color(0.86, 0.89, 0.82, 1.0)
+							tinted_material.roughness = maxf(tinted_material.roughness, 0.9)
 
 				mesh_instance.set_surface_override_material(surface_idx, tinted_material)
 	for child in node.get_children():
-		_apply_runner_palette(child)
+		_apply_runner_palette(child, style)
+
+
+func _apply_cyber_material_tint(material: StandardMaterial3D, mesh_name: String) -> void:
+	material.albedo_color = Color(0.82, 0.95, 1.0, 1.0)
+	material.roughness = minf(material.roughness, 0.36)
+	material.metallic = maxf(material.metallic, 0.55)
+
+	if mesh_name.contains("eye") or mesh_name.contains("visor") or mesh_name.contains("glass"):
+		material.albedo_color = Color(0.72, 0.26, 1.0, 1.0)
+		material.emission_enabled = true
+		material.emission = Color(0.16, 0.96, 1.0)
+		material.emission_energy_multiplier = 3.2
+	else:
+		material.emission_enabled = true
+		material.emission = Color(0.08, 0.42, 0.58)
+		material.emission_energy_multiplier = 0.28
 
 
 func _create_nature_gradient_material(source_material: StandardMaterial3D) -> Material:
@@ -1062,3 +1136,40 @@ void fragment() {
 	material.shader = shader
 	material.set_shader_parameter("roughness_value", maxf(source_material.roughness, 0.88))
 	return material
+
+
+func _create_cyber_gradient_material(source_material: StandardMaterial3D) -> Material:
+	var shader := Shader.new()
+	shader.code = """
+shader_type spatial;
+render_mode cull_back, diffuse_burley, specular_schlick_ggx;
+
+uniform vec4 bottom_color : source_color = vec4(0.05, 0.10, 0.18, 1.0);
+uniform vec4 mid_color : source_color = vec4(0.10, 0.55, 0.72, 1.0);
+uniform vec4 top_color : source_color = vec4(0.78, 0.24, 1.0, 1.0);
+uniform vec4 glow_color : source_color = vec4(0.18, 0.94, 1.0, 1.0);
+uniform float gradient_height = 1.8;
+uniform float roughness_value = 0.24;
+uniform float metallic_value = 0.65;
+uniform float glow_energy = 1.7;
+
+void fragment() {
+	float h = clamp((VERTEX.y + 0.35) / gradient_height, 0.0, 1.0);
+	vec3 low_mid = mix(bottom_color.rgb, mid_color.rgb, smoothstep(0.0, 0.55, h));
+	vec3 final_color = mix(low_mid, top_color.rgb, smoothstep(0.45, 1.0, h));
+	ALBEDO = final_color;
+	ROUGHNESS = roughness_value;
+	METALLIC = metallic_value;
+	EMISSION = mix(mid_color.rgb, glow_color.rgb, smoothstep(0.35, 1.0, h)) * glow_energy;
+}
+"""
+
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	material.set_shader_parameter("roughness_value", minf(source_material.roughness, 0.28))
+	return material
+
+
+func _get_player_visual_scale() -> float:
+	var player_profile: Dictionary = ThemeRegistryScript.get_profile().get("player", {})
+	return player_profile.get("visual_scale", PLAYER_VISUAL_SCALE)

@@ -3,14 +3,14 @@ extends Node
 ## Prefers the curated UAL2 clip set on the Quaternius runner rig.
 ## If no AnimationPlayer is found, falls back to code-driven transforms.
 
-const ANIM_IDLE_OPTIONS: Array[String] = ["Idle_No_Loop", "Idle_Rail_Loop", "Idle_A"]
-const ANIM_RUN_OPTIONS: Array[String] = ["Running_A", "Running_B", "Walk_Carry_Loop", "Zombie_Walk_Fwd_Loop"]
-const ANIM_JUMP_UP_OPTIONS: Array[String] = ["Jump_Start", "NinjaJump_Start"]
-const ANIM_JUMP_FALL_OPTIONS: Array[String] = ["Jump_Idle", "NinjaJump_Idle_Loop"]
-const ANIM_JUMP_LAND_OPTIONS: Array[String] = ["Jump_Land", "NinjaJump_Land"]
-const ANIM_SLIDE_OPTIONS: Array[String] = ["Crouching", "Slide_Loop"]
-const ANIM_DEATH_OPTIONS: Array[String] = ["Death_A", "Hit_Knockback"]
-const ANIM_STUMBLE_OPTIONS: Array[String] = ["Hit_A", "Hit_Knockback"]
+const ANIM_IDLE_OPTIONS: Array[String] = ["Idle_No_Loop", "Idle_Rail_Loop", "Idle_A", "Idle", "Idle_Neutral"]
+const ANIM_RUN_OPTIONS: Array[String] = ["Running_A", "Running_B", "Run", "Walk_Carry_Loop", "Zombie_Walk_Fwd_Loop", "Walk"]
+const ANIM_JUMP_UP_OPTIONS: Array[String] = ["Jump_Start", "NinjaJump_Start", "Jump"]
+const ANIM_JUMP_FALL_OPTIONS: Array[String] = ["Jump_Idle", "NinjaJump_Idle_Loop", "Jump"]
+const ANIM_JUMP_LAND_OPTIONS: Array[String] = ["Jump_Land", "NinjaJump_Land", "Land", "Idle"]
+const ANIM_SLIDE_OPTIONS: Array[String] = ["Crouching", "Slide_Loop", "Duck", "Idle"]
+const ANIM_DEATH_OPTIONS: Array[String] = ["Death_A", "Death", "Hit_Knockback"]
+const ANIM_STUMBLE_OPTIONS: Array[String] = ["Hit_A", "Hit_Knockback", "HitRecieve_1", "HitRecieve_2", "HitRecieve", "HitReact"]
 
 const XFADE: float = 0.15
 const XFADE_FAST: float = 0.08
@@ -219,9 +219,10 @@ func _play_first_available(anim_names: Array[String], crossfade: float = XFADE) 
 func _set_loop_modes() -> void:
 	var looping_anims: Array[String] = [
 		"Idle_No_Loop", "Idle_Rail_Loop", "Idle_A", "Idle_B",
-		"Zombie_Walk_Fwd_Loop", "Walk_Carry_Loop", "Running_A", "Running_B",
+		"Idle", "Idle_Neutral", "Zombie_Walk_Fwd_Loop", "Walk_Carry_Loop", "Running_A", "Running_B",
+		"Run", "Walk", "Run_Holding", "Run_Tall",
 		"Slide_Loop", "Crouching",
-		"NinjaJump_Idle_Loop", "Jump_Idle",
+		"NinjaJump_Idle_Loop", "Jump_Idle", "Duck",
 		"Walking_A", "Walking_B", "Walking_C",
 		"Crawling", "Sneaking",
 	]
