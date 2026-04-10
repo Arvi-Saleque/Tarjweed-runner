@@ -84,6 +84,7 @@ var _bridge_built_for_river: Node = null    # Track which river we already built
 var _near_river_no_jump: bool = false       # True when within 20m of a river (suppress jump)
 var _bridge_preview_river: Node = null
 var _bridge_preview_node: Node3D = null
+var _bridge_preview_lane: int = -1
 
 # --- Node References ---
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
@@ -174,6 +175,7 @@ func _physics_process(delta: float) -> void:
 	# Detect nearby rivers and handle bridge building
 	_scan_for_rivers()
 	_update_bridge_hold(delta)
+	_update_river_support_state()
 
 	# Sync model tilt for lane changes
 	var lane_diff: float = target_x - position.x
@@ -510,12 +512,8 @@ func _handle_collision(node: Node) -> void:
 
 	# River kill zones — skip if bridge was built on this lane
 	if node.is_in_group("river_kill_zones"):
-		var lane_idx: int = node.get_meta("lane_index", -1)
-		if lane_idx == current_lane:
-			# Check if this river has a bridge on our lane
-			var river_parent: Node = node.get_parent()
-			if river_parent and river_parent.has_meta("bridge_lane_%d" % lane_idx):
-				return  # Bridge exists, safe to pass
+		if _is_supported_on_river_zone(node):
+			return
 		# No bridge — die
 		hit_obstacle.emit()
 		AudioManager.play_impact()
@@ -825,6 +823,23 @@ func _update_bridge_hold(delta: float) -> void:
 		_space_hold_time = 0.0
 
 
+func _update_river_support_state() -> void:
+	if current_state == PlayerState.DEAD:
+		return
+	for river in get_tree().get_nodes_in_group("river_crossings"):
+		if not is_instance_valid(river):
+			continue
+		if not _is_player_over_river(river):
+			continue
+		if _is_river_lane_supported(river, current_lane):
+			return
+		hit_obstacle.emit()
+		AudioManager.play_impact()
+		GameManager.trigger_game_over()
+		_die()
+		return
+
+
 func _build_bridge(river: Node) -> void:
 	# Spawn the stylized full-width bridge for the current river crossing.
 	_build_bridge_stylized_impl(river)
@@ -859,6 +874,7 @@ func _update_bridge_preview(river: Node, progress: float) -> void:
 	if _bridge_preview_river != river or _bridge_preview_node == null or not is_instance_valid(_bridge_preview_node):
 		_clear_bridge_preview()
 		_bridge_preview_river = river
+		_bridge_preview_lane = current_lane
 		_bridge_preview_node = Node3D.new()
 		_bridge_preview_node.name = "BridgePreview"
 		_bridge_preview_node.position = Vector3(0.0, 0.16, 0.0)
@@ -870,6 +886,7 @@ func _update_bridge_preview(river: Node, progress: float) -> void:
 		return
 
 	var clamped_progress: float = clampf(progress, 0.0, 1.0)
+	river.set_meta("bridge_preview_lane_%d" % _bridge_preview_lane, clamped_progress)
 	var z_scale: float = lerpf(0.08, 1.0, clamped_progress)
 	_bridge_preview_node.scale = Vector3(1.0, lerpf(0.82, 1.0, clamped_progress), z_scale)
 	_bridge_preview_node.position.z = lerpf(1.95, 0.0, clamped_progress)
@@ -877,10 +894,40 @@ func _update_bridge_preview(river: Node, progress: float) -> void:
 
 
 func _clear_bridge_preview() -> void:
+	if _bridge_preview_river and is_instance_valid(_bridge_preview_river):
+		if _bridge_preview_lane >= 0:
+			_bridge_preview_river.remove_meta("bridge_preview_lane_%d" % _bridge_preview_lane)
 	if _bridge_preview_node and is_instance_valid(_bridge_preview_node):
 		_bridge_preview_node.queue_free()
 	_bridge_preview_node = null
 	_bridge_preview_river = null
+	_bridge_preview_lane = -1
+
+
+func _is_supported_on_river_zone(river_zone: Node) -> bool:
+	var lane_idx: int = river_zone.get_meta("lane_index", -1)
+	if lane_idx != current_lane:
+		return false
+	var river_parent: Node = river_zone.get_parent()
+	return river_parent != null and _is_river_lane_supported(river_parent, lane_idx)
+
+
+func _is_river_lane_supported(river: Node, lane_idx: int) -> bool:
+	if river.has_meta("bridge_lane_%d" % lane_idx):
+		return true
+	var preview_progress: float = float(river.get_meta("bridge_preview_lane_%d" % lane_idx, 0.0))
+	if preview_progress <= 0.0:
+		return false
+	var local_player_z: float = -river.global_position.z
+	var near_edge_z: float = RIVER_DEPTH * 0.5
+	var far_edge_z: float = -RIVER_DEPTH * 0.5
+	var supported_min_z: float = lerpf(near_edge_z, far_edge_z, preview_progress)
+	return local_player_z <= near_edge_z + 0.08 and local_player_z >= supported_min_z - 0.08
+
+
+func _is_player_over_river(river: Node) -> bool:
+	var local_player_z: float = -river.global_position.z
+	return local_player_z <= (RIVER_DEPTH * 0.5) and local_player_z >= -(RIVER_DEPTH * 0.5)
 
 
 func _apply_bridge_preview_look(node: Node) -> void:
