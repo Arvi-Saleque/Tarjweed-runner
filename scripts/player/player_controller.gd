@@ -79,6 +79,7 @@ const RIVER_BRIDGE_RANGE: float = 30.0     # Can build bridge within this range
 const RIVER_NO_JUMP_RANGE: float = 20.0    # No jumping within this range of a river
 const BRIDGE_HOLD_TIME: float = 0.8        # Seconds of holding spacebar to build
 const RIVER_SUPPORT_DEPTH: float = 4.0     # Must match river obstacle depth for live bridge support
+const BRIDGE_PREVIEW_DEPTH: float = 4.9    # Must match the stylized bridge visual depth
 var _nearby_river: Node = null
 var _space_hold_time: float = 0.0
 var _bridge_built_for_river: Node = null    # Track which river we already built a bridge for
@@ -889,15 +890,21 @@ func _update_bridge_preview(river: Node, progress: float) -> void:
 	var clamped_progress: float = clampf(progress, 0.0, 1.0)
 	river.set_meta("bridge_preview_lane_%d" % _bridge_preview_lane, clamped_progress)
 	var z_scale: float = lerpf(0.08, 1.0, clamped_progress)
+	var center_z: float = lerpf(1.95, 0.0, clamped_progress)
 	_bridge_preview_node.scale = Vector3(1.0, lerpf(0.82, 1.0, clamped_progress), z_scale)
-	_bridge_preview_node.position.z = lerpf(1.95, 0.0, clamped_progress)
+	_bridge_preview_node.position.z = center_z
 	_bridge_preview_node.position.y = 0.14 + sin(Time.get_ticks_msec() / 120.0) * 0.02
+	var half_depth: float = BRIDGE_PREVIEW_DEPTH * z_scale * 0.5
+	river.set_meta("bridge_preview_min_z_%d" % _bridge_preview_lane, center_z - half_depth)
+	river.set_meta("bridge_preview_max_z_%d" % _bridge_preview_lane, center_z + half_depth)
 
 
 func _clear_bridge_preview() -> void:
 	if _bridge_preview_river and is_instance_valid(_bridge_preview_river):
 		if _bridge_preview_lane >= 0:
 			_bridge_preview_river.remove_meta("bridge_preview_lane_%d" % _bridge_preview_lane)
+			_bridge_preview_river.remove_meta("bridge_preview_min_z_%d" % _bridge_preview_lane)
+			_bridge_preview_river.remove_meta("bridge_preview_max_z_%d" % _bridge_preview_lane)
 	if _bridge_preview_node and is_instance_valid(_bridge_preview_node):
 		_bridge_preview_node.queue_free()
 	_bridge_preview_node = null
@@ -916,14 +923,12 @@ func _is_supported_on_river_zone(river_zone: Node) -> bool:
 func _is_river_lane_supported(river: Node, lane_idx: int) -> bool:
 	if river.has_meta("bridge_lane_%d" % lane_idx):
 		return true
-	var preview_progress: float = float(river.get_meta("bridge_preview_lane_%d" % lane_idx, 0.0))
-	if preview_progress <= 0.0:
+	var preview_min_z: float = float(river.get_meta("bridge_preview_min_z_%d" % lane_idx, 999.0))
+	var preview_max_z: float = float(river.get_meta("bridge_preview_max_z_%d" % lane_idx, -999.0))
+	if preview_min_z > preview_max_z:
 		return false
 	var local_player_z: float = -river.global_position.z
-	var near_edge_z: float = RIVER_SUPPORT_DEPTH * 0.5
-	var far_edge_z: float = -RIVER_SUPPORT_DEPTH * 0.5
-	var supported_min_z: float = lerpf(near_edge_z, far_edge_z, preview_progress)
-	return local_player_z <= near_edge_z + 0.08 and local_player_z >= supported_min_z - 0.08
+	return local_player_z <= preview_max_z + 0.12 and local_player_z >= preview_min_z - 0.12
 
 
 func _is_player_over_river(river: Node) -> bool:
