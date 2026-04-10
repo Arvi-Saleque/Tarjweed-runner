@@ -1,5 +1,5 @@
 extends Control
-## MainMenu - Entry flow with a shared cyber-acade presentation.
+## MainMenu - Entry flow with a shared cyber-arcade presentation.
 
 var _title_label: Control
 var _subtitle_label: Label
@@ -190,7 +190,7 @@ func _create_layout() -> void:
 	_coins_label = UITheme.make_label("COINS: %d" % coins_val, UITheme.FONT_SMALL, UITheme.get_color("accent", "cyberprank"), "cyberprank")
 	stats_vbox.add_child(_coins_label)
 
-	var footer := UITheme.make_label("v0.5 - Phase 9", UITheme.FONT_SMALL - 4, UITheme.get_color("text_dim", "cyberprank"), "cyberprank")
+	var footer := UITheme.make_label("v0.5 - Cyberprank Polish", UITheme.FONT_SMALL - 4, UITheme.get_color("text_dim", "cyberprank"), "cyberprank")
 	footer.modulate.a = 0.0
 	_vbox.add_child(footer)
 
