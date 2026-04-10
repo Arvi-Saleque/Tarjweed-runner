@@ -449,7 +449,6 @@ const CYBERPRANK_PROFILE: Dictionary = {
 	"obstacles": {
 		"ground": [
 			"res://assets/world/cyberprank/space_kit/characters/Enemy_Small.gltf",
-			"res://assets/world/cyberprank/space_kit/characters/Enemy_Large.gltf",
 			"res://assets/world/cyberprank/cyberpunk_kit/platforms/Computer_Large.gltf",
 			"res://assets/world/cyberprank/cyberpunk_kit/platforms/Fence.gltf",
 			"res://assets/world/cyberprank/cyberpunk_kit/platforms/Sign_Corner_Hazard.gltf",
