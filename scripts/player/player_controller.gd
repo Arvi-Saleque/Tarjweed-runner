@@ -99,6 +99,13 @@ var _bridge_preview_lane: int = -1
 # Collision shape resource (shared between main body and hit area)
 var _stand_shape: CapsuleShape3D
 var _slide_shape: CapsuleShape3D
+var _lane_lean_impulse: float = 0.0
+var _jump_anticipation_timer: float = 0.0
+var _land_impact_timer: float = 0.0
+var _runner_shadow: MeshInstance3D = null
+var _runner_shadow_material: StandardMaterial3D = null
+var _movement_dust: GPUParticles3D = null
+var _cyber_trail: GPUParticles3D = null
 
 
 func _ready() -> void:
@@ -128,6 +135,7 @@ func _ready() -> void:
 
 	# Create visible player mesh if PlayerModel is empty
 	_ensure_player_visible()
+	_setup_runner_fx()
 
 	# Connect signals
 	hit_area.body_entered.connect(_on_hit_area_body_entered)
@@ -179,10 +187,7 @@ func _physics_process(delta: float) -> void:
 	_scan_for_rivers()
 	_update_bridge_hold(delta)
 	_update_river_support_state()
-
-	# Sync model tilt for lane changes
-	var lane_diff: float = target_x - position.x
-	player_model.rotation.z = lerp(player_model.rotation.z, clampf(-lane_diff * 0.15, -0.2, 0.2), delta * 10.0)
+	_update_runner_presentation(delta)
 
 
 # --- Input ---
@@ -307,6 +312,7 @@ func _switch_lane(direction: int) -> void:
 		return
 	current_lane = new_lane
 	target_x = GameManager.LANE_POSITIONS[current_lane]
+	_lane_lean_impulse = clampf(_lane_lean_impulse + float(direction) * -0.26, -0.32, 0.32)
 	lane_changed.emit(current_lane)
 	AudioManager.play_sfx(AudioManager.sfx_lane_swoosh, 0.0 if GameManager.is_cyberprank_theme() else 0.15)
 
@@ -317,6 +323,7 @@ func _jump() -> void:
 	current_state = PlayerState.JUMPING
 	vertical_velocity = JUMP_FORCE
 	is_grounded = false
+	_jump_anticipation_timer = 0.12
 	coyote_timer.stop()
 	AudioManager.play_sfx(AudioManager.sfx_jump)
 
@@ -420,8 +427,10 @@ func _on_land() -> void:
 	if current_state == PlayerState.JUMPING:
 		current_state = PlayerState.RUNNING
 	vertical_velocity = 0.0
+	_land_impact_timer = 0.18
 	landed.emit()
 	AudioManager.play_sfx(AudioManager.sfx_landing, 0.1)
+	_spawn_landing_pulse()
 
 	# Check buffered input
 	if _input_buffer_slide:
@@ -481,6 +490,42 @@ func _update_invincibility(delta: float) -> void:
 		_is_invincible = false
 		if player_model:
 			player_model.visible = true
+
+
+func _update_runner_presentation(delta: float) -> void:
+	if player_model == null:
+		return
+
+	if _jump_anticipation_timer > 0.0:
+		_jump_anticipation_timer = maxf(0.0, _jump_anticipation_timer - delta)
+	if _land_impact_timer > 0.0:
+		_land_impact_timer = maxf(0.0, _land_impact_timer - delta)
+
+	_lane_lean_impulse = lerpf(_lane_lean_impulse, 0.0, delta * 8.5)
+	var lane_diff: float = target_x - position.x
+	var target_roll: float = clampf(-lane_diff * 0.18, -0.24, 0.24) + _lane_lean_impulse
+	var target_pitch: float = deg_to_rad(-4.0) if current_state == PlayerState.RUNNING else 0.0
+
+	if current_state == PlayerState.SLIDING:
+		target_pitch = deg_to_rad(-60.0)
+	elif current_state == PlayerState.JUMPING:
+		target_pitch = deg_to_rad(-12.0 if vertical_velocity > 0.0 else 10.0)
+	elif _land_impact_timer > 0.0:
+		target_pitch = deg_to_rad(6.0 * (_land_impact_timer / 0.18))
+
+	player_model.rotation.x = lerpf(player_model.rotation.x, target_pitch, delta * 10.0)
+	player_model.rotation.z = lerpf(player_model.rotation.z, target_roll, delta * 10.0)
+
+	var target_scale := Vector3.ONE
+	if _jump_anticipation_timer > 0.0:
+		target_scale = Vector3(1.08, 0.90, 1.08)
+	elif _land_impact_timer > 0.0:
+		var land_ratio: float = _land_impact_timer / 0.18
+		target_scale = Vector3(1.06 + 0.05 * land_ratio, 0.86 + 0.08 * (1.0 - land_ratio), 1.06 + 0.05 * land_ratio)
+	player_model.scale = player_model.scale.lerp(target_scale, delta * 12.0)
+
+	_update_runner_shadow()
+	_update_runner_fx()
 
 
 # --- Collision ---
@@ -1218,6 +1263,155 @@ func _ensure_player_visible() -> void:
 	head_mesh.mesh = sphere
 	head_mesh.position.y = 1.25
 	player_model.add_child(head_mesh)
+
+
+func _setup_runner_fx() -> void:
+	if _runner_shadow == null:
+		_runner_shadow = MeshInstance3D.new()
+		_runner_shadow.name = "RunnerShadow"
+		var shadow_mesh := CylinderMesh.new()
+		shadow_mesh.top_radius = 0.34
+		shadow_mesh.bottom_radius = 0.44
+		shadow_mesh.height = 0.03
+		_runner_shadow_material = StandardMaterial3D.new()
+		_runner_shadow_material.albedo_color = Color(0.01, 0.03, 0.05, 0.28) if GameManager.is_cyberprank_theme() else Color(0.0, 0.0, 0.0, 0.22)
+		_runner_shadow_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_runner_shadow_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_runner_shadow_material.no_depth_test = false
+		shadow_mesh.material = _runner_shadow_material
+		_runner_shadow.mesh = shadow_mesh
+		_runner_shadow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(_runner_shadow)
+
+	if _movement_dust == null and ResourceLoader.exists("res://scripts/vfx/dust_vfx.gd"):
+		var dust := GPUParticles3D.new()
+		dust.name = "MovementDust"
+		dust.set_script(load("res://scripts/vfx/dust_vfx.gd"))
+		add_child(dust)
+		_movement_dust = dust
+		call_deferred("_tune_runner_dust")
+
+	if GameManager.is_cyberprank_theme() and _cyber_trail == null:
+		_cyber_trail = _create_cyber_trail_fx()
+		player_model.add_child(_cyber_trail)
+
+
+func _tune_runner_dust() -> void:
+	if _movement_dust == null or not is_instance_valid(_movement_dust):
+		return
+	var process := _movement_dust.process_material as ParticleProcessMaterial
+	if process == null:
+		return
+	if GameManager.is_cyberprank_theme():
+		process.color = Color(0.18, 0.92, 1.0, 0.28)
+		if process.color_ramp:
+			process.color_ramp.gradient = _make_runner_gradient_texture(Color(0.88, 0.26, 1.0, 0.55), Color(0.12, 0.90, 1.0, 0.0)).gradient
+	else:
+		process.color = Color(0.65, 0.55, 0.40, 0.35)
+
+
+func _create_cyber_trail_fx() -> GPUParticles3D:
+	var trail := GPUParticles3D.new()
+	trail.name = "CyberTrail"
+	trail.amount = 10
+	trail.lifetime = 0.34
+	trail.one_shot = false
+	trail.explosiveness = 0.0
+	trail.randomness = 0.24
+	trail.fixed_fps = 30
+	trail.position = Vector3(0.0, 0.48, 0.42)
+	trail.emitting = false
+
+	var process := ParticleProcessMaterial.new()
+	process.direction = Vector3(0.0, 0.04, 1.0)
+	process.spread = 16.0
+	process.initial_velocity_min = 0.35
+	process.initial_velocity_max = 0.95
+	process.gravity = Vector3(0.0, 0.0, 0.0)
+	process.damping_min = 3.0
+	process.damping_max = 4.5
+	process.scale_min = 0.35
+	process.scale_max = 0.72
+	process.color = Color(0.16, 0.92, 1.0, 0.34)
+	process.color_ramp = _make_runner_gradient_texture(Color(0.88, 0.24, 1.0, 0.55), Color(0.14, 0.92, 1.0, 0.0))
+	trail.process_material = process
+
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.10, 0.24)
+	var draw_material := StandardMaterial3D.new()
+	draw_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	draw_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	draw_material.vertex_color_use_as_albedo = true
+	draw_material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	draw_material.no_depth_test = false
+	quad.material = draw_material
+	trail.draw_pass_1 = quad
+
+	return trail
+
+
+func _make_runner_gradient_texture(start_color: Color, end_color: Color) -> GradientTexture1D:
+	var gradient := Gradient.new()
+	gradient.set_color(0, start_color)
+	gradient.add_point(0.45, Color(
+		lerpf(start_color.r, end_color.r, 0.4),
+		lerpf(start_color.g, end_color.g, 0.4),
+		lerpf(start_color.b, end_color.b, 0.4),
+		lerpf(start_color.a, end_color.a, 0.4)
+	))
+	gradient.set_color(gradient.get_point_count() - 1, end_color)
+	var texture := GradientTexture1D.new()
+	texture.gradient = gradient
+	return texture
+
+
+func _update_runner_shadow() -> void:
+	if _runner_shadow == null or not is_instance_valid(_runner_shadow):
+		return
+	var height_ratio: float = clampf(global_position.y / 2.4, 0.0, 1.0)
+	_runner_shadow.position = Vector3(0.0, -global_position.y + 0.025, 0.12)
+	var shadow_scale: float = lerpf(1.0, 0.62, height_ratio)
+	_runner_shadow.scale = Vector3(shadow_scale, 1.0, shadow_scale)
+	if _runner_shadow_material:
+		var base_alpha: float = 0.34 if GameManager.is_cyberprank_theme() else 0.22
+		_runner_shadow_material.albedo_color.a = lerpf(base_alpha, 0.07, height_ratio)
+
+
+func _update_runner_fx() -> void:
+	if _movement_dust and is_instance_valid(_movement_dust):
+		_movement_dust.visible = current_state != PlayerState.DEAD
+
+	if _cyber_trail and is_instance_valid(_cyber_trail):
+		var should_emit: bool = GameManager.is_playing() and current_state in [PlayerState.RUNNING, PlayerState.JUMPING, PlayerState.SLIDING]
+		_cyber_trail.emitting = should_emit
+		_cyber_trail.speed_scale = lerpf(0.85, 1.4, GameManager.get_speed_ratio())
+		_cyber_trail.visible = current_state != PlayerState.DEAD
+
+
+func _spawn_landing_pulse() -> void:
+	var pulse := MeshInstance3D.new()
+	var ring := CylinderMesh.new()
+	ring.top_radius = 0.18
+	ring.bottom_radius = 0.22
+	ring.height = 0.018
+	var material := StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = Color(0.18, 0.92, 1.0, 0.42) if GameManager.is_cyberprank_theme() else Color(0.78, 0.64, 0.42, 0.30)
+	material.emission_enabled = GameManager.is_cyberprank_theme()
+	material.emission = Color(0.86, 0.26, 1.0, 1.0)
+	material.emission_energy_multiplier = 1.4
+	ring.material = material
+	pulse.mesh = ring
+	pulse.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	pulse.position = Vector3(0.0, -global_position.y + 0.03, 0.04)
+	add_child(pulse)
+
+	var tween := create_tween()
+	tween.tween_property(pulse, "scale", Vector3(4.4, 1.0, 4.4), 0.26).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween.parallel().tween_property(pulse, "position:y", pulse.position.y + 0.04, 0.26)
+	tween.parallel().tween_property(pulse, "modulate:a", 0.0, 0.26)
+	tween.tween_callback(pulse.queue_free)
 
 
 func _build_runner_visual() -> Node3D:
