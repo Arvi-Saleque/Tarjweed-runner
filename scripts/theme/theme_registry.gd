@@ -357,7 +357,6 @@ const CYBERPRANK_PROFILE: Dictionary = {
 			"res://assets/Characters/cyberprank/mech_pack/Stan.gltf",
 		],
 		"giant": [
-			"res://assets/world/cyberprank/space_kit/characters/Astronaut_FinnTheFrog.gltf",
 			"res://assets/Characters/cyberprank/cyberpunk_kit/Enemy_2Legs.gltf",
 			"res://assets/Characters/cyberprank/cyberpunk_kit/Enemy_2Legs_Gun.gltf",
 		],
