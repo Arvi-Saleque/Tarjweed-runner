@@ -38,6 +38,15 @@ const FAR_SCALE: Dictionary = {
 	"background": Vector2(1.35, 2.25),
 }
 
+const CYBER_FAMILY_ORDER: Array[String] = [
+	"pod_hub",
+	"sign_corridor",
+	"machine_yard",
+	"dome_cluster",
+	"support_bay",
+	"service_sprawl",
+]
+
 
 static func spawn_decorations(chunk: Node3D, chunk_length: float, path_width: float, generator: Node3D) -> void:
 	if not generator or generator.decoration_scenes.is_empty():
@@ -48,10 +57,210 @@ static func spawn_decorations(chunk: Node3D, chunk_length: float, path_width: fl
 	deco_container.name = "Decorations"
 	chunk.add_child(deco_container)
 
+	if _is_cyber_theme(generator):
+		_spawn_cyber_decorations(chunk, deco_container, chunk_length, path_width, generator)
+		return
+
 	for side in [-1.0, 1.0]:
 		_spawn_near_band(deco_container, chunk_length, path_width, generator, side)
 		_spawn_mid_band(deco_container, chunk_length, generator, side)
 		_spawn_far_band(deco_container, chunk_length, generator, side)
+
+
+static func _spawn_cyber_decorations(chunk: Node3D, container: Node3D, chunk_length: float, path_width: float, generator: Node3D) -> void:
+	var chunk_index: int = int(chunk.get("chunk_index"))
+	for side in [-1.0, 1.0]:
+		var family: String = _get_cyber_family(chunk_index, side)
+		_spawn_cyber_near_band(container, chunk_length, path_width, generator, side, family)
+		_spawn_cyber_mid_band(container, chunk_length, generator, side, family)
+		_spawn_cyber_far_band(container, chunk_length, generator, side, family)
+	_spawn_cyber_overhead_scenery(container, chunk_length, path_width, generator, chunk_index)
+
+
+static func _spawn_cyber_near_band(container: Node3D, chunk_length: float, path_width: float, generator: Node3D, side: float, family: String) -> void:
+	var count: int = randi_range(7, 10)
+	var categories: Array[String] = _get_cyber_near_categories(family)
+
+	for i in count:
+		var scene := _pick_scene_from_categories(generator, categories)
+		if scene == null:
+			continue
+
+		var instance: Node3D = scene.instantiate()
+		var z: float = randf_range(0.0, -chunk_length)
+		instance.position = Vector3(side * randf_range(path_width * 0.5 + 0.95, 9.4), 0.0, z)
+		instance.rotation.y = randf_range(-0.12, 0.12) if family in ["sign_corridor", "support_bay"] else randf_range(0.0, TAU)
+
+		var category: String = _guess_scene_category(generator, scene)
+		var scale_range: Vector2 = _get_near_scale(generator, category)
+		var scale_mul: float = 1.0
+		if family == "sign_corridor" and category == "flowers":
+			scale_mul = 1.12
+		elif family == "machine_yard" and category == "rocks_small":
+			scale_mul = 1.1
+		var s: float = randf_range(scale_range.x, scale_range.y) * scale_mul
+		instance.scale = Vector3(s, s, s)
+
+		if category == "grass":
+			instance.position.x = side * randf_range(path_width * 0.5 + 0.9, 11.0)
+		elif category == "flowers":
+			instance.position.x = side * randf_range(6.2, 9.0)
+			instance.position.y = 0.04
+		elif category == "rocks_small":
+			instance.position.x = side * randf_range(5.9, 9.4)
+
+		container.add_child(instance)
+
+
+static func _spawn_cyber_mid_band(container: Node3D, chunk_length: float, generator: Node3D, side: float, family: String) -> void:
+	var count: int = randi_range(4, 6)
+	var categories: Array[String] = _get_cyber_mid_categories(family)
+
+	for i in count:
+		var scene := _pick_scene_from_categories(generator, categories)
+		if scene == null:
+			continue
+
+		var instance: Node3D = scene.instantiate()
+		var category: String = _guess_scene_category(generator, scene)
+		var depth_shift: float = randf_range(0.0, 2.0)
+		instance.position = Vector3(
+			side * randf_range(MID_X_MIN + depth_shift, MID_X_MAX + 4.0),
+			0.0,
+			randf_range(0.0, -chunk_length)
+		)
+		instance.rotation.y = randf_range(-0.08, 0.08) if category in ["signals", "infrastructure"] else randf_range(0.0, TAU)
+
+		var scale_range: Vector2 = _get_mid_scale(generator, category if MID_SCALE.has(category) else "rocks")
+		var scale_mul: float = 1.0
+		if family == "dome_cluster" and category in ["pods", "background"]:
+			scale_mul = 1.12
+		elif family == "service_sprawl" and category == "service_props":
+			scale_mul = 1.15
+		var s: float = randf_range(scale_range.x, scale_range.y) * scale_mul
+		instance.scale = Vector3(s, s, s)
+
+		container.add_child(instance)
+
+
+static func _spawn_cyber_far_band(container: Node3D, chunk_length: float, generator: Node3D, side: float, family: String) -> void:
+	var count: int = randi_range(4, 6)
+	var categories: Array[String] = _get_cyber_far_categories(family)
+
+	for i in count:
+		var scene := _pick_scene_from_categories(generator, categories)
+		if scene == null:
+			continue
+
+		var instance: Node3D = scene.instantiate()
+		var category: String = _guess_scene_category(generator, scene)
+		instance.position = Vector3(
+			side * randf_range(FAR_X_MIN + 2.0, FAR_X_MAX + 12.0),
+			0.0,
+			randf_range(0.0, -chunk_length)
+		)
+		instance.rotation.y = randf_range(-0.12, 0.12)
+
+		var scale_range: Vector2 = _get_far_scale(generator, category if FAR_SCALE.has(category) else "background")
+		var scale_mul: float = 1.0
+		if category == "skyline":
+			scale_mul = 1.12
+		elif family == "dome_cluster" and category == "background":
+			scale_mul = 1.15
+		var s: float = randf_range(scale_range.x, scale_range.y) * scale_mul
+		var y_scale: float = s * randf_range(1.0, 1.25)
+		instance.scale = Vector3(s, y_scale, s)
+		instance.position.y = -0.08 if category in ["background", "skyline"] else 0.0
+
+		_disable_shadows_recursive(instance)
+		container.add_child(instance)
+
+
+static func _spawn_cyber_overhead_scenery(container: Node3D, chunk_length: float, path_width: float, generator: Node3D, chunk_index: int) -> void:
+	if chunk_index % 3 != 1:
+		return
+	var scene := _pick_scene(generator, "scenic_overhead")
+	if scene == null:
+		return
+
+	var instance: Node3D = scene.instantiate()
+	instance.position = Vector3(0.0, randf_range(5.0, 7.0), randf_range(-4.0, -(chunk_length - 4.0)))
+	instance.rotation.y = PI * 0.5
+	var s: float = randf_range(1.25, 1.75)
+	instance.scale = Vector3(s, s, s)
+	_disable_collisions_recursive(instance)
+	container.add_child(instance)
+
+
+static func _get_cyber_family(chunk_index: int, side: float) -> String:
+	var side_offset: int = 0 if side < 0.0 else 2
+	return CYBER_FAMILY_ORDER[posmod(chunk_index + side_offset, CYBER_FAMILY_ORDER.size())]
+
+
+static func _get_cyber_near_categories(family: String) -> Array[String]:
+	match family:
+		"pod_hub":
+			return ["service_props", "service_props", "signals", "rocks_small", "grass"]
+		"sign_corridor":
+			return ["signals", "signals", "service_props", "flowers", "rocks_small"]
+		"machine_yard":
+			return ["service_props", "service_props", "rocks_small", "rocks_small", "grass"]
+		"dome_cluster":
+			return ["flowers", "signals", "service_props", "rocks_small", "grass"]
+		"support_bay":
+			return ["service_props", "grass", "signals", "service_props", "rocks_small"]
+		_:
+			return ["service_props", "service_props", "signals", "grass", "rocks_small"]
+
+
+static func _get_cyber_mid_categories(family: String) -> Array[String]:
+	match family:
+		"pod_hub":
+			return ["pods", "pods", "infrastructure", "rocks"]
+		"sign_corridor":
+			return ["signals", "signals", "infrastructure", "trees_pine"]
+		"machine_yard":
+			return ["infrastructure", "infrastructure", "rocks", "bushes"]
+		"dome_cluster":
+			return ["pods", "pods", "rocks", "flowers"]
+		"support_bay":
+			return ["infrastructure", "trees_pine", "service_props", "rocks"]
+		_:
+			return ["service_props", "infrastructure", "rocks", "trees_large"]
+
+
+static func _get_cyber_far_categories(family: String) -> Array[String]:
+	match family:
+		"pod_hub":
+			return ["skyline", "background", "skyline", "trees_large"]
+		"sign_corridor":
+			return ["skyline", "skyline", "background", "trees_large"]
+		"machine_yard":
+			return ["skyline", "infrastructure", "background", "trees_large"]
+		"dome_cluster":
+			return ["background", "background", "skyline", "trees_large"]
+		"support_bay":
+			return ["skyline", "infrastructure", "skyline", "background"]
+		_:
+			return ["skyline", "background", "trees_large", "background"]
+
+
+static func _pick_scene_from_categories(generator: Node3D, categories: Array[String]) -> PackedScene:
+	var shuffled := categories.duplicate()
+	shuffled.shuffle()
+	for category in shuffled:
+		var scene := _pick_scene(generator, category)
+		if scene != null:
+			return scene
+	return null
+
+
+static func _guess_scene_category(generator: Node3D, scene: PackedScene) -> String:
+	for category in generator.decoration_scenes.keys():
+		var scenes: Array = generator.decoration_scenes.get(category, [])
+		if scene in scenes:
+			return String(category)
+	return ""
 
 
 static func _spawn_near_band(container: Node3D, chunk_length: float, path_width: float, generator: Node3D, side: float) -> void:
@@ -173,6 +382,10 @@ static func _get_near_scale(generator: Node3D, category: String) -> Vector2:
 				return Vector2(0.65, 1.05)
 			"bushes":
 				return Vector2(0.75, 1.15)
+			"service_props":
+				return Vector2(0.72, 1.08)
+			"signals":
+				return Vector2(0.80, 1.12)
 	return NEAR_SCALE.get(category, Vector2(0.9, 1.1))
 
 
@@ -189,6 +402,14 @@ static func _get_mid_scale(generator: Node3D, category: String) -> Vector2:
 				return Vector2(1.15, 1.95)
 			"flowers":
 				return Vector2(0.9, 1.35)
+			"pods":
+				return Vector2(1.0, 1.35)
+			"infrastructure":
+				return Vector2(1.1, 1.55)
+			"service_props":
+				return Vector2(0.95, 1.22)
+			"signals":
+				return Vector2(1.0, 1.25)
 	return MID_SCALE.get(category, Vector2(0.95, 1.2))
 
 
@@ -201,6 +422,10 @@ static func _get_far_scale(generator: Node3D, category: String) -> Vector2:
 				return Vector2(1.5, 2.3)
 			"background":
 				return Vector2(2.0, 3.0)
+			"skyline":
+				return Vector2(2.2, 3.2)
+			"infrastructure":
+				return Vector2(1.6, 2.4)
 	return FAR_SCALE.get(category, Vector2(1.2, 1.8))
 
 
@@ -209,6 +434,14 @@ static func _disable_shadows_recursive(node: Node) -> void:
 		(node as GeometryInstance3D).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	for child in node.get_children():
 		_disable_shadows_recursive(child)
+
+
+static func _disable_collisions_recursive(node: Node) -> void:
+	if node is CollisionObject3D:
+		(node as CollisionObject3D).collision_layer = 0
+		(node as CollisionObject3D).collision_mask = 0
+	for child in node.get_children():
+		_disable_collisions_recursive(child)
 
 
 static func _spawn_fallback_decorations(chunk: Node3D, chunk_length: float, path_width: float) -> void:
