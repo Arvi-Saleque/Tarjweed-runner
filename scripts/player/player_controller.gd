@@ -82,6 +82,8 @@ var _nearby_river: Node = null
 var _space_hold_time: float = 0.0
 var _bridge_built_for_river: Node = null    # Track which river we already built a bridge for
 var _near_river_no_jump: bool = false       # True when within 20m of a river (suppress jump)
+var _bridge_preview_river: Node = null
+var _bridge_preview_node: Node3D = null
 
 # --- Node References ---
 @onready var collision_shape: CollisionShape3D = $CollisionShape3D
@@ -599,6 +601,10 @@ func _try_giant_rock_blast() -> int:
 
 
 func _fire_blast_projectile(target_rock: Node) -> void:
+	if GameManager.is_cyberprank_theme():
+		_fire_cyber_laser(target_rock)
+		return
+
 	## Spawn a glowing energy ball that flies from the player to the rock.
 	var projectile := MeshInstance3D.new()
 	var sphere := SphereMesh.new()
@@ -664,6 +670,103 @@ func _fire_blast_projectile(target_rock: Node) -> void:
 	)
 
 
+func _fire_cyber_laser(target_rock: Node) -> void:
+	var start_pos := Vector3(global_position.x, 1.24, global_position.z - 0.35)
+	var target_pos := Vector3(target_rock.global_position.x, 1.5, target_rock.global_position.z)
+	var beam_length: float = start_pos.distance_to(target_pos)
+
+	var laser_root := Node3D.new()
+	laser_root.position = start_pos.lerp(target_pos, 0.5)
+	laser_root.look_at(target_pos, Vector3.UP, true)
+	get_tree().current_scene.add_child(laser_root)
+
+	var core_material := StandardMaterial3D.new()
+	core_material.albedo_color = Color(0.98, 0.56, 1.0, 0.98)
+	core_material.roughness = 0.02
+	core_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	core_material.emission_enabled = true
+	core_material.emission = Color(0.16, 0.96, 1.0, 1.0)
+	core_material.emission_energy_multiplier = 5.8
+	core_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	core_material.no_depth_test = true
+
+	var beam_core := MeshInstance3D.new()
+	var core_box := BoxMesh.new()
+	core_box.size = Vector3(0.10, 0.10, beam_length)
+	core_box.material = core_material
+	beam_core.mesh = core_box
+	beam_core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	laser_root.add_child(beam_core)
+
+	var glow_material := StandardMaterial3D.new()
+	glow_material.albedo_color = Color(0.12, 0.92, 1.0, 0.42)
+	glow_material.roughness = 0.01
+	glow_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	glow_material.emission_enabled = true
+	glow_material.emission = Color(0.82, 0.30, 1.0, 1.0)
+	glow_material.emission_energy_multiplier = 3.9
+	glow_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glow_material.no_depth_test = true
+
+	var beam_glow := MeshInstance3D.new()
+	var glow_box := BoxMesh.new()
+	glow_box.size = Vector3(0.26, 0.26, beam_length)
+	glow_box.material = glow_material
+	beam_glow.mesh = glow_box
+	beam_glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	laser_root.add_child(beam_glow)
+
+	var muzzle := _create_laser_flash(Color(0.18, 0.95, 1.0, 0.88), Color(0.82, 0.30, 1.0, 1.0), 1.2)
+	muzzle.position = Vector3(0.0, 0.0, beam_length * 0.5)
+	laser_root.add_child(muzzle)
+
+	var impact := _create_laser_flash(Color(0.92, 0.56, 1.0, 0.82), Color(0.16, 0.96, 1.0, 1.0), 1.6)
+	impact.position = Vector3(0.0, 0.0, -beam_length * 0.5)
+	laser_root.add_child(impact)
+
+	var light := OmniLight3D.new()
+	light.light_color = Color(0.42, 0.92, 1.0)
+	light.light_energy = 3.8
+	light.omni_range = 7.0
+	laser_root.add_child(light)
+
+	AudioManager.play_blast_fire()
+
+	var fade_tween := get_tree().create_tween()
+	fade_tween.tween_method(func(alpha: float):
+		core_material.albedo_color.a = alpha
+		glow_material.albedo_color.a = alpha * 0.45
+		light.light_energy = 3.8 * alpha
+	, 1.0, 0.0, 0.12)
+	fade_tween.parallel().tween_property(laser_root, "scale", Vector3(1.0, 1.55, 1.0), 0.12)
+	fade_tween.tween_callback(func():
+		if is_instance_valid(target_rock):
+			if target_rock.has_method("trigger_blast"):
+				target_rock.trigger_blast()
+			AudioManager.play_blast_impact()
+		laser_root.queue_free()
+	)
+
+
+func _create_laser_flash(color: Color, emission: Color, scale_value: float) -> MeshInstance3D:
+	var flash := MeshInstance3D.new()
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.34 * scale_value, 0.34 * scale_value)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = color
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+	material.no_depth_test = true
+	material.emission_enabled = true
+	material.emission = emission
+	material.emission_energy_multiplier = 3.4
+	quad.material = material
+	flash.mesh = quad
+	flash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return flash
+
+
 # --- River Detection & Bridge Building ---
 
 func _scan_for_rivers() -> void:
@@ -692,10 +795,12 @@ func _update_bridge_hold(delta: float) -> void:
 	if _nearby_river == null or not is_instance_valid(_nearby_river):
 		_space_hold_time = 0.0
 		_touch_hold_building = false
+		_clear_bridge_preview()
 		return
 
 	# Already built bridge for this river on this lane
 	if _nearby_river.has_meta("bridge_lane_%d" % current_lane):
+		_clear_bridge_preview()
 		return
 
 	# Check keyboard hold OR touch hold
@@ -711,10 +816,12 @@ func _update_bridge_hold(delta: float) -> void:
 
 	if is_holding:
 		_space_hold_time += delta
+		_update_bridge_preview(_nearby_river, clampf(_space_hold_time / BRIDGE_HOLD_TIME, 0.0, 1.0))
 		if _space_hold_time >= BRIDGE_HOLD_TIME:
 			_build_bridge(_nearby_river)
 			_space_hold_time = 0.0
 	else:
+		_clear_bridge_preview()
 		_space_hold_time = 0.0
 
 
@@ -724,6 +831,8 @@ func _build_bridge(river: Node) -> void:
 
 
 func _build_bridge_stylized_impl(river: Node) -> void:
+	_clear_bridge_preview()
+
 	for l in 3:
 		river.set_meta("bridge_lane_%d" % l, true)
 	_bridge_built_for_river = river
@@ -744,6 +853,52 @@ func _build_bridge_stylized_impl(river: Node) -> void:
 
 	AudioManager.play_bridge_build()
 	print("[Bridge] Built on lane %d for river at Z=%.1f" % [current_lane, river.global_position.z])
+
+
+func _update_bridge_preview(river: Node, progress: float) -> void:
+	if _bridge_preview_river != river or _bridge_preview_node == null or not is_instance_valid(_bridge_preview_node):
+		_clear_bridge_preview()
+		_bridge_preview_river = river
+		_bridge_preview_node = Node3D.new()
+		_bridge_preview_node.name = "BridgePreview"
+		_bridge_preview_node.position = Vector3(0.0, 0.16, 0.0)
+		river.add_child(_bridge_preview_node)
+		_build_stylized_bridge(_bridge_preview_node)
+		_apply_bridge_preview_look(_bridge_preview_node)
+
+	if _bridge_preview_node == null:
+		return
+
+	var clamped_progress: float = clampf(progress, 0.0, 1.0)
+	var z_scale: float = lerpf(0.08, 1.0, clamped_progress)
+	_bridge_preview_node.scale = Vector3(1.0, lerpf(0.82, 1.0, clamped_progress), z_scale)
+	_bridge_preview_node.position.z = lerpf(1.95, 0.0, clamped_progress)
+	_bridge_preview_node.position.y = 0.14 + sin(Time.get_ticks_msec() / 120.0) * 0.02
+
+
+func _clear_bridge_preview() -> void:
+	if _bridge_preview_node and is_instance_valid(_bridge_preview_node):
+		_bridge_preview_node.queue_free()
+	_bridge_preview_node = null
+	_bridge_preview_river = null
+
+
+func _apply_bridge_preview_look(node: Node) -> void:
+	if node is MeshInstance3D:
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance.mesh:
+			for surface_idx in mesh_instance.mesh.get_surface_count():
+				var active_material := mesh_instance.get_active_material(surface_idx)
+				if active_material is StandardMaterial3D:
+					var preview_material: StandardMaterial3D = (active_material as StandardMaterial3D).duplicate()
+					preview_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+					preview_material.albedo_color.a *= 0.52 if GameManager.is_cyberprank_theme() else 0.68
+					if GameManager.is_cyberprank_theme():
+						preview_material.emission_enabled = true
+						preview_material.emission_energy_multiplier *= 1.25
+					mesh_instance.set_surface_override_material(surface_idx, preview_material)
+	for child in node.get_children():
+		_apply_bridge_preview_look(child)
 
 
 func _build_stylized_bridge(parent: Node3D) -> void:
