@@ -404,6 +404,8 @@ static func _add_cyber_trench_visuals(river: Node3D) -> void:
 	river.add_child(_create_trench_glow_strip(trench_width - 0.5, -RIVER_DEPTH * 0.5 + 0.16))
 	river.add_child(_create_trench_glow_strip(trench_width - 0.5, RIVER_DEPTH * 0.5 - 0.16))
 	river.add_child(_create_trench_core_strip(trench_width - 1.4))
+	river.add_child(_create_trench_threshold(trench_width - 0.3, -RIVER_DEPTH * 0.5 - 0.10, false))
+	river.add_child(_create_trench_threshold(trench_width - 0.3, RIVER_DEPTH * 0.5 + 0.10, true))
 
 	for x_sign in [-1.0, 1.0]:
 		var side_column := MeshInstance3D.new()
@@ -419,6 +421,13 @@ static func _add_cyber_trench_visuals(river: Node3D) -> void:
 		side_column.mesh = mesh
 		side_column.position = Vector3(x_sign * (trench_width * 0.5 - 0.1), 0.2, 0.0)
 		river.add_child(side_column)
+
+	for lane_x in GameManager.LANE_POSITIONS:
+		for z_sign in [-1.0, 1.0]:
+			river.add_child(_create_trench_warning_tile(
+				Vector3(lane_x, 0.03, z_sign * ((RIVER_DEPTH * 0.5) + 0.48)),
+				z_sign > 0.0
+			))
 
 	for side in [-1.0, 1.0]:
 		for z_sign in [-1.0, 1.0]:
@@ -533,6 +542,42 @@ static func _create_trench_core_strip(width: float) -> MeshInstance3D:
 	core.position = Vector3(0.0, -0.12, 0.0)
 	core.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return core
+
+
+static func _create_trench_threshold(width: float, z_pos: float, use_magenta: bool) -> MeshInstance3D:
+	var threshold := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(width, 0.08, 0.22)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.08, 0.14, 0.18, 1.0)
+	material.roughness = 0.12
+	material.metallic = 0.52
+	material.emission_enabled = true
+	material.emission = Color(0.88, 0.24, 1.0, 1.0) if use_magenta else Color(0.12, 0.92, 1.0, 1.0)
+	material.emission_energy_multiplier = 1.25
+	mesh.material = material
+	threshold.mesh = mesh
+	threshold.position = Vector3(0.0, 0.05, z_pos)
+	threshold.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return threshold
+
+
+static func _create_trench_warning_tile(pos: Vector3, use_magenta: bool) -> MeshInstance3D:
+	var tile := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = Vector3(GameManager.LANE_WIDTH * 0.62, 0.024, 0.32)
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.10, 0.18, 0.24, 0.94)
+	material.roughness = 0.05
+	material.metallic = 0.36
+	material.emission_enabled = true
+	material.emission = Color(0.14, 0.92, 1.0, 1.0) if not use_magenta else Color(0.92, 0.24, 1.0, 1.0)
+	material.emission_energy_multiplier = 1.55
+	mesh.material = material
+	tile.mesh = mesh
+	tile.position = pos
+	tile.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return tile
 
 
 static func _create_trench_pylon(pos: Vector3, use_magenta: bool) -> Node3D:
