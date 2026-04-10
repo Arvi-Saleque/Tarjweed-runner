@@ -8,8 +8,11 @@ var _environment: Environment
 var _sun_light: DirectionalLight3D
 var _road_fill_light: OmniLight3D
 var _rim_light: OmniLight3D
+var _cyber_particles: GPUParticles3D
+var _cyber_streaks: GPUParticles3D
 var _theme_id: String = "nature"
 var _atmosphere: Dictionary = {}
+var _ambient_motion: Dictionary = {}
 var _base_fog_density: float = 0.003
 var _max_fog_density: float = 0.007
 var _base_glow_intensity: float = 0.4
@@ -17,19 +20,23 @@ var _max_glow_intensity: float = 0.7
 var _target_fog: float = 0.003
 var _target_glow: float = 0.4
 var _light_pulse_time: float = 0.0
+var _is_game_over: bool = false
 
 
 func _ready() -> void:
 	var world_env: WorldEnvironment = get_parent().get_node_or_null("WorldEnvironment")
 	_sun_light = get_parent().get_node_or_null("DirectionalLight3D") as DirectionalLight3D
 	_theme_id = GameManager.current_visual_theme
-	_atmosphere = ThemeRegistryScript.get_profile(_theme_id).get("atmosphere", {})
+	var theme_profile: Dictionary = ThemeRegistryScript.get_profile(_theme_id)
+	_atmosphere = theme_profile.get("atmosphere", {})
+	_ambient_motion = theme_profile.get("ambient_motion", {})
 	if world_env and world_env.environment:
 		_environment = world_env.environment
 		_apply_theme_environment()
 		_target_fog = _base_fog_density
 		_target_glow = _base_glow_intensity
 		_create_theme_lights()
+		_create_theme_particles()
 
 	GameManager.speed_changed.connect(_on_speed_changed)
 	GameManager.game_started.connect(_on_game_started)
@@ -42,6 +49,7 @@ func _process(delta: float) -> void:
 	_environment.fog_density = lerpf(_environment.fog_density, _target_fog, delta * 2.0)
 	_environment.glow_intensity = lerpf(_environment.glow_intensity, _target_glow, delta * 2.0)
 	_update_theme_lights(delta)
+	_update_theme_particles()
 
 
 func _apply_theme_environment() -> void:
@@ -112,6 +120,17 @@ func _create_theme_lights() -> void:
 	_rim_light.light_energy = _atmosphere.get("rim_energy", 0.34)
 
 
+func _create_theme_particles() -> void:
+	if _theme_id != "cyberprank":
+		return
+	if _cyber_particles == null:
+		_cyber_particles = _create_cyber_atmosphere_particles()
+		add_child(_cyber_particles)
+	if _cyber_streaks == null:
+		_cyber_streaks = _create_cyber_light_streaks()
+		add_child(_cyber_streaks)
+
+
 func _update_theme_lights(delta: float) -> void:
 	if _theme_id != "cyberprank":
 		return
@@ -125,6 +144,112 @@ func _update_theme_lights(delta: float) -> void:
 		_rim_light.light_energy = rim_energy * (0.95 + sin(_light_pulse_time * 1.6 + 0.8) * 0.05)
 
 
+func _update_theme_particles() -> void:
+	if _theme_id != "cyberprank":
+		return
+	var speed_ratio: float = GameManager.get_speed_ratio()
+	if _cyber_particles:
+		_cyber_particles.speed_scale = lerpf(0.85, 1.2, speed_ratio)
+		_cyber_particles.visible = not _is_game_over
+		_cyber_particles.emitting = true
+	if _cyber_streaks:
+		_cyber_streaks.speed_scale = lerpf(0.9, 1.8, speed_ratio)
+		_cyber_streaks.visible = not _is_game_over
+		_cyber_streaks.emitting = true
+
+
+func _create_cyber_atmosphere_particles() -> GPUParticles3D:
+	var particles := GPUParticles3D.new()
+	particles.name = "CyberAtmosphereParticles"
+	particles.amount = int(_ambient_motion.get("particle_amount", 36))
+	particles.lifetime = 3.2
+	particles.one_shot = false
+	particles.explosiveness = 0.0
+	particles.randomness = 0.55
+	particles.fixed_fps = 30
+	particles.position = Vector3(0.0, 2.6, -12.0)
+	particles.emitting = true
+	particles.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+	var process := ParticleProcessMaterial.new()
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	process.emission_box_extents = Vector3(12.0, 2.8, 15.0)
+	process.direction = Vector3(0.0, 0.12, 1.0)
+	process.spread = 14.0
+	process.initial_velocity_min = 0.15
+	process.initial_velocity_max = 0.42
+	process.gravity = Vector3.ZERO
+	process.scale_min = 0.14
+	process.scale_max = 0.32
+	process.color = Color(0.40, 0.92, 1.0, 0.26)
+	process.color_ramp = _make_particle_ramp([
+		Color(0.10, 0.18, 0.26, 0.00),
+		Color(0.16, 0.82, 1.0, 0.20),
+		Color(0.92, 0.20, 1.0, 0.10),
+		Color(0.06, 0.10, 0.16, 0.00),
+	])
+	particles.process_material = process
+
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.18, 0.18)
+	particles.draw_pass_1 = quad
+	return particles
+
+
+func _create_cyber_light_streaks() -> GPUParticles3D:
+	var streaks := GPUParticles3D.new()
+	streaks.name = "CyberLightStreaks"
+	streaks.amount = int(_ambient_motion.get("streak_amount", 10))
+	streaks.lifetime = 1.05
+	streaks.one_shot = false
+	streaks.explosiveness = 0.22
+	streaks.randomness = 0.32
+	streaks.fixed_fps = 30
+	streaks.position = Vector3(0.0, 1.2, -14.0)
+	streaks.emitting = true
+	streaks.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+
+	var process := ParticleProcessMaterial.new()
+	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
+	process.emission_box_extents = Vector3(6.0, 1.0, 12.0)
+	process.direction = Vector3(0.0, 0.0, 1.0)
+	process.spread = 6.0
+	process.initial_velocity_min = 5.5
+	process.initial_velocity_max = 8.5
+	process.gravity = Vector3.ZERO
+	process.scale_min = 0.24
+	process.scale_max = 0.48
+	process.color = Color(0.18, 0.90, 1.0, 0.42)
+	process.color_ramp = _make_particle_ramp([
+		Color(0.00, 0.00, 0.00, 0.00),
+		Color(0.14, 0.90, 1.0, 0.34),
+		Color(0.96, 0.26, 1.0, 0.20),
+		Color(0.00, 0.00, 0.00, 0.00),
+	])
+	streaks.process_material = process
+
+	var quad := QuadMesh.new()
+	quad.size = Vector2(0.12, 1.35)
+	streaks.draw_pass_1 = quad
+	return streaks
+
+
+func _make_particle_ramp(colors: Array[Color]) -> GradientTexture1D:
+	var gradient := Gradient.new()
+	var offsets: PackedFloat32Array = PackedFloat32Array()
+	var packed_colors: PackedColorArray = PackedColorArray()
+	var count: int = max(colors.size(), 1)
+	for idx in count:
+		offsets.append(float(idx) / float(max(count - 1, 1)))
+		packed_colors.append(colors[idx])
+	gradient.offsets = offsets
+	gradient.colors = packed_colors
+
+	var texture := GradientTexture1D.new()
+	texture.gradient = gradient
+	return texture
+
+
 func _on_speed_changed(_speed: float) -> void:
 	var ratio: float = GameManager.get_speed_ratio()
 	_target_fog = lerpf(_base_fog_density, _max_fog_density, ratio)
@@ -134,13 +259,18 @@ func _on_speed_changed(_speed: float) -> void:
 func _on_game_started() -> void:
 	_target_fog = _base_fog_density
 	_target_glow = _base_glow_intensity
+	_is_game_over = false
 	if _environment:
 		_environment.fog_density = _base_fog_density
 		_environment.glow_intensity = _base_glow_intensity
 	_apply_theme_environment()
 	_create_theme_lights()
+	_create_theme_particles()
 
 
 func _on_game_over() -> void:
 	_target_fog = _max_fog_density * 0.8
 	_target_glow = _base_glow_intensity * 0.5
+	_is_game_over = true
+	if _cyber_streaks:
+		_cyber_streaks.emitting = false
