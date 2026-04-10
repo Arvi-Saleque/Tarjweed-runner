@@ -306,7 +306,7 @@ func _switch_lane(direction: int) -> void:
 	current_lane = new_lane
 	target_x = GameManager.LANE_POSITIONS[current_lane]
 	lane_changed.emit(current_lane)
-	AudioManager.play_sfx(AudioManager.sfx_lane_swoosh, 0.15)
+	AudioManager.play_sfx(AudioManager.sfx_lane_swoosh, 0.06 if GameManager.is_cyberprank_theme() else 0.15)
 
 
 func _jump() -> void:
@@ -379,7 +379,10 @@ func _start_slide() -> void:
 
 	current_state = PlayerState.SLIDING
 	_slide_timer = SLIDE_DURATION
-	AudioManager.play_sfx(AudioManager.sfx_slide, 0.1)
+	if GameManager.is_cyberprank_theme():
+		AudioManager.play_sfx(AudioManager.sfx_jump)
+	else:
+		AudioManager.play_sfx(AudioManager.sfx_slide, 0.1)
 
 	# Shrink collision
 	collision_shape.shape = _slide_shape
