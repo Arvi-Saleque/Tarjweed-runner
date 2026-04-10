@@ -1,6 +1,8 @@
 extends Control
 ## Settings — Audio settings popup with toggle buttons and volume sliders.
 
+const ControlsManager = preload("res://scripts/input/controls_manager.gd")
+
 var _overlay: ColorRect
 var _panel: PanelContainer
 var _music_toggle: Button
@@ -8,12 +10,16 @@ var _sfx_toggle: Button
 var _music_slider: HSlider
 var _sfx_slider: HSlider
 var _close_btn: Button
+var _binding_buttons: Dictionary = {}
+var _listening_action: String = ""
+var _listening_hint: Label
 
 var _music_enabled: bool = true
 var _sfx_enabled: bool = true
 
 
 func _ready() -> void:
+	ControlsManager.ensure_controls_ready()
 	anchors_preset = Control.PRESET_FULL_RECT
 	anchor_right = 1.0
 	anchor_bottom = 1.0
@@ -45,7 +51,7 @@ func _create_popup() -> void:
 
 	# Panel
 	_panel = UITheme.make_panel()
-	_panel.custom_minimum_size = Vector2(400, 0)
+	_panel.custom_minimum_size = Vector2(520, 0)
 	center.add_child(_panel)
 
 	var vbox := VBoxContainer.new()
@@ -93,6 +99,8 @@ func _create_popup() -> void:
 		func(toggled: bool): _on_sfx_toggled(toggled),
 		func(val: float): _on_sfx_volume_changed(val)
 	)
+
+	_create_controls_section(vbox)
 
 
 func _create_audio_row(parent: VBoxContainer, label_text: String, icon: Texture2D,
@@ -183,6 +191,93 @@ func _style_slider(slider: HSlider) -> void:
 	slider.add_theme_stylebox_override("slider", bg)
 
 
+func _create_controls_section(parent: VBoxContainer) -> void:
+	var sep := HSeparator.new()
+	var sep_style := StyleBoxFlat.new()
+	sep_style.bg_color = Color(1, 1, 1, 0.1)
+	sep_style.content_margin_top = 1.0
+	sep_style.content_margin_bottom = 6.0
+	sep.add_theme_stylebox_override("separator", sep_style)
+	parent.add_child(sep)
+
+	var title := UITheme.make_label("CONTROLS", UITheme.FONT_BODY, UITheme.COLOR_TEXT)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	parent.add_child(title)
+
+	_listening_hint = UITheme.make_label("Choose a control to rebind it.", UITheme.FONT_SMALL, Color(0.82, 0.84, 0.9))
+	_listening_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	parent.add_child(_listening_hint)
+
+	for action_info in ControlsManager.get_actions():
+		_create_binding_row(parent, action_info)
+
+	var reset_btn := UITheme.make_button("RESET CONTROLS", null, UITheme.FONT_SMALL, "secondary")
+	reset_btn.custom_minimum_size = Vector2(240, 58)
+	reset_btn.pressed.connect(_on_reset_controls_pressed)
+	parent.add_child(reset_btn)
+
+
+func _create_binding_row(parent: VBoxContainer, action_info: Dictionary) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 14)
+	parent.add_child(row)
+
+	var copy := VBoxContainer.new()
+	copy.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	copy.add_theme_constant_override("separation", 2)
+	row.add_child(copy)
+
+	var label := UITheme.make_label(String(action_info.get("label", "")), UITheme.FONT_BODY, UITheme.COLOR_TEXT)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	copy.add_child(label)
+
+	var hint_text: String = String(action_info.get("hint", ""))
+	var hint := UITheme.make_label(hint_text, UITheme.FONT_SMALL, Color(0.70, 0.72, 0.8))
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	copy.add_child(hint)
+
+	var action_name: String = String(action_info.get("action", ""))
+	var button := UITheme.make_button(ControlsManager.get_binding_display(action_name), null, UITheme.FONT_SMALL, "secondary")
+	button.custom_minimum_size = Vector2(180, 56)
+	button.size_flags_horizontal = Control.SIZE_SHRINK_END
+	button.pressed.connect(func(): _begin_rebind(action_name))
+	row.add_child(button)
+
+	_binding_buttons[action_name] = button
+
+
+func _begin_rebind(action: String) -> void:
+	if _listening_action == action:
+		_listening_action = ""
+		_listening_hint.text = "Choose a control to rebind it."
+		_refresh_binding_buttons()
+		return
+
+	_listening_action = action
+	_listening_hint.text = "Press a key for %s..." % action.replace("_", " ").to_upper()
+	_refresh_binding_buttons()
+	AudioManager.play_ui_sound(AudioManager.ui_click)
+
+
+func _refresh_binding_buttons() -> void:
+	for action in _binding_buttons.keys():
+		var button := _binding_buttons[action] as Button
+		if button == null:
+			continue
+		if action == _listening_action:
+			button.text = "PRESS KEY..."
+		else:
+			button.text = ControlsManager.get_binding_display(String(action))
+
+
+func _on_reset_controls_pressed() -> void:
+	ControlsManager.reset_to_defaults()
+	_listening_action = ""
+	_listening_hint.text = "Controls reset to defaults."
+	_refresh_binding_buttons()
+	AudioManager.play_ui_sound(AudioManager.ui_click)
+
+
 func _animate_in() -> void:
 	_overlay.color.a = 0.0
 	_panel.scale = Vector2(0.85, 0.85)
@@ -197,6 +292,7 @@ func _animate_in() -> void:
 
 
 func _animate_out() -> void:
+	_listening_action = ""
 	var tween := create_tween()
 	tween.set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
 	tween.tween_property(_panel, "scale", Vector2(0.9, 0.9), 0.15)
@@ -232,3 +328,24 @@ func _on_music_volume_changed(val: float) -> void:
 
 func _on_sfx_volume_changed(val: float) -> void:
 	AudioManager.set_sfx_volume(val)
+
+
+func _input(event: InputEvent) -> void:
+	if _listening_action == "":
+		return
+	if event is InputEventKey:
+		var key_event := event as InputEventKey
+		if not key_event.pressed or key_event.echo:
+			return
+		var keycode: int = int(key_event.physical_keycode) if int(key_event.physical_keycode) != 0 else int(key_event.keycode)
+		if keycode == 0:
+			return
+		ControlsManager.set_binding(_listening_action, keycode)
+		_listening_hint.text = "%s bound to %s." % [
+			_listening_action.replace("_", " ").to_upper(),
+			ControlsManager.get_binding_display(_listening_action),
+		]
+		_listening_action = ""
+		_refresh_binding_buttons()
+		AudioManager.play_ui_sound(AudioManager.ui_click)
+		get_viewport().set_input_as_handled()
