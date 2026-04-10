@@ -302,6 +302,7 @@ func _animate_out() -> void:
 
 
 func _on_close_pressed() -> void:
+	SaveManager.save_now()
 	AudioManager.play_ui_sound(AudioManager.ui_click)
 	_animate_out()
 

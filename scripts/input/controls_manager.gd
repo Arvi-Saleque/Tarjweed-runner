@@ -51,13 +51,7 @@ static var ACTION_CONFIG: Dictionary = {
 	},
 }
 
-static var _runtime_ready: bool = false
-
-
 static func ensure_controls_ready() -> void:
-	if _runtime_ready:
-		return
-
 	for action in ACTION_ORDER:
 		if not InputMap.has_action(action):
 			InputMap.add_action(action)
@@ -71,9 +65,6 @@ static func ensure_controls_ready() -> void:
 		else:
 			for keycode in default_keys:
 				InputMap.action_add_event(action, _make_key_event(int(keycode)))
-
-	_runtime_ready = true
-
 
 static func get_actions() -> Array[Dictionary]:
 	ensure_controls_ready()
@@ -111,11 +102,12 @@ static func set_binding(action: String, keycode: int) -> void:
 	_clear_key_events(action)
 	InputMap.action_add_event(action, _make_key_event(keycode))
 	_save_current_bindings()
+	SaveManager.save_now()
 
 
 static func reset_to_defaults() -> void:
-	_runtime_ready = false
 	SaveManager.set_setting(SETTINGS_KEY, {})
+	SaveManager.save_now()
 	ensure_controls_ready()
 
 
