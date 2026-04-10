@@ -151,6 +151,22 @@ func _create_cyber_track_accents() -> void:
 	pulse_material.emission = Color(0.86, 0.22, 1.0, 1.0)
 	pulse_material.emission_energy_multiplier = 1.6
 
+	var guide_material := StandardMaterial3D.new()
+	guide_material.albedo_color = Color(0.08, 0.16, 0.26, 0.96)
+	guide_material.roughness = 0.06
+	guide_material.metallic = 0.45
+	guide_material.emission_enabled = true
+	guide_material.emission = Color(0.16, 0.94, 1.0, 1.0)
+	guide_material.emission_energy_multiplier = 0.9
+
+	var magenta_material := StandardMaterial3D.new()
+	magenta_material.albedo_color = Color(0.18, 0.10, 0.26, 0.96)
+	magenta_material.roughness = 0.05
+	magenta_material.metallic = 0.42
+	magenta_material.emission_enabled = true
+	magenta_material.emission = Color(0.92, 0.24, 1.0, 1.0)
+	magenta_material.emission_energy_multiplier = 1.85
+
 	for side in [-1.0, 1.0]:
 		var rail := MeshInstance3D.new()
 		var rail_mesh := BoxMesh.new()
@@ -160,6 +176,15 @@ func _create_cyber_track_accents() -> void:
 		rail.position = Vector3(side * (path_width * 0.5 - 0.18), 0.06, -chunk_length / 2.0)
 		rail.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(rail)
+
+		var outer_guard := MeshInstance3D.new()
+		var outer_mesh := BoxMesh.new()
+		outer_mesh.size = Vector3(0.18, 0.10, chunk_length)
+		outer_mesh.material = guide_material
+		outer_guard.mesh = outer_mesh
+		outer_guard.position = Vector3(side * (path_width * 0.5 + 0.42), -0.01, -chunk_length / 2.0)
+		outer_guard.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		add_child(outer_guard)
 
 	var pulse_count: int = int(chunk_length / 4.0)
 	for idx in pulse_count:
@@ -180,6 +205,41 @@ func _create_cyber_track_accents() -> void:
 		side_pad.position = Vector3(path_width * 0.24 * (-1.0 if idx % 2 == 0 else 1.0), 0.026, -(idx * 4.0) - 2.0)
 		side_pad.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(side_pad)
+
+	for lane_idx in GameManager.LANE_COUNT:
+		var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
+		for seg in 4:
+			var lane_flow := MeshInstance3D.new()
+			var flow_mesh := BoxMesh.new()
+			flow_mesh.size = Vector3(0.18, 0.018, 1.3)
+			flow_mesh.material = guide_material if (seg + lane_idx + chunk_index) % 2 == 0 else pulse_material
+			lane_flow.mesh = flow_mesh
+			lane_flow.position = Vector3(lane_x, 0.016, -(seg * 4.4) - 2.6)
+			lane_flow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(lane_flow)
+
+	if chunk_index % 2 == 0:
+		for z_sign in [-1.0, 1.0]:
+			var gate := MeshInstance3D.new()
+			var gate_mesh := BoxMesh.new()
+			gate_mesh.size = Vector3(path_width - 0.6, 0.04, 0.24)
+			gate_mesh.material = magenta_material if z_sign > 0.0 else guide_material
+			gate.mesh = gate_mesh
+			gate.position = Vector3(0.0, 0.042, -chunk_length * (0.28 if z_sign > 0.0 else 0.74))
+			gate.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			add_child(gate)
+
+	if chunk_index % 3 == 0:
+		for side in [-1.0, 1.0]:
+			for z_idx in 3:
+				var node := MeshInstance3D.new()
+				var node_mesh := BoxMesh.new()
+				node_mesh.size = Vector3(0.22, 0.10, 0.22)
+				node_mesh.material = magenta_material if z_idx == 1 else guide_material
+				node.mesh = node_mesh
+				node.position = Vector3(side * (path_width * 0.5 - 0.46), 0.10, -(z_idx * 5.0) - 4.0)
+				node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+				add_child(node)
 
 
 func _create_side_terrain() -> void:
