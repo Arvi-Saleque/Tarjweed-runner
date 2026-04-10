@@ -334,7 +334,7 @@ func _make_texture_stylebox(texture: Texture2D, modulate_color: Color, horizonta
 func _resolve_skin(skin_override: String = "") -> String:
 	if not skin_override.is_empty():
 		return skin_override
-	return "nature"
+	return get_gameplay_skin()
 
 
 func _get_skin_colors(skin_id: String) -> Dictionary:
