@@ -22,8 +22,8 @@ config/icon="res://assets/UI/Icons/icon_play_light.png"
 
 [audio]
 
-driver/enable_input=true
 buses/default_bus_layout="uid://d0fkxfk3uupcw"
+driver/enable_input=true
 bus/default_bus_layout="res://default_bus_layout.tres"
 
 [autoload]
