@@ -124,8 +124,9 @@ static func _spawn_cyber_mid_band(container: Node3D, chunk_length: float, genera
 		var instance: Node3D = scene.instantiate()
 		var category: String = _guess_scene_category(generator, scene)
 		var depth_shift: float = randf_range(0.0, 2.0)
+		var x_range: Vector2 = _get_cyber_mid_x_range(category)
 		instance.position = Vector3(
-			side * randf_range(MID_X_MIN + depth_shift, MID_X_MAX + 4.0),
+			side * randf_range(x_range.x + depth_shift, x_range.y),
 			0.0,
 			randf_range(0.0, -chunk_length)
 		)
@@ -137,6 +138,8 @@ static func _spawn_cyber_mid_band(container: Node3D, chunk_length: float, genera
 			scale_mul = 1.12
 		elif family == "service_sprawl" and category == "service_props":
 			scale_mul = 1.15
+		if category in ["pods", "infrastructure", "trees_large", "trees_pine"]:
+			scale_mul *= 0.84
 		var s: float = randf_range(scale_range.x, scale_range.y) * scale_mul
 		instance.scale = Vector3(s, s, s)
 
@@ -154,8 +157,9 @@ static func _spawn_cyber_far_band(container: Node3D, chunk_length: float, genera
 
 		var instance: Node3D = scene.instantiate()
 		var category: String = _guess_scene_category(generator, scene)
+		var x_range: Vector2 = _get_cyber_far_x_range(category)
 		instance.position = Vector3(
-			side * randf_range(FAR_X_MIN + 2.0, FAR_X_MAX + 12.0),
+			side * randf_range(x_range.x, x_range.y),
 			0.0,
 			randf_range(0.0, -chunk_length)
 		)
@@ -167,6 +171,8 @@ static func _spawn_cyber_far_band(container: Node3D, chunk_length: float, genera
 			scale_mul = 1.12
 		elif family == "dome_cluster" and category == "background":
 			scale_mul = 1.15
+		if category in ["background", "skyline", "infrastructure"]:
+			scale_mul *= 0.82
 		var s: float = randf_range(scale_range.x, scale_range.y) * scale_mul
 		var y_scale: float = s * randf_range(1.0, 1.25)
 		instance.scale = Vector3(s, y_scale, s)
@@ -184,12 +190,38 @@ static func _spawn_cyber_overhead_scenery(container: Node3D, chunk_length: float
 		return
 
 	var instance: Node3D = scene.instantiate()
-	instance.position = Vector3(0.0, randf_range(5.0, 7.0), randf_range(-4.0, -(chunk_length - 4.0)))
+	var side: float = -1.0 if chunk_index % 2 == 0 else 1.0
+	instance.position = Vector3(side * randf_range(path_width * 0.5 + 10.0, 15.5), randf_range(7.0, 9.5), randf_range(-4.0, -(chunk_length - 4.0)))
 	instance.rotation.y = PI * 0.5
-	var s: float = randf_range(1.25, 1.75)
+	var s: float = randf_range(0.85, 1.15)
 	instance.scale = Vector3(s, s, s)
+	_disable_shadows_recursive(instance)
 	_disable_collisions_recursive(instance)
 	container.add_child(instance)
+
+
+static func _get_cyber_mid_x_range(category: String) -> Vector2:
+	match category:
+		"pods", "infrastructure", "trees_large", "trees_pine":
+			return Vector2(16.0, 26.0)
+		"signals":
+			return Vector2(12.5, 20.5)
+		"service_props":
+			return Vector2(10.0, 17.0)
+		_:
+			return Vector2(MID_X_MIN, MID_X_MAX + 2.0)
+
+
+static func _get_cyber_far_x_range(category: String) -> Vector2:
+	match category:
+		"background", "skyline", "infrastructure":
+			return Vector2(30.0, 46.0)
+		"trees_large":
+			return Vector2(24.0, 38.0)
+		"trees_pine":
+			return Vector2(22.0, 34.0)
+		_:
+			return Vector2(FAR_X_MIN + 4.0, FAR_X_MAX + 10.0)
 
 
 static func _get_cyber_family(chunk_index: int, side: float) -> String:
