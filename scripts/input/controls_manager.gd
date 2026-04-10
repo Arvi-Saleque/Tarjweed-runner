@@ -13,41 +13,41 @@ const ACTION_ORDER: Array[String] = [
 	"pause",
 ]
 
-const ACTION_CONFIG: Dictionary = {
+static var ACTION_CONFIG: Dictionary = {
 	"move_left": {
 		"label": "MOVE LEFT",
 		"hint": "Shift one lane left",
-		"defaults": [Key.A, Key.LEFT],
+		"defaults": [65, 4194319],
 	},
 	"move_right": {
 		"label": "MOVE RIGHT",
 		"hint": "Shift one lane right",
-		"defaults": [Key.D, Key.RIGHT],
+		"defaults": [68, 4194321],
 	},
 	"jump": {
 		"label": "JUMP",
 		"hint": "Leap over hazards",
-		"defaults": [Key.SPACE, Key.UP],
+		"defaults": [32, 4194320],
 	},
 	"slide": {
 		"label": "SLIDE",
 		"hint": "Duck under obstacles",
-		"defaults": [Key.S, Key.DOWN],
+		"defaults": [83, 4194322],
 	},
 	"blast": {
 		"label": "BLAST",
 		"hint": "Double tap to fire",
-		"defaults": [Key.F],
+		"defaults": [70],
 	},
 	"bridge": {
 		"label": "BRIDGE",
 		"hint": "Hold to build",
-		"defaults": [Key.E],
+		"defaults": [69],
 	},
 	"pause": {
 		"label": "PAUSE",
 		"hint": "Pause or resume gameplay",
-		"defaults": [Key.ESCAPE],
+		"defaults": [4194305],
 	},
 }
 
