@@ -352,12 +352,14 @@ const CYBERPRANK_PROFILE: Dictionary = {
 			"res://assets/world/cyberprank/cyberpunk_kit/platforms/Rail_Long.gltf",
 			"res://assets/world/cyberprank/cyberpunk_kit/platforms/Support_Long.gltf",
 			"res://assets/world/cyberprank/cyberpunk_kit/platforms/Light_Street_2.gltf",
-		],
-		"giant": [
-			"res://assets/Characters/cyberprank/cyberpunk_kit/Enemy_Large_Gun.gltf",
-			"res://assets/Characters/cyberprank/cyberpunk_kit/Enemy_2Legs_Gun.gltf",
 			"res://assets/Characters/cyberprank/mech_pack/George.gltf",
 			"res://assets/Characters/cyberprank/mech_pack/Stan.gltf",
+		],
+		"giant": [
+			"res://assets/Characters/cyberprank/cyberpunk_kit/Enemy_Large.gltf",
+			"res://assets/Characters/cyberprank/cyberpunk_kit/Enemy_2Legs.gltf",
+			"res://assets/Characters/cyberprank/cyberpunk_kit/Enemy_2Legs_Gun.gltf",
+			"res://assets/Characters/cyberprank/cyberpunk_kit/Enemy_Large_Gun.gltf",
 		],
 	},
 	"player": {

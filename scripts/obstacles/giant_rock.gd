@@ -16,7 +16,6 @@ var state: RockState = RockState.INTACT
 var _model: Node3D = null
 var _hint_root: Node3D = null
 var _hint_icon: Sprite3D = null
-var _hint_label: Label3D = null
 var _shake_timer: float = 0.0
 var _original_positions: Array[Vector3] = []
 var _debris_nodes: Array[Node3D] = []
@@ -71,8 +70,8 @@ func trigger_blast() -> void:
 	remove_from_group("obstacles")
 
 	# Hide hint
-	if _hint_label:
-		_hint_label.visible = false
+	if _hint_root:
+		_hint_root.visible = false
 
 	# Spawn explosion VFX
 	_spawn_blast_effect()
@@ -185,15 +184,6 @@ func _create_hint_label() -> void:
 	_hint_icon.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_hint_icon.modulate = Color(0.18, 0.92, 1.0, 0.98) if GameManager.is_cyberprank_theme() else Color(1.0, 0.96, 0.86, 0.95)
 	_hint_root.add_child(_hint_icon)
-
-	_hint_label = Label3D.new()
-	_hint_label.text = "DOUBLE TAP"
-	_hint_label.font_size = 42
-	_hint_label.outline_size = 10
-	_hint_label.modulate = Color(0.82, 0.34, 1.0, 1.0) if GameManager.is_cyberprank_theme() else Color(0.98, 0.88, 0.45, 1.0)
-	_hint_label.position = Vector3(0.0, -0.7, 0.0)
-	_hint_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_hint_root.add_child(_hint_label)
 
 
 func show_hint() -> void:
