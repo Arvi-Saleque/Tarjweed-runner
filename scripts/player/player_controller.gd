@@ -77,7 +77,7 @@ var _nearby_giant_rock: Node = null
 const RIVER_DETECT_RANGE: float = 40.0     # Start detecting river at this distance
 const RIVER_BRIDGE_RANGE: float = 30.0     # Can build bridge within this range
 const RIVER_NO_JUMP_RANGE: float = 20.0    # No jumping within this range of a river
-const BRIDGE_HOLD_TIME: float = 0.4        # Seconds of holding spacebar to build
+const BRIDGE_HOLD_TIME: float = 0.8        # Seconds of holding spacebar to build
 var _nearby_river: Node = null
 var _space_hold_time: float = 0.0
 var _bridge_built_for_river: Node = null    # Track which river we already built a bridge for
@@ -308,7 +308,7 @@ func _switch_lane(direction: int) -> void:
 	current_lane = new_lane
 	target_x = GameManager.LANE_POSITIONS[current_lane]
 	lane_changed.emit(current_lane)
-	AudioManager.play_sfx(AudioManager.sfx_lane_swoosh, 0.06 if GameManager.is_cyberprank_theme() else 0.15)
+	AudioManager.play_sfx(AudioManager.sfx_lane_swoosh, 0.0 if GameManager.is_cyberprank_theme() else 0.15)
 
 
 func _jump() -> void:
