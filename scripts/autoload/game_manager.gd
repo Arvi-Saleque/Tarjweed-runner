@@ -2,6 +2,8 @@ extends Node
 ## GameManager - Global game state singleton.
 ## Manages score, coins, distance, speed, difficulty, and game state transitions.
 
+const ControlsManager = preload("res://scripts/input/controls_manager.gd")
+
 # --- Signals ---
 signal game_started
 signal game_over_triggered
@@ -50,6 +52,7 @@ var max_obstacle_frequency: float = 0.75
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS  # Keep processing even when paused
+	ControlsManager.ensure_controls_ready()
 
 
 func _process(delta: float) -> void:

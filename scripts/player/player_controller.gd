@@ -3,6 +3,7 @@ extends CharacterBody3D
 ## The player stays at Z=0; the world moves toward them.
 
 const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
+const ControlsManager = preload("res://scripts/input/controls_manager.gd")
 
 # --- Signals ---
 signal hit_obstacle
@@ -102,6 +103,7 @@ var _slide_shape: CapsuleShape3D
 
 
 func _ready() -> void:
+	ControlsManager.ensure_controls_ready()
 	add_to_group("player")
 
 	# Create collision shapes
@@ -262,14 +264,6 @@ func _handle_input() -> void:
 	# In Quiz/Pronunciation mode, spacebar jump is disabled — use quiz_jump() from manager
 	if GameManager.is_normal_mode():
 		if Input.is_action_just_pressed("jump"):
-			# Near a river — spacebar is reserved for bridge building, no jump
-			if _near_river_no_jump:
-				return
-			# Check for giant rock double-tap blast
-			var blast_result := _try_giant_rock_blast()
-			if blast_result == 1:
-				return
-			# Always jump regardless of blast state
 			if is_grounded or not coyote_timer.is_stopped():
 				_jump()
 			else:
@@ -282,6 +276,9 @@ func _handle_input() -> void:
 			else:
 				_input_buffer_slide = true
 				_buffer_timer = 0.15
+
+		if Input.is_action_just_pressed("blast"):
+			_try_giant_rock_blast()
 
 
 func _process_input_buffer(delta: float) -> void:
@@ -791,7 +788,7 @@ func _scan_for_rivers() -> void:
 
 
 func _update_bridge_hold(delta: float) -> void:
-	## Track spacebar/touch hold to build bridge over river.
+	## Track bridge-action/touch hold to build bridge over river.
 	if _nearby_river == null or not is_instance_valid(_nearby_river):
 		_space_hold_time = 0.0
 		_touch_hold_building = false
@@ -804,7 +801,7 @@ func _update_bridge_hold(delta: float) -> void:
 		return
 
 	# Check keyboard hold OR touch hold
-	var is_holding: bool = Input.is_action_pressed("jump")
+	var is_holding: bool = Input.is_action_pressed("bridge")
 
 	# Touch hold detection: finger is down, hasn't swiped, held long enough
 	if _touch_active and not _touch_hold_building:
