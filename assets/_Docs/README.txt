@@ -24,3 +24,5 @@ Important removed legacy dependencies:
 For the curated retained runtime set, see:
 - `ASSET_MIGRATION_MANIFEST.md`
 
+For the Cyberprank polish verification pass, see:
+- `CYBERPRANK_POLISH_ACCEPTANCE_CHECKLIST.md`
