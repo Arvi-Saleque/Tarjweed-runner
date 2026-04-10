@@ -212,6 +212,9 @@ const NATURE_PROFILE: Dictionary = {
 		"sun_indirect_energy": 0.5,
 		"shadow_max_distance": 100.0,
 	},
+	"ambient_motion": {
+		"enabled": false,
+	},
 	"decorations": {
 		"trees_large": [
 			"res://assets/world/quaternius_nature/trees/CommonTree_2.gltf",
@@ -349,6 +352,26 @@ const CYBERPRANK_PROFILE: Dictionary = {
 		"road_fill_energy": 0.72,
 		"rim_color": Color(0.92, 0.22, 1.0, 1.0),
 		"rim_energy": 0.34,
+	},
+	"ambient_motion": {
+		"enabled": true,
+		"signal_bob_height": 0.10,
+		"signal_bob_speed": 1.4,
+		"signal_yaw_speed": 0.24,
+		"signal_light_min": 0.35,
+		"signal_light_max": 0.88,
+		"service_bob_height": 0.04,
+		"service_bob_speed": 1.1,
+		"service_yaw_speed": 0.12,
+		"service_light_min": 0.18,
+		"service_light_max": 0.46,
+		"overhead_bob_height": 0.18,
+		"overhead_bob_speed": 0.9,
+		"overhead_yaw_speed": 0.16,
+		"overhead_light_min": 0.26,
+		"overhead_light_max": 0.72,
+		"particle_amount": 36,
+		"streak_amount": 10,
 	},
 	"decorations": {
 		"trees_large": [

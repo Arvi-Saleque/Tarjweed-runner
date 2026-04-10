@@ -3,6 +3,8 @@ extends RefCounted
 ## The goal is an authored runner backdrop: clean near-road dressing, readable mid-ground,
 ## and low-distraction silhouettes in the far background.
 
+const CyberAmbientMotionScript = preload("res://scripts/world/cyber_ambient_motion.gd")
+
 const NEAR_MIN_PER_SIDE: int = 8
 const NEAR_MAX_PER_SIDE: int = 12
 const MID_MIN_PER_SIDE: int = 5
@@ -71,13 +73,13 @@ static func _spawn_cyber_decorations(chunk: Node3D, container: Node3D, chunk_len
 	var chunk_index: int = int(chunk.get("chunk_index"))
 	for side in [-1.0, 1.0]:
 		var family: String = _get_cyber_family(chunk_index, side)
-		_spawn_cyber_near_band(container, chunk_length, path_width, generator, side, family)
-		_spawn_cyber_mid_band(container, chunk_length, generator, side, family)
-		_spawn_cyber_far_band(container, chunk_length, generator, side, family)
+		_spawn_cyber_near_band(container, chunk_length, path_width, generator, side, family, chunk_index)
+		_spawn_cyber_mid_band(container, chunk_length, generator, side, family, chunk_index)
+		_spawn_cyber_far_band(container, chunk_length, generator, side, family, chunk_index)
 	_spawn_cyber_overhead_scenery(container, chunk_length, path_width, generator, chunk_index)
 
 
-static func _spawn_cyber_near_band(container: Node3D, chunk_length: float, path_width: float, generator: Node3D, side: float, family: String) -> void:
+static func _spawn_cyber_near_band(container: Node3D, chunk_length: float, path_width: float, generator: Node3D, side: float, family: String, chunk_index: int) -> void:
 	var count: int = randi_range(7, 10)
 	var categories: Array[String] = _get_cyber_near_categories(family)
 
@@ -109,10 +111,11 @@ static func _spawn_cyber_near_band(container: Node3D, chunk_length: float, path_
 		elif category == "rocks_small":
 			instance.position.x = side * randf_range(5.9, 9.4)
 
+		_apply_cyber_ambient_motion(instance, category, generator, chunk_index, side)
 		container.add_child(instance)
 
 
-static func _spawn_cyber_mid_band(container: Node3D, chunk_length: float, generator: Node3D, side: float, family: String) -> void:
+static func _spawn_cyber_mid_band(container: Node3D, chunk_length: float, generator: Node3D, side: float, family: String, chunk_index: int) -> void:
 	var count: int = randi_range(4, 6)
 	var categories: Array[String] = _get_cyber_mid_categories(family)
 
@@ -143,10 +146,11 @@ static func _spawn_cyber_mid_band(container: Node3D, chunk_length: float, genera
 		var s: float = randf_range(scale_range.x, scale_range.y) * scale_mul
 		instance.scale = Vector3(s, s, s)
 
+		_apply_cyber_ambient_motion(instance, category, generator, chunk_index, side)
 		container.add_child(instance)
 
 
-static func _spawn_cyber_far_band(container: Node3D, chunk_length: float, generator: Node3D, side: float, family: String) -> void:
+static func _spawn_cyber_far_band(container: Node3D, chunk_length: float, generator: Node3D, side: float, family: String, chunk_index: int) -> void:
 	var count: int = randi_range(4, 6)
 	var categories: Array[String] = _get_cyber_far_categories(family)
 
@@ -179,6 +183,7 @@ static func _spawn_cyber_far_band(container: Node3D, chunk_length: float, genera
 		instance.position.y = -0.08 if category in ["background", "skyline"] else 0.0
 
 		_disable_shadows_recursive(instance)
+		_apply_cyber_ambient_motion(instance, category, generator, chunk_index, side)
 		container.add_child(instance)
 
 
@@ -197,6 +202,7 @@ static func _spawn_cyber_overhead_scenery(container: Node3D, chunk_length: float
 	instance.scale = Vector3(s, s, s)
 	_disable_shadows_recursive(instance)
 	_disable_collisions_recursive(instance)
+	_apply_cyber_ambient_motion(instance, "scenic_overhead", generator, chunk_index, side)
 	container.add_child(instance)
 
 
@@ -474,6 +480,74 @@ static func _disable_collisions_recursive(node: Node) -> void:
 		(node as CollisionObject3D).collision_mask = 0
 	for child in node.get_children():
 		_disable_collisions_recursive(child)
+
+
+static func _apply_cyber_ambient_motion(instance: Node3D, category: String, generator: Node3D, chunk_index: int, side: float) -> void:
+	if not _is_cyber_theme(generator):
+		return
+	var motion_profile: Dictionary = generator.theme_profile.get("ambient_motion", {})
+	if not bool(motion_profile.get("enabled", false)):
+		return
+
+	var config: Dictionary = {
+		"phase": float(chunk_index) * 0.73 + side * 0.41 + absf(instance.position.z) * 0.037,
+	}
+
+	match category:
+		"signals":
+			config["bob_height"] = float(motion_profile.get("signal_bob_height", 0.10))
+			config["bob_speed"] = float(motion_profile.get("signal_bob_speed", 1.4))
+			config["yaw_speed"] = float(motion_profile.get("signal_yaw_speed", 0.24)) * side
+			config["sway_angle"] = 0.035
+			config["sway_speed"] = 1.7
+			config["roll_angle"] = 0.02
+			config["light_range"] = 5.4
+			config["light_min"] = float(motion_profile.get("signal_light_min", 0.35))
+			config["light_max"] = float(motion_profile.get("signal_light_max", 0.88))
+			config["light_speed"] = 2.4
+			config["light_offset"] = Vector3(0.0, 1.7, 0.0)
+			config["light_color"] = Color(0.10, 0.92, 1.0, 1.0) if side < 0.0 else Color(0.96, 0.22, 1.0, 1.0)
+		"service_props":
+			config["bob_height"] = float(motion_profile.get("service_bob_height", 0.04))
+			config["bob_speed"] = float(motion_profile.get("service_bob_speed", 1.1))
+			config["yaw_speed"] = float(motion_profile.get("service_yaw_speed", 0.12)) * side
+			config["z_sway"] = 0.03
+			if posmod(chunk_index + int(absf(instance.position.z)), 3) == 0:
+				config["light_range"] = 3.8
+				config["light_min"] = float(motion_profile.get("service_light_min", 0.18))
+				config["light_max"] = float(motion_profile.get("service_light_max", 0.46))
+				config["light_speed"] = 1.8
+				config["light_offset"] = Vector3(0.0, 0.9, 0.0)
+				config["light_color"] = Color(1.0, 0.72, 0.22, 1.0)
+		"infrastructure", "skyline":
+			if posmod(chunk_index + int(absf(instance.position.x)), 4) != 0:
+				return
+			config["light_range"] = 6.5
+			config["light_min"] = 0.10
+			config["light_max"] = 0.34
+			config["light_speed"] = 1.1
+			config["light_offset"] = Vector3(0.0, 2.8, 0.0)
+			config["light_color"] = Color(0.10, 0.92, 1.0, 1.0)
+		"scenic_overhead":
+			config["bob_height"] = float(motion_profile.get("overhead_bob_height", 0.18))
+			config["bob_speed"] = float(motion_profile.get("overhead_bob_speed", 0.9))
+			config["yaw_speed"] = float(motion_profile.get("overhead_yaw_speed", 0.16)) * -side
+			config["sway_angle"] = 0.02
+			config["sway_speed"] = 1.1
+			config["light_range"] = 7.2
+			config["light_min"] = float(motion_profile.get("overhead_light_min", 0.26))
+			config["light_max"] = float(motion_profile.get("overhead_light_max", 0.72))
+			config["light_speed"] = 1.5
+			config["light_offset"] = Vector3(0.0, 1.2, 0.0)
+			config["light_color"] = Color(0.12, 0.88, 1.0, 1.0)
+		_:
+			return
+
+	var motion := Node.new()
+	motion.name = "CyberAmbientMotion"
+	motion.set_script(CyberAmbientMotionScript)
+	instance.add_child(motion)
+	motion.call("configure", config)
 
 
 static func _spawn_fallback_decorations(chunk: Node3D, chunk_length: float, path_width: float) -> void:
