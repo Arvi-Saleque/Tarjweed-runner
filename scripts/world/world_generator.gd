@@ -148,10 +148,10 @@ func _setup_materials() -> void:
 	road_patch_material = StandardMaterial3D.new()
 	road_patch_material.albedo_color = road_profile.get("patch", Color(0.42, 0.34, 0.24, 1.0))
 	road_patch_material.roughness = road_profile.get("patch_roughness", 1.0)
-	if theme_id == "cyberprank":
+	if road_profile.get("patch_emission_energy", 0.0) > 0.0:
 		road_patch_material.emission_enabled = true
-		road_patch_material.emission = Color(0.05, 0.52, 0.72, 1.0)
-		road_patch_material.emission_energy_multiplier = 0.85
+		road_patch_material.emission = road_profile.get("patch_emission", Color(0.05, 0.52, 0.72, 1.0))
+		road_patch_material.emission_energy_multiplier = road_profile.get("patch_emission_energy", 0.85)
 
 	grass_material = StandardMaterial3D.new()
 	grass_material.albedo_color = road_profile.get("side", Color(0.31, 0.47, 0.24, 1.0))

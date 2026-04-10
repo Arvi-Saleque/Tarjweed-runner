@@ -111,7 +111,7 @@ static func _spawn_mid_band(container: Node3D, chunk_length: float, generator: N
 		var s: float = randf_range(scale_range.x, scale_range.y)
 		instance.scale = Vector3(s, s, s)
 
-		if category in ["trees_large", "trees_pine", "rocks"]:
+		if category in ["trees_large", "trees_pine", "rocks"] and not _is_cyber_theme(generator):
 			_disable_shadows_recursive(instance)
 
 		container.add_child(instance)
