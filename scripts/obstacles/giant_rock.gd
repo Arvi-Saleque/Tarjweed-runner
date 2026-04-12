@@ -32,6 +32,8 @@ func setup(model_scene: PackedScene) -> void:
 		add_child(_model)
 		# Scale up to be imposing — fill all lanes
 		_model.scale = Vector3(3.5, 3.0, 3.0)
+		if not GameManager.is_cyberprank_theme():
+			_apply_nature_rock_tint(_model)
 
 	# Create wide collision spanning all 3 lanes
 	var col := CollisionShape3D.new()
@@ -196,6 +198,34 @@ func show_hint() -> void:
 func hide_hint() -> void:
 	if _hint_root:
 		_hint_root.visible = false
+
+
+func _apply_nature_rock_tint(node: Node) -> void:
+	if node is MeshInstance3D:
+		var mi := node as MeshInstance3D
+		if mi.mesh != null:
+			for surface_idx in mi.mesh.get_surface_count():
+				var source_material := mi.get_active_material(surface_idx)
+				var tinted_material: StandardMaterial3D = null
+
+				if source_material is StandardMaterial3D:
+					tinted_material = (source_material as StandardMaterial3D).duplicate() as StandardMaterial3D
+				else:
+					tinted_material = StandardMaterial3D.new()
+
+				var base_color := Color(1.0, 1.0, 1.0, 1.0)
+				if source_material is StandardMaterial3D:
+					base_color = (source_material as StandardMaterial3D).albedo_color
+
+				var stone_target := Color(0.34, 0.35, 0.33, 1.0)
+				tinted_material.albedo_color = base_color.lerp(stone_target, 0.38).darkened(0.18)
+				tinted_material.roughness = maxf(tinted_material.roughness, 0.9)
+				tinted_material.metallic = 0.0
+				tinted_material.emission_enabled = false
+				mi.set_surface_override_material(surface_idx, tinted_material)
+
+	for child in node.get_children():
+		_apply_nature_rock_tint(child)
 
 
 func _apply_glow_tint(node: Node, color: Color) -> void:

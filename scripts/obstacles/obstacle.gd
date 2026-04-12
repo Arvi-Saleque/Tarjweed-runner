@@ -18,6 +18,8 @@ func setup(model_scene: PackedScene, obs_type: ObstacleType = ObstacleType.GROUN
 	if model_scene:
 		_model = model_scene.instantiate()
 		add_child(_model)
+		if not GameManager.is_cyberprank_theme():
+			_apply_nature_contrast_tint(_model)
 
 	# Create collision from model bounds
 	_auto_collision()
@@ -34,6 +36,8 @@ func setup_overhead(model_scene: PackedScene) -> void:
 	if model_scene:
 		_model = model_scene.instantiate()
 		add_child(_model)
+		if not GameManager.is_cyberprank_theme():
+			_apply_nature_contrast_tint(_model)
 
 	# Get model AABB to know its size
 	var aabb := _compute_aabb()
@@ -130,6 +134,37 @@ func _compute_aabb() -> AABB:
 			else:
 				aabb = aabb.merge(mesh_aabb)
 	return aabb
+
+
+func _apply_nature_contrast_tint(node: Node) -> void:
+	if node is MeshInstance3D:
+		var mesh_instance := node as MeshInstance3D
+		if mesh_instance.mesh != null:
+			for surface_idx in mesh_instance.mesh.get_surface_count():
+				var source_material := mesh_instance.get_active_material(surface_idx)
+				var tinted_material: StandardMaterial3D = null
+
+				if source_material is StandardMaterial3D:
+					var std_material := source_material as StandardMaterial3D
+					if std_material.albedo_texture != null:
+						continue
+					tinted_material = std_material.duplicate() as StandardMaterial3D
+				else:
+					tinted_material = StandardMaterial3D.new()
+
+				var base_color := Color(0.82, 0.82, 0.82, 1.0)
+				if source_material is StandardMaterial3D:
+					base_color = (source_material as StandardMaterial3D).albedo_color
+
+				var darker_target := Color(0.24, 0.22, 0.20, 1.0)
+				tinted_material.albedo_color = base_color.lerp(darker_target, 0.7)
+				tinted_material.roughness = maxf(tinted_material.roughness, 0.88)
+				tinted_material.metallic = 0.0
+				tinted_material.emission_enabled = false
+				mesh_instance.set_surface_override_material(surface_idx, tinted_material)
+
+	for child in node.get_children():
+		_apply_nature_contrast_tint(child)
 
 
 func _get_all_children(node: Node) -> Array[Node]:
