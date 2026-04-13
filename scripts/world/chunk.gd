@@ -282,10 +282,7 @@ func _is_cyber_theme() -> bool:
 
 
 func _uses_single_full_road() -> bool:
-	if _generator == null:
-		return false
-	var theme_id: String = _generator.get("theme_id")
-	return theme_id == "nature" or theme_id == "park"
+	return _generator != null and _generator.get("theme_id") == "nature"
 
 
 func _get_chunk_ground_material() -> StandardMaterial3D:

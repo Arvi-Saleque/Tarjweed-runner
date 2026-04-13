@@ -305,8 +305,6 @@ static func _spawn_near_band(container: Node3D, chunk_length: float, path_width:
 	var near_categories: Array[String] = ["grass", "grass", "grass", "bushes", "bushes", "rocks_small", "flowers"]
 	if _is_cyber_theme(generator):
 		near_categories = ["grass", "grass", "rocks_small", "bushes", "flowers", "flowers"]
-	elif _is_park_theme(generator):
-		near_categories = ["grass", "grass", "grass", "flowers", "flowers", "bushes", "rocks_small"]
 	var count: int = randi_range(NEAR_MIN_PER_SIDE, NEAR_MAX_PER_SIDE)
 
 	for i in count:
@@ -340,8 +338,6 @@ static func _spawn_mid_band(container: Node3D, chunk_length: float, generator: N
 	var mid_categories: Array[String] = ["bushes", "bushes", "rocks", "trees_large", "trees_pine"]
 	if _is_cyber_theme(generator):
 		mid_categories = ["bushes", "rocks", "trees_pine", "trees_pine", "flowers"]
-	elif _is_park_theme(generator):
-		mid_categories = ["bushes", "flowers", "rocks", "trees_large", "trees_large", "trees_pine"]
 	var count: int = randi_range(MID_MIN_PER_SIDE, MID_MAX_PER_SIDE)
 
 	for i in count:
@@ -372,8 +368,6 @@ static func _spawn_far_band(container: Node3D, chunk_length: float, generator: N
 	var far_categories: Array[String] = ["trees_large", "trees_pine", "background", "background"]
 	if _is_cyber_theme(generator):
 		far_categories = ["trees_large", "background", "background", "background"]
-	elif _is_park_theme(generator):
-		far_categories = ["trees_large", "trees_large", "trees_pine", "background"]
 	var count: int = randi_range(FAR_MIN_PER_SIDE, FAR_MAX_PER_SIDE)
 
 	for i in count:
@@ -415,10 +409,6 @@ static func _is_cyber_theme(generator: Node3D) -> bool:
 	return generator != null and generator.get("theme_id") == "cyberprank"
 
 
-static func _is_park_theme(generator: Node3D) -> bool:
-	return generator != null and generator.get("theme_id") == "park"
-
-
 static func _get_near_scale(generator: Node3D, category: String) -> Vector2:
 	if _is_cyber_theme(generator):
 		match category:
@@ -434,16 +424,6 @@ static func _get_near_scale(generator: Node3D, category: String) -> Vector2:
 				return Vector2(0.72, 1.08)
 			"signals":
 				return Vector2(0.80, 1.12)
-	if _is_park_theme(generator):
-		match category:
-			"grass":
-				return Vector2(0.9, 1.35)
-			"flowers":
-				return Vector2(0.95, 1.4)
-			"rocks_small":
-				return Vector2(0.6, 0.95)
-			"bushes":
-				return Vector2(0.85, 1.2)
 	return NEAR_SCALE.get(category, Vector2(0.9, 1.1))
 
 
@@ -468,18 +448,6 @@ static func _get_mid_scale(generator: Node3D, category: String) -> Vector2:
 				return Vector2(0.95, 1.22)
 			"signals":
 				return Vector2(1.0, 1.25)
-	if _is_park_theme(generator):
-		match category:
-			"bushes":
-				return Vector2(1.0, 1.45)
-			"rocks":
-				return Vector2(0.95, 1.3)
-			"trees_large":
-				return Vector2(1.15, 1.65)
-			"trees_pine":
-				return Vector2(1.0, 1.45)
-			"flowers":
-				return Vector2(1.0, 1.35)
 	return MID_SCALE.get(category, Vector2(0.95, 1.2))
 
 
@@ -496,14 +464,6 @@ static func _get_far_scale(generator: Node3D, category: String) -> Vector2:
 				return Vector2(2.2, 3.2)
 			"infrastructure":
 				return Vector2(1.6, 2.4)
-	if _is_park_theme(generator):
-		match category:
-			"trees_large":
-				return Vector2(1.45, 2.1)
-			"trees_pine":
-				return Vector2(1.3, 1.9)
-			"background":
-				return Vector2(1.6, 2.35)
 	return FAR_SCALE.get(category, Vector2(1.2, 1.8))
 
 

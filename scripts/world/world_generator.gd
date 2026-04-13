@@ -139,8 +139,6 @@ func _setup_materials() -> void:
 
 	if theme_id == "nature":
 		ground_material = _build_nature_road_material()
-	elif theme_id == "park":
-		ground_material = _build_park_road_material()
 	else:
 		ground_material = StandardMaterial3D.new()
 		ground_material.albedo_color = road_profile.get("ground", Color(0.60, 0.48, 0.31, 1.0))
@@ -229,16 +227,6 @@ func _build_nature_road_material() -> StandardMaterial3D:
 		material.ao_texture = load(ao_path) as Texture2D
 		material.ao_light_affect = 0.65
 
-	return material
-
-
-func _build_park_road_material() -> StandardMaterial3D:
-	var road_profile: Dictionary = theme_profile.get("road", {})
-	var material := StandardMaterial3D.new()
-	material.albedo_color = road_profile.get("ground", Color(0.82, 0.70, 0.44, 1.0))
-	material.roughness = road_profile.get("ground_roughness", 0.94)
-	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-	material.metallic = 0.0
 	return material
 
 
