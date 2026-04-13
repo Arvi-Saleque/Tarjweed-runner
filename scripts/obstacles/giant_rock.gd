@@ -37,8 +37,9 @@ func setup(model_scene: PackedScene) -> void:
 		# Scale up to be imposing — fill all lanes
 		var model_scale := Vector3(3.5, 3.0, 3.0)
 		if model_scene.resource_path.contains("BlastRocks/Rocks.glb"):
-			model_scale = Vector3(5.1, 4.1, 3.8)
-			_model.position = Vector3(0.0, -0.15, 0.0)
+			_recenter_blast_rocks_model(_model)
+			model_scale = Vector3(1.05, 1.05, 1.05)
+			_model.position = Vector3(0.0, 0.02, 0.0)
 		_model.scale = model_scale
 		if not GameManager.is_cyberprank_theme():
 			_apply_nature_rock_material(_model)
@@ -248,6 +249,22 @@ func _get_nature_rock_material() -> StandardMaterial3D:
 
 	_cached_nature_rock_material = material
 	return _cached_nature_rock_material
+
+
+func _recenter_blast_rocks_model(root: Node3D) -> void:
+	var parts: Array[Node3D] = []
+	var x_sum: float = 0.0
+	for child in root.get_children():
+		if child is Node3D:
+			parts.append(child)
+			x_sum += (child as Node3D).position.x
+
+	if parts.is_empty():
+		return
+
+	var x_center: float = x_sum / float(parts.size())
+	for part in parts:
+		part.position.x -= x_center
 
 
 func _apply_glow_tint(node: Node, color: Color) -> void:
