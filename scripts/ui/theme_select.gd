@@ -583,7 +583,7 @@ func _refresh_featured_runner() -> void:
 	_runner_title.text = data.get("title", "")
 	_runner_subtitle.text = data.get("subtitle", "").to_upper()
 	var theme_label: String = _selected_theme.capitalize()
-	_runner_meta.text = "%s RUNNER\nChosen for a clean silhouette, readable motion, and a stronger %s-theme feel during gameplay." % [theme_label, _selected_theme]
+	_runner_meta.text = "%s RUNNER\nChosen for a clear silhouette, readable motion, and a stronger %s-theme identity during gameplay." % [theme_label, _selected_theme]
 	_runner_confirm_btn.text = "  SELECT %s" % data.get("title", "")
 
 	for runner_id in _runner_tiles.keys():
