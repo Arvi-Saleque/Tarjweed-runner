@@ -1526,12 +1526,11 @@ func _find_node_recursive(node: Node, node_name: String) -> Node:
 
 
 func _apply_runner_palette(node: Node, style: String = "nature_gradient") -> void:
+	if style == "nature_passthrough":
+		return
 	var cyber_palette: Dictionary = {}
 	if style == "cyber_mech":
 		cyber_palette = _get_cyber_runner_palette()
-	var nature_palette: Dictionary = {}
-	if style == "nature_original" or style == "nature_green":
-		nature_palette = _get_nature_runner_palette(style)
 	if node is MeshInstance3D:
 		var mesh_instance := node as MeshInstance3D
 		if mesh_instance.mesh:
@@ -1550,11 +1549,6 @@ func _apply_runner_palette(node: Node, style: String = "nature_gradient") -> voi
 							mesh_instance.set_surface_override_material(surface_idx, _create_cyber_gradient_material(tinted_material, cyber_palette))
 							continue
 						_apply_cyber_material_tint(tinted_material, mesh_name, cyber_palette)
-					"nature_original", "nature_green":
-						if mesh_name.contains("mannequin"):
-							mesh_instance.set_surface_override_material(surface_idx, _create_nature_gradient_material(tinted_material, nature_palette))
-							continue
-						_apply_nature_material_tint(tinted_material, mesh_name, nature_palette)
 					_:
 						if mesh_name.contains("hair") or mesh_name.contains("eyebrow"):
 							tinted_material.albedo_color = Color(0.22, 0.15, 0.10, 1.0)
@@ -1571,36 +1565,6 @@ func _apply_runner_palette(node: Node, style: String = "nature_gradient") -> voi
 				mesh_instance.set_surface_override_material(surface_idx, tinted_material)
 	for child in node.get_children():
 		_apply_runner_palette(child, style)
-
-
-func _apply_nature_material_tint(material: StandardMaterial3D, mesh_name: String, nature_palette: Dictionary = {}) -> void:
-	var primary: Color = nature_palette.get("primary", Color(1.0, 1.0, 1.0, 1.0))
-	var secondary: Color = nature_palette.get("secondary", Color(0.86, 0.89, 0.82, 1.0))
-	var hair_color: Color = nature_palette.get("hair", Color(0.22, 0.15, 0.10, 1.0))
-	var eye_color: Color = nature_palette.get("eyes", Color(1.0, 1.0, 1.0, 1.0))
-	var has_albedo_texture: bool = material.albedo_texture != null
-
-	material.emission_enabled = false
-	material.metallic = minf(material.metallic, 0.08)
-	material.roughness = maxf(material.roughness, 0.82)
-
-	if mesh_name.contains("hair") or mesh_name.contains("eyebrow") or mesh_name.contains("beard"):
-		material.albedo_color = hair_color
-		material.roughness = 0.95
-		return
-
-	if mesh_name.contains("eye"):
-		material.albedo_color = eye_color
-		return
-
-	if has_albedo_texture:
-		material.albedo_color = primary
-		return
-
-	if mesh_name.contains("body") or mesh_name.contains("torso") or mesh_name.contains("robe") or mesh_name.contains("cape") or mesh_name.contains("cloth") or mesh_name.contains("arm") or mesh_name.contains("leg") or mesh_name.contains("hat"):
-		material.albedo_color = secondary
-	else:
-		material.albedo_color = primary.lerp(secondary, 0.35)
 
 
 func _apply_cyber_material_tint(material: StandardMaterial3D, mesh_name: String, cyber_palette: Dictionary = {}) -> void:
@@ -1648,7 +1612,7 @@ func _apply_cyber_material_tint(material: StandardMaterial3D, mesh_name: String,
 	material.emission_energy_multiplier = 0.34 if has_albedo_texture else 0.56
 
 
-func _create_nature_gradient_material(source_material: StandardMaterial3D, nature_palette: Dictionary = {}) -> Material:
+func _create_nature_gradient_material(source_material: StandardMaterial3D) -> Material:
 	var shader := Shader.new()
 	shader.code = """
 shader_type spatial;
@@ -1671,9 +1635,6 @@ void fragment() {
 
 	var material := ShaderMaterial.new()
 	material.shader = shader
-	material.set_shader_parameter("bottom_color", nature_palette.get("bottom", Color(0.26, 0.33, 0.18, 1.0)))
-	material.set_shader_parameter("mid_color", nature_palette.get("secondary", Color(0.42, 0.56, 0.28, 1.0)))
-	material.set_shader_parameter("top_color", nature_palette.get("top", Color(0.74, 0.82, 0.52, 1.0)))
 	material.set_shader_parameter("roughness_value", maxf(source_material.roughness, 0.88))
 	return material
 
@@ -1724,26 +1685,6 @@ func _get_cyber_runner_palette() -> Dictionary:
 		"metal_light": Color(0.86, 0.94, 1.0, 1.0),
 		"metal_mid": Color(0.20, 0.34, 0.46, 1.0).lerp(accent, 0.18),
 		"metal_dark": Color(0.04, 0.08, 0.12, 1.0).lerp(accent, 0.06),
-	}
-
-
-func _get_nature_runner_palette(style: String) -> Dictionary:
-	if style == "nature_green":
-		return {
-			"primary": Color(0.62, 0.92, 0.58, 1.0),
-			"secondary": Color(0.26, 0.56, 0.28, 1.0),
-			"bottom": Color(0.14, 0.28, 0.13, 1.0),
-			"top": Color(0.80, 0.94, 0.68, 1.0),
-			"hair": Color(0.12, 0.18, 0.08, 1.0),
-			"eyes": Color(0.94, 0.98, 0.92, 1.0),
-		}
-	return {
-		"primary": Color(1.0, 1.0, 1.0, 1.0),
-		"secondary": Color(0.90, 0.92, 0.86, 1.0),
-		"bottom": Color(0.26, 0.33, 0.18, 1.0),
-		"top": Color(0.74, 0.82, 0.52, 1.0),
-		"hair": Color(0.22, 0.15, 0.10, 1.0),
-		"eyes": Color(1.0, 1.0, 1.0, 1.0),
 	}
 
 
