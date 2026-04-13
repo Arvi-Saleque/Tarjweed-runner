@@ -282,10 +282,12 @@ func _is_cyber_theme() -> bool:
 
 
 func _uses_alt_full_road() -> bool:
+	var road_run_size: int = 6
+	var road_run_index: int = int(chunk_index / road_run_size)
 	return _generator != null \
 		and _generator.get("theme_id") == "nature" \
 		and _generator.get("road_alt_ground_material") != null \
-		and chunk_index % 4 == 1
+		and road_run_index % 2 == 1
 
 
 func _get_chunk_ground_material() -> StandardMaterial3D:
