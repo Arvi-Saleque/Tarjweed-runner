@@ -340,26 +340,6 @@ const NATURE_PLAYER_VARIANTS: Dictionary = {
 	},
 }
 
-const PARK_PLAYER_VARIANTS: Dictionary = {
-	"elf": {
-		"id": "elf",
-		"title": "ELF",
-		"subtitle": "Park trail runner",
-		"color": Color(0.46, 0.82, 0.40),
-		"icon_text": "ELF",
-		"base_scene_path": "res://assets/Characters/nature_variants/Elf.gltf",
-		"preview_image_path": "res://assets/UI/nature/runner_previews/elf.png",
-		"fallback_scene_paths": [
-			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
-		],
-		"extra_anim_scene_paths": [],
-		"visual_scale": 0.58,
-		"style": "nature_passthrough",
-		"preview_scale": 1.1,
-		"preview_height": -0.98,
-	},
-}
-
 const NATURE_PROFILE: Dictionary = {
 	"id": "nature",
 	"road": {
@@ -486,137 +466,6 @@ const NATURE_PROFILE: Dictionary = {
 		"fallback_scene_paths": [],
 		"visual_scale": 0.58,
 		"style": "nature_gradient",
-	},
-	"ui": {
-		"skin": "nature",
-	},
-}
-
-const PARK_PROFILE: Dictionary = {
-	"id": "park",
-	"road": {
-		"ground": Color(0.82, 0.70, 0.44, 1.0),
-		"ground_roughness": 0.94,
-		"detail": Color(0.90, 0.80, 0.54, 1.0),
-		"detail_roughness": 0.92,
-		"patch": Color(0.72, 0.59, 0.34, 1.0),
-		"patch_roughness": 0.98,
-		"side": Color(0.54, 0.78, 0.40, 1.0),
-		"side_roughness": 0.95,
-		"edge": Color(0.44, 0.33, 0.20, 1.0),
-		"edge_roughness": 0.88,
-		"lane_marker": Color(0.97, 0.95, 0.82, 0.42),
-		"lane_marker_emission": Color(0.0, 0.0, 0.0, 1.0),
-		"lane_marker_emission_energy": 0.0,
-		"patch_emission": Color(0.0, 0.0, 0.0, 1.0),
-		"patch_emission_energy": 0.0,
-	},
-	"atmosphere": {
-		"background_mode": "sky",
-		"background_color": Color(0.78, 0.86, 0.94, 1.0),
-		"ambient_source": "sky",
-		"ambient_color": Color(0.86, 0.90, 0.84, 1.0),
-		"ambient_energy": 0.84,
-		"exposure": 1.08,
-		"white": 6.2,
-		"glow_base": 0.28,
-		"glow_max": 0.46,
-		"glow_strength": 0.7,
-		"glow_bloom": 0.08,
-		"fog_color": Color(0.92, 0.91, 0.76, 1.0),
-		"fog_density_base": 0.0025,
-		"fog_density_max": 0.0055,
-		"fog_light_energy": 1.05,
-		"fog_aerial": 0.72,
-		"fog_sky_affect": 0.88,
-		"adjustment_brightness": 1.08,
-		"adjustment_contrast": 1.04,
-		"adjustment_saturation": 1.14,
-		"sun_color": Color(1.0, 0.95, 0.78, 1.0),
-		"sun_energy": 1.55,
-		"sun_indirect_energy": 0.68,
-		"shadow_max_distance": 105.0,
-	},
-	"ambient_motion": {
-		"enabled": false,
-	},
-	"decorations": {
-		"trees_large": [
-			"res://assets/world/quaternius_nature/trees/CommonTree_2.gltf",
-			"res://assets/world/quaternius_nature/trees/CommonTree_4.gltf",
-		],
-		"trees_pine": [
-			"res://assets/world/quaternius_nature/trees/Pine_2.gltf",
-			"res://assets/world/quaternius_nature/trees/Pine_4.gltf",
-		],
-		"bushes": [
-			"res://assets/world/quaternius_nature/plants/Bush_Common.gltf",
-			"res://assets/world/quaternius_nature/plants/Fern_1.gltf",
-		],
-		"flowers": [
-			"res://assets/world/quaternius_nature/plants/Flower_4_Group.gltf",
-		],
-		"rocks": [
-			"res://assets/world/quaternius_nature/rocks/Rock_Medium_1.gltf",
-			"res://assets/world/quaternius_nature/rocks/Rock_Medium_2.gltf",
-		],
-		"rocks_small": [
-			"res://assets/world/quaternius_nature/rocks/RockPath_Round_Small_2.gltf",
-			"res://assets/world/quaternius_nature/rocks/RockPath_Round_Wide.gltf",
-		],
-		"grass": [
-			"res://assets/world/quaternius_nature/plants/Grass_Common_Short.gltf",
-			"res://assets/world/quaternius_nature/plants/Grass_Common_Tall.gltf",
-		],
-		"background": [
-			"res://assets/world/quaternius_nature/trees/CommonTree_2.gltf",
-			"res://assets/world/quaternius_nature/trees/CommonTree_4.gltf",
-			"res://assets/world/quaternius_nature/trees/Pine_4.gltf",
-		],
-	},
-	"obstacles": {
-		"ground": [
-			"res://assets/Obstacles/ExtraObstacleProps/barrel.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/crate.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/crate-strong.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/fence-broken.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/fence-low-broken.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/trap-spikes.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/trap-spikes-large.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/bomb.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/spike-block.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/spike-block-wide.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/rocks.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/stones.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/hedge.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/hedge-corner.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/cliff_block_stone.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/cliff_blockHalf_stone.glb",
-			"res://assets/Obstacles/ExtraObstacleProps/cliff_blockQuarter_stone.glb",
-			"res://assets/Obstacles/RocksSmall/cliff_blockHalf_rock.glb",
-			"res://assets/Obstacles/RocksSmall/cliff_blockQuarter_rock.glb",
-			"res://assets/Obstacles/RocksBig/cliff_block_rock.glb",
-		],
-		"overhead": [
-			"res://assets/Obstacles/Overhead/fence-rope.glb",
-			"res://assets/Obstacles/Overhead/pipe.glb",
-			"res://assets/Obstacles/Overhead/poles.glb",
-			"res://assets/Obstacles/Overhead/saw.glb",
-			"res://assets/Obstacles/Overhead/log_large.glb",
-			"res://assets/Obstacles/Overhead/fence_gate.glb",
-		],
-		"giant": [
-			"res://assets/Obstacles/GiantRock/BlastRocks/Rocks.glb",
-		],
-	},
-	"player": {
-		"base_scene_path": "res://assets/Characters/nature_variants/Elf.gltf",
-		"fallback_scene_paths": [
-			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
-		],
-		"extra_anim_scene_paths": [],
-		"visual_scale": 0.58,
-		"style": "nature_passthrough",
 	},
 	"ui": {
 		"skin": "nature",
@@ -837,10 +686,6 @@ static func get_profile(theme_id: String = "") -> Dictionary:
 			var cyber_profile: Dictionary = CYBERPRANK_PROFILE.duplicate(true)
 			cyber_profile["player"] = get_player_profile(resolved_theme)
 			return cyber_profile
-		"park":
-			var park_profile: Dictionary = PARK_PROFILE.duplicate(true)
-			park_profile["player"] = get_player_profile(resolved_theme)
-			return park_profile
 		_:
 			var nature_profile: Dictionary = NATURE_PROFILE.duplicate(true)
 			nature_profile["player"] = get_player_profile("nature")
@@ -849,11 +694,6 @@ static func get_profile(theme_id: String = "") -> Dictionary:
 
 static func get_player_profile(theme_id: String = "", variant_id: String = "") -> Dictionary:
 	var resolved_theme: String = theme_id if not theme_id.is_empty() else GameManager.current_visual_theme
-	if resolved_theme == "park":
-		var resolved_park_variant: String = variant_id if not variant_id.is_empty() else GameManager.current_player_variant
-		if resolved_park_variant.is_empty() or resolved_park_variant == "park_default" or not PARK_PLAYER_VARIANTS.has(resolved_park_variant):
-			resolved_park_variant = "elf"
-		return PARK_PLAYER_VARIANTS[resolved_park_variant].duplicate(true)
 	if resolved_theme == "nature":
 		var resolved_nature_variant: String = variant_id if not variant_id.is_empty() else GameManager.current_player_variant
 		if resolved_nature_variant.is_empty() or resolved_nature_variant == "nature_default" or not NATURE_PLAYER_VARIANTS.has(resolved_nature_variant):
@@ -870,10 +710,6 @@ static func get_player_profile(theme_id: String = "", variant_id: String = "") -
 
 static func get_player_options(theme_id: String = "") -> Array[Dictionary]:
 	var resolved_theme: String = theme_id if not theme_id.is_empty() else GameManager.current_visual_theme
-	if resolved_theme == "park":
-		var park_options: Array[Dictionary] = []
-		park_options.append(PARK_PLAYER_VARIANTS["elf"].duplicate(true))
-		return park_options
 	if resolved_theme == "nature":
 		var nature_order: Array[String] = [
 			"elf", "goblin_male", "soldier_male",

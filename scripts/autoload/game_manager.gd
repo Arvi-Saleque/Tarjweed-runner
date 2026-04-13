@@ -172,10 +172,6 @@ func is_nature_theme() -> bool:
 	return current_visual_theme == "nature"
 
 
-func is_park_theme() -> bool:
-	return current_visual_theme == "park"
-
-
 func is_cyberprank_theme() -> bool:
 	return current_visual_theme == "cyberprank"
 
