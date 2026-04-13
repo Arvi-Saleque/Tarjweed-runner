@@ -29,6 +29,7 @@ var coin_material: StandardMaterial3D
 var ground_material: StandardMaterial3D
 var road_detail_material: StandardMaterial3D
 var road_patch_material: StandardMaterial3D
+var road_alt_material: StandardMaterial3D
 var grass_material: StandardMaterial3D
 var path_edge_material: StandardMaterial3D
 var lane_marker_material: StandardMaterial3D
@@ -152,6 +153,20 @@ func _setup_materials() -> void:
 		road_patch_material.emission_enabled = true
 		road_patch_material.emission = road_profile.get("patch_emission", Color(0.05, 0.52, 0.72, 1.0))
 		road_patch_material.emission_energy_multiplier = road_profile.get("patch_emission_energy", 0.85)
+
+	road_alt_material = null
+	if theme_id == "nature":
+		var cobble_diff_path := "res://road-asset/cobblestone_05_4k.blend/textures/cobblestone_05_diff_4k.jpg"
+		var cobble_rough_path := "res://road-asset/cobblestone_05_4k.blend/textures/cobblestone_05_rough_4k.jpg"
+		if ResourceLoader.exists(cobble_diff_path):
+			road_alt_material = StandardMaterial3D.new()
+			road_alt_material.albedo_texture = load(cobble_diff_path) as Texture2D
+			road_alt_material.albedo_color = Color(0.84, 0.80, 0.72, 1.0)
+			road_alt_material.uv1_scale = Vector3(1.7, 1.0, 4.2)
+			road_alt_material.roughness = 0.96
+			if ResourceLoader.exists(cobble_rough_path):
+				road_alt_material.roughness_texture = load(cobble_rough_path) as Texture2D
+			road_alt_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 
 	grass_material = StandardMaterial3D.new()
 	grass_material.albedo_color = road_profile.get("side", Color(0.31, 0.47, 0.24, 1.0))
