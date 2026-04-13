@@ -219,20 +219,15 @@ func _preload_obstacles() -> void:
 
 
 func _preload_coins() -> void:
+	coin_scenes.clear()
 	var gold: Array[PackedScene] = _load_scene_array(["res://assets/Collectibles/Coins/coin-gold.glb"])
-	var silver: Array[PackedScene] = _load_scene_array(["res://assets/Collectibles/Coins/coin-silver.glb"])
-	var bronze: Array[PackedScene] = _load_scene_array(["res://assets/Collectibles/Coins/coin-bronze.glb"])
 
 	if gold.size() > 0:
 		coin_scenes["gold"] = gold[0]
-	if silver.size() > 0:
-		coin_scenes["silver"] = silver[0]
-	if bronze.size() > 0:
-		coin_scenes["bronze"] = bronze[0]
 
 
 func get_coin_scene(type: String) -> PackedScene:
-	return coin_scenes.get(type, coin_scenes.get("gold", null))
+	return coin_scenes.get("gold", null)
 
 
 func get_random_obstacle_scene() -> PackedScene:

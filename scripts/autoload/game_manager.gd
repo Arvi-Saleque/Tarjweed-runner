@@ -26,9 +26,7 @@ const LANE_COUNT: int = 3
 const LANE_POSITIONS: Array[float] = [-2.0, 0.0, 2.0]
 
 const COIN_VALUES: Dictionary = {
-	"gold": 3,
-	"silver": 2,
-	"bronze": 1,
+	"gold": 1,
 }
 
 # --- State ---
@@ -135,9 +133,10 @@ func resume_game() -> void:
 
 
 func collect_coin(type: String = "gold") -> void:
-	var value: int = COIN_VALUES.get(type, 1)
+	var resolved_type: String = "gold"
+	var value: int = COIN_VALUES.get(resolved_type, 1)
 	coins += value
-	score_bonus += value * 10
+	score_bonus += value
 	score = int(distance) + score_bonus
 	coin_collected.emit(value)
 	score_updated.emit(score)

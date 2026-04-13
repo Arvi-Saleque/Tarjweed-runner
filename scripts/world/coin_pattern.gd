@@ -1,6 +1,6 @@
 extends RefCounted
-## CoinPattern — Static utility for spawning coins in various patterns.
-## Creates coins using the coin.gd script with real GLB models.
+## CoinPattern — Static utility for spawning gold coins in various patterns.
+## Creates coins using the coin.gd script with the gold GLB model.
 
 enum Pattern { LINE, ARC, ZIGZAG, CLUSTER, RAMP }
 
@@ -75,7 +75,7 @@ static func _spawn_zigzag(parent: Node3D, start: Vector3, lane_idx: int, gen: No
 
 
 static func _spawn_cluster(parent: Node3D, start: Vector3, lane_idx: int, gen: Node3D) -> void:
-	## Tight cluster of coins — mix of gold and silver
+	## Tight cluster of coins.
 	var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
 	var positions: Array[Vector3] = [
 		Vector3(lane_x, COIN_HEIGHT, start.z),
@@ -86,8 +86,7 @@ static func _spawn_cluster(parent: Node3D, start: Vector3, lane_idx: int, gen: N
 	]
 
 	for i in positions.size():
-		var type: String = "gold" if i == 3 else "silver"  # Center-top coin is gold
-		_create_coin(parent, positions[i], type, gen)
+		_create_coin(parent, positions[i], "gold", gen)
 
 
 static func _spawn_ramp(parent: Node3D, start: Vector3, lane_idx: int, gen: Node3D) -> void:
@@ -98,7 +97,7 @@ static func _spawn_ramp(parent: Node3D, start: Vector3, lane_idx: int, gen: Node
 
 	for i in count:
 		var pos := Vector3(lane_x, COIN_HEIGHT + i * height_step, start.z - i * COIN_SPACING)
-		_create_coin(parent, pos, "gold" if i >= count - 1 else "silver", gen)
+		_create_coin(parent, pos, "gold", gen)
 
 
 # --- Coin Creation ---
