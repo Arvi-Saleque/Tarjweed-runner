@@ -8,9 +8,9 @@ signal rock_destroyed
 enum RockState { INTACT, EXPLODING, DESTROYED }
 
 const DETECTION_RANGE: float = 35.0  # How far ahead player can see/target the rock
-const BLAST_RANGE: float = 25.0       # Must be within this range for blast to work
-const ROCK_WIDTH: float = 7.0         # Spans all 3 lanes
-const ROCK_HEIGHT: float = 3.5        # Tall enough to block everything
+const BLAST_RANGE: float = 25.0      # Must be within this range for blast to work
+const ROCK_WIDTH: float = 7.0        # Spans all 3 lanes
+const ROCK_HEIGHT: float = 3.5       # Tall enough to block everything
 const NATURE_ROCK_DIFFUSE_PATH: String = "res://assets/Obstacles/GiantRock/textures/namaqualand_boulder_02/diffuse.jpg"
 const NATURE_ROCK_NORMAL_PATH: String = "res://assets/Obstacles/GiantRock/textures/namaqualand_boulder_02/normal_gl.exr"
 const NATURE_ROCK_ROUGHNESS_PATH: String = "res://assets/Obstacles/GiantRock/textures/namaqualand_boulder_02/roughness.exr"
@@ -20,31 +20,29 @@ var _model: Node3D = null
 var _hint_root: Node3D = null
 var _hint_icon: Sprite3D = null
 var _shake_timer: float = 0.0
-var _original_positions: Array[Vector3] = []
 var _debris_nodes: Array[Node3D] = []
 static var _cached_nature_rock_material: StandardMaterial3D = null
 
 
 func setup(model_scene: PackedScene) -> void:
-	collision_layer = 4  # Obstacles layer
+	collision_layer = 4
 	collision_mask = 0
 	add_to_group("obstacles")
 	add_to_group("giant_rocks")
 
 	if model_scene:
-		_model = model_scene.instantiate()
-		add_child(_model)
-		# Scale up to be imposing — fill all lanes
-		var model_scale := Vector3(3.5, 3.0, 3.0)
 		if model_scene.resource_path.contains("BlastRocks/Rocks.glb"):
-			_recenter_blast_rocks_model(_model)
-			model_scale = Vector3(2.35, 2.35, 2.35)
-			_model.position = Vector3(0.0, 0.12, 0.0)
-		_model.scale = model_scale
-		if not GameManager.is_cyberprank_theme() and not model_scene.resource_path.contains("BlastRocks/Rocks.glb"):
-			_apply_nature_rock_material(_model)
+			# The imported GLB proved unreliable from the runner camera, so build a
+			# guaranteed visible blocker in the same clustered-rock silhouette.
+			_model = _build_blast_rock_cluster()
+			add_child(_model)
+		else:
+			_model = model_scene.instantiate()
+			add_child(_model)
+			_model.scale = Vector3(3.5, 3.0, 3.0)
+			if not GameManager.is_cyberprank_theme():
+				_apply_nature_rock_material(_model)
 
-	# Create wide collision spanning all 3 lanes
 	var col := CollisionShape3D.new()
 	var box := BoxShape3D.new()
 	box.size = Vector3(ROCK_WIDTH, ROCK_HEIGHT, 1.5)
@@ -62,58 +60,45 @@ func _process(delta: float) -> void:
 			_shake_timer += delta
 			if _shake_timer > 1.5:
 				_finish_destroy()
-
 		RockState.DESTROYED:
 			pass
 
 
 func trigger_blast() -> void:
-	## Called when player fires blast — instantly destroys the rock with VFX.
 	if state != RockState.INTACT:
 		return
+
 	state = RockState.EXPLODING
 	_shake_timer = 0.0
 
-	# Remove collision immediately so player passes through
 	for child in get_children():
 		if child is CollisionShape3D:
 			child.set_deferred("disabled", true)
 	remove_from_group("obstacles")
 
-	# Hide hint
 	if _hint_root:
 		_hint_root.visible = false
 
-	# Spawn explosion VFX
 	_spawn_blast_effect()
-
-	# Scatter debris
 	_explode_model()
 
-	# Camera shake via player's camera rig
 	var players := get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
-		var camera_rig = players[0].get_node_or_null("CameraRig")
+		var camera_rig := players[0].get_node_or_null("CameraRig")
 		if camera_rig and camera_rig.has_method("shake"):
 			camera_rig.shake(0.5, 3.0)
 
-	# Award bonus coins for destroying rock
 	GameManager.collect_coin("gold")
-
 	rock_destroyed.emit()
 
 
 func _explode_model() -> void:
-	## Break the rock into flying debris chunks
 	if not _model:
 		return
 
-	# Hide original model
 	_model.visible = false
 
-	# Create debris pieces flying outward
-	var debris_count: int = 12
-	for i in debris_count:
+	for i in 12:
 		var debris := MeshInstance3D.new()
 		var box_mesh := BoxMesh.new()
 		var size := randf_range(0.2, 0.6)
@@ -146,23 +131,26 @@ func _explode_model() -> void:
 		add_child(debris)
 		_debris_nodes.append(debris)
 
-		# Animate debris flying outward
 		var tween := create_tween()
 		var target_pos := debris.position + Vector3(
 			randf_range(-6.0, 6.0),
 			randf_range(3.0, 8.0),
 			randf_range(-4.0, 4.0)
 		)
-		var end_pos := target_pos + Vector3(0, -10.0, 0)  # Fall down
+		var end_pos := target_pos + Vector3(0, -10.0, 0)
 
 		tween.tween_property(debris, "position", target_pos, 0.4).set_ease(Tween.EASE_OUT)
 		tween.tween_property(debris, "position", end_pos, 0.8).set_ease(Tween.EASE_IN)
-		tween.parallel().tween_property(debris, "rotation", Vector3(randf_range(-5, 5), randf_range(-5, 5), randf_range(-5, 5)), 1.2)
+		tween.parallel().tween_property(
+			debris,
+			"rotation",
+			Vector3(randf_range(-5, 5), randf_range(-5, 5), randf_range(-5, 5)),
+			1.2
+		)
 		tween.tween_callback(debris.queue_free)
 
 
 func _spawn_blast_effect() -> void:
-	## Create the sonic blast shockwave VFX
 	var blast_script: GDScript = load("res://scripts/obstacles/sonic_blast.gd") as GDScript
 	if not blast_script:
 		return
@@ -176,7 +164,6 @@ func _spawn_blast_effect() -> void:
 
 func _finish_destroy() -> void:
 	state = RockState.DESTROYED
-	# Clean up any remaining debris
 	for d in _debris_nodes:
 		if is_instance_valid(d):
 			d.queue_free()
@@ -251,20 +238,50 @@ func _get_nature_rock_material() -> StandardMaterial3D:
 	return _cached_nature_rock_material
 
 
-func _recenter_blast_rocks_model(root: Node3D) -> void:
-	var parts: Array[Node3D] = []
-	var x_sum: float = 0.0
-	for child in root.get_children():
-		if child is Node3D:
-			parts.append(child)
-			x_sum += (child as Node3D).position.x
+func _build_blast_rock_cluster() -> Node3D:
+	var cluster := Node3D.new()
+	cluster.name = "BlastRockCluster"
+	cluster.position = Vector3(0.0, 0.06, 0.0)
 
-	if parts.is_empty():
-		return
+	var rock_material := _get_nature_rock_material()
+	var fallback_color := Color(0.54, 0.49, 0.43, 1.0)
 
-	var x_center: float = x_sum / float(parts.size())
-	for part in parts:
-		part.position.x -= x_center
+	_add_blast_rock_piece(cluster, Vector3(0.0, 0.45, 0.0), Vector3(5.6, 0.95, 1.7), rock_material, fallback_color)
+	_add_blast_rock_piece(cluster, Vector3(-1.95, 1.06, 0.04), Vector3(1.55, 1.3, 1.08), rock_material, fallback_color)
+	_add_blast_rock_piece(cluster, Vector3(-0.18, 1.75, 0.0), Vector3(1.65, 2.55, 1.05), rock_material, fallback_color)
+	_add_blast_rock_piece(cluster, Vector3(1.45, 0.96, 0.06), Vector3(1.55, 1.25, 1.0), rock_material, fallback_color)
+	_add_blast_rock_piece(cluster, Vector3(2.35, 0.64, 0.12), Vector3(1.0, 0.84, 0.86), rock_material, fallback_color)
+	_add_blast_rock_piece(cluster, Vector3(-2.55, 0.58, 0.08), Vector3(0.92, 0.76, 0.82), rock_material, fallback_color)
+
+	return cluster
+
+
+func _add_blast_rock_piece(parent: Node3D, pos: Vector3, size: Vector3, textured_material: StandardMaterial3D, fallback_color: Color) -> void:
+	var rock := MeshInstance3D.new()
+	var mesh := BoxMesh.new()
+	mesh.size = size
+	rock.mesh = mesh
+	rock.position = pos
+	rock.rotation = Vector3(
+		randf_range(-0.06, 0.06),
+		randf_range(-0.16, 0.16),
+		randf_range(-0.05, 0.05)
+	)
+	rock.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+
+	var material: StandardMaterial3D
+	if textured_material != null:
+		material = textured_material.duplicate() as StandardMaterial3D
+		material.uv1_scale = Vector3(1.0, 1.0, 1.0)
+		material.albedo_color = material.albedo_color.lightened(randf_range(0.0, 0.04))
+	else:
+		material = StandardMaterial3D.new()
+		material.albedo_color = fallback_color.lightened(randf_range(-0.08, 0.08))
+		material.roughness = 0.96
+		material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+
+	rock.material_override = material
+	parent.add_child(rock)
 
 
 func _apply_glow_tint(node: Node, color: Color) -> void:

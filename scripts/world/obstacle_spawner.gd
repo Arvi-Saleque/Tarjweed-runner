@@ -13,7 +13,7 @@ const OVERHEAD_CHANCE_BASE: float = 0.15   # 15% chance at low difficulty
 const OVERHEAD_CHANCE_MAX: float = 0.35    # 35% chance at high difficulty
 
 # Giant rock settings (natural mode only)
-const GIANT_ROCK_CHANCE: float = 0.20       # 20% per chunk
+const GIANT_ROCK_CHANCE: float = 0.35       # 35% per chunk
 const GIANT_ROCK_MIN_DISTANCE: float = 80.0   # minimum meters between giant rocks
 const GIANT_ROCK_MIN_SCORE: float = 50.0      # don't spawn until player has run 50m
 
@@ -749,8 +749,8 @@ static func _should_spawn_giant_rock(chunk_dist: float) -> bool:
 
 	var last_dist: float = GameManager.get_meta("_last_giant_rock_dist", -999.0) as float
 
-	# GUARANTEED first giant rock at ~100m
-	if last_dist < 0 and chunk_dist >= 80.0:
+	# GUARANTEED first giant rock early so the blast obstacle is easy to verify.
+	if last_dist < 0 and chunk_dist >= 20.0:
 		print("[GiantRock] GUARANTEED first spawn at chunk_dist=%.0f" % chunk_dist)
 		return true
 
