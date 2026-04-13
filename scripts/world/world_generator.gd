@@ -142,7 +142,6 @@ func _setup_materials() -> void:
 	ground_material.albedo_color = road_profile.get("ground", Color(0.60, 0.48, 0.31, 1.0))
 	ground_material.roughness = road_profile.get("ground_roughness", 0.96)
 	ground_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-	ground_material.texture_repeat = BaseMaterial3D.TEXTURE_REPEAT_ENABLED
 
 	road_alt_ground_material = null
 	if theme_id == "nature":
@@ -211,7 +210,6 @@ func _build_alt_nature_road_material() -> StandardMaterial3D:
 	material.albedo_color = Color(0.78, 0.76, 0.68, 1.0)
 	material.roughness = 0.92
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-	material.texture_repeat = BaseMaterial3D.TEXTURE_REPEAT_ENABLED
 	material.uv1_scale = Vector3(3.2, 1.0, 7.6)
 
 	if ResourceLoader.exists(normal_path):
@@ -285,5 +283,3 @@ func get_random_giant_rock_scene() -> PackedScene:
 	if giant_rock_scenes.is_empty():
 		return null
 	return giant_rock_scenes[randi() % giant_rock_scenes.size()]
-
-
