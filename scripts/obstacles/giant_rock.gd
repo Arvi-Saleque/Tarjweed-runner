@@ -35,7 +35,11 @@ func setup(model_scene: PackedScene) -> void:
 		_model = model_scene.instantiate()
 		add_child(_model)
 		# Scale up to be imposing — fill all lanes
-		_model.scale = Vector3(3.5, 3.0, 3.0)
+		var model_scale := Vector3(3.5, 3.0, 3.0)
+		if model_scene.resource_path.contains("BlastRocks/Rocks.glb"):
+			model_scale = Vector3(5.1, 4.1, 3.8)
+			_model.position = Vector3(0.0, -0.15, 0.0)
+		_model.scale = model_scale
 		if not GameManager.is_cyberprank_theme():
 			_apply_nature_rock_material(_model)
 

@@ -453,10 +453,7 @@ const NATURE_PROFILE: Dictionary = {
 			"res://assets/Obstacles/Overhead/fence_gate.glb",
 		],
 		"giant": [
-			"res://assets/Obstacles/GiantRock/rock_tallA.glb",
-			"res://assets/Obstacles/GiantRock/rock_tallB.glb",
-			"res://assets/Obstacles/GiantRock/rock_tallC.glb",
-			"res://assets/Obstacles/GiantRock/rock_largeA.glb",
+			"res://assets/Obstacles/GiantRock/BlastRocks/Rocks.glb",
 		],
 	},
 	"player": {
