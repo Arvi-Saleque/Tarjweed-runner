@@ -11,6 +11,9 @@ const DETECTION_RANGE: float = 35.0  # How far ahead player can see/target the r
 const BLAST_RANGE: float = 25.0       # Must be within this range for blast to work
 const ROCK_WIDTH: float = 7.0         # Spans all 3 lanes
 const ROCK_HEIGHT: float = 3.5        # Tall enough to block everything
+const NATURE_ROCK_DIFFUSE_PATH: String = "res://assets/Obstacles/GiantRock/textures/namaqualand_boulder_02/diffuse.jpg"
+const NATURE_ROCK_NORMAL_PATH: String = "res://assets/Obstacles/GiantRock/textures/namaqualand_boulder_02/normal_gl.exr"
+const NATURE_ROCK_ROUGHNESS_PATH: String = "res://assets/Obstacles/GiantRock/textures/namaqualand_boulder_02/roughness.exr"
 
 var state: RockState = RockState.INTACT
 var _model: Node3D = null
@@ -19,6 +22,7 @@ var _hint_icon: Sprite3D = null
 var _shake_timer: float = 0.0
 var _original_positions: Array[Vector3] = []
 var _debris_nodes: Array[Node3D] = []
+static var _cached_nature_rock_material: StandardMaterial3D = null
 
 
 func setup(model_scene: PackedScene) -> void:
@@ -33,7 +37,7 @@ func setup(model_scene: PackedScene) -> void:
 		# Scale up to be imposing — fill all lanes
 		_model.scale = Vector3(3.5, 3.0, 3.0)
 		if not GameManager.is_cyberprank_theme():
-			_apply_nature_rock_tint(_model)
+			_apply_nature_rock_material(_model)
 
 	# Create wide collision spanning all 3 lanes
 	var col := CollisionShape3D.new()
@@ -119,8 +123,13 @@ func _explode_model() -> void:
 			mat.emission = Color(0.14, 0.86, 1.0)
 			mat.emission_energy_multiplier = 1.2
 		else:
-			mat.albedo_color = Color(0.5, 0.45, 0.4).lerp(Color(0.35, 0.3, 0.25), randf())
-			mat.roughness = 0.9
+			var nature_material := _get_nature_rock_material()
+			if nature_material != null:
+				mat = nature_material.duplicate() as StandardMaterial3D
+				mat.albedo_color = mat.albedo_color.darkened(randf_range(0.0, 0.12))
+			else:
+				mat.albedo_color = Color(0.5, 0.45, 0.4).lerp(Color(0.35, 0.3, 0.25), randf())
+				mat.roughness = 0.9
 		box_mesh.material = mat
 
 		debris.mesh = box_mesh
@@ -200,32 +209,41 @@ func hide_hint() -> void:
 		_hint_root.visible = false
 
 
-func _apply_nature_rock_tint(node: Node) -> void:
+func _apply_nature_rock_material(node: Node) -> void:
 	if node is MeshInstance3D:
 		var mi := node as MeshInstance3D
 		if mi.mesh != null:
 			for surface_idx in mi.mesh.get_surface_count():
-				var source_material := mi.get_active_material(surface_idx)
-				var tinted_material: StandardMaterial3D = null
-
-				if source_material is StandardMaterial3D:
-					tinted_material = (source_material as StandardMaterial3D).duplicate() as StandardMaterial3D
-				else:
-					tinted_material = StandardMaterial3D.new()
-
-				var base_color := Color(1.0, 1.0, 1.0, 1.0)
-				if source_material is StandardMaterial3D:
-					base_color = (source_material as StandardMaterial3D).albedo_color
-
-				var stone_target := Color(0.34, 0.35, 0.33, 1.0)
-				tinted_material.albedo_color = base_color.lerp(stone_target, 0.38).darkened(0.18)
-				tinted_material.roughness = maxf(tinted_material.roughness, 0.9)
-				tinted_material.metallic = 0.0
-				tinted_material.emission_enabled = false
-				mi.set_surface_override_material(surface_idx, tinted_material)
+				var textured_material := _get_nature_rock_material()
+				if textured_material != null:
+					mi.set_surface_override_material(surface_idx, textured_material)
 
 	for child in node.get_children():
-		_apply_nature_rock_tint(child)
+		_apply_nature_rock_material(child)
+
+
+func _get_nature_rock_material() -> StandardMaterial3D:
+	if _cached_nature_rock_material != null:
+		return _cached_nature_rock_material
+	if not ResourceLoader.exists(NATURE_ROCK_DIFFUSE_PATH):
+		return null
+
+	var material := StandardMaterial3D.new()
+	material.albedo_texture = load(NATURE_ROCK_DIFFUSE_PATH) as Texture2D
+	material.albedo_color = Color(0.92, 0.90, 0.86, 1.0)
+	material.roughness = 0.88
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+
+	if ResourceLoader.exists(NATURE_ROCK_NORMAL_PATH):
+		material.normal_enabled = true
+		material.normal_texture = load(NATURE_ROCK_NORMAL_PATH) as Texture2D
+		material.normal_scale = 1.05
+
+	if ResourceLoader.exists(NATURE_ROCK_ROUGHNESS_PATH):
+		material.roughness_texture = load(NATURE_ROCK_ROUGHNESS_PATH) as Texture2D
+
+	_cached_nature_rock_material = material
+	return _cached_nature_rock_material
 
 
 func _apply_glow_tint(node: Node, color: Color) -> void:
