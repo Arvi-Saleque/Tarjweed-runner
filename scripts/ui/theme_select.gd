@@ -442,7 +442,7 @@ func _create_runner_tile(data: Dictionary) -> PanelContainer:
 	vbox.add_theme_constant_override("separation", 10)
 	margin.add_child(vbox)
 
-	vbox.add_child(_create_runner_preview(data, Vector2(248, 150), false))
+	vbox.add_child(_create_runner_preview(data, Vector2(248, 150), true))
 
 	var title := UITheme.make_label(data.get("title", ""), UITheme.FONT_SMALL, UITheme.get_color("text", CYBER_UI_SKIN), CYBER_UI_SKIN)
 	vbox.add_child(title)
