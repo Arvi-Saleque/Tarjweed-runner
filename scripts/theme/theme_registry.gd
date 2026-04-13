@@ -175,6 +175,7 @@ const NATURE_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.42, 0.82, 0.44),
 		"icon_text": "ELF",
 		"base_scene_path": "res://assets/Characters/nature_variants/Elf.gltf",
+		"preview_image_path": "res://assets/UI/nature/runner_previews/elf.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
 		],
@@ -191,6 +192,7 @@ const NATURE_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.36, 0.74, 0.30),
 		"icon_text": "GOB",
 		"base_scene_path": "res://assets/Characters/nature_variants/Goblin_Male.gltf",
+		"preview_image_path": "res://assets/UI/nature/runner_previews/goblin_male.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
 		],
@@ -207,6 +209,7 @@ const NATURE_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.58, 0.76, 0.42),
 		"icon_text": "SOL",
 		"base_scene_path": "res://assets/Characters/nature_variants/Soldier_Male.gltf",
+		"preview_image_path": "res://assets/UI/nature/runner_previews/soldier_male.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
 		],
@@ -223,6 +226,7 @@ const NATURE_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.78, 0.66, 0.34),
 		"icon_text": "COW",
 		"base_scene_path": "res://assets/Characters/nature_variants/Cowboy_Male.gltf",
+		"preview_image_path": "res://assets/UI/nature/runner_previews/cowboy_male.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
 		],
@@ -239,6 +243,7 @@ const NATURE_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.74, 0.42, 0.40),
 		"icon_text": "KIM",
 		"base_scene_path": "res://assets/Characters/nature_variants/Kimono_Male.gltf",
+		"preview_image_path": "res://assets/UI/nature/runner_previews/kimono_male.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
 		],
@@ -255,6 +260,7 @@ const NATURE_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.62, 0.64, 0.74),
 		"icon_text": "KNT",
 		"base_scene_path": "res://assets/Characters/nature_variants/Knight_Male.gltf",
+		"preview_image_path": "res://assets/UI/nature/runner_previews/knight_male.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
 		],
@@ -271,6 +277,7 @@ const NATURE_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.20, 0.24, 0.24),
 		"icon_text": "NIN",
 		"base_scene_path": "res://assets/Characters/nature_variants/Ninja_Male.gltf",
+		"preview_image_path": "res://assets/UI/nature/runner_previews/ninja_male.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
 		],
@@ -287,6 +294,7 @@ const NATURE_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.74, 0.52, 0.30),
 		"icon_text": "PIR",
 		"base_scene_path": "res://assets/Characters/nature_variants/Pirate_Male.gltf",
+		"preview_image_path": "res://assets/UI/nature/runner_previews/pirate_male.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
 		],
@@ -303,6 +311,7 @@ const NATURE_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.56, 0.30, 0.58),
 		"icon_text": "WIT",
 		"base_scene_path": "res://assets/Characters/nature_variants/Witch.gltf",
+		"preview_image_path": "res://assets/UI/nature/runner_previews/witch.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
 		],
@@ -319,6 +328,7 @@ const NATURE_PLAYER_VARIANTS: Dictionary = {
 		"color": Color(0.42, 0.50, 0.82),
 		"icon_text": "WIZ",
 		"base_scene_path": "res://assets/Characters/nature_variants/Wizard.gltf",
+		"preview_image_path": "res://assets/UI/nature/runner_previews/wizard.png",
 		"fallback_scene_paths": [
 			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
 		],
