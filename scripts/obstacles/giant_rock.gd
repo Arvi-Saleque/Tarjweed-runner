@@ -38,10 +38,10 @@ func setup(model_scene: PackedScene) -> void:
 		var model_scale := Vector3(3.5, 3.0, 3.0)
 		if model_scene.resource_path.contains("BlastRocks/Rocks.glb"):
 			_recenter_blast_rocks_model(_model)
-			model_scale = Vector3(1.85, 1.85, 1.85)
-			_model.position = Vector3(0.0, 0.18, 0.0)
+			model_scale = Vector3(2.35, 2.35, 2.35)
+			_model.position = Vector3(0.0, 0.12, 0.0)
 		_model.scale = model_scale
-		if not GameManager.is_cyberprank_theme():
+		if not GameManager.is_cyberprank_theme() and not model_scene.resource_path.contains("BlastRocks/Rocks.glb"):
 			_apply_nature_rock_material(_model)
 
 	# Create wide collision spanning all 3 lanes
