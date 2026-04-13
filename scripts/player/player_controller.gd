@@ -79,7 +79,7 @@ const RIVER_DETECT_RANGE: float = 40.0     # Start detecting river at this dista
 const RIVER_BRIDGE_RANGE: float = 30.0     # Can build bridge within this range
 const RIVER_NO_JUMP_RANGE: float = 20.0    # No jumping within this range of a river
 const BRIDGE_HOLD_TIME: float = 0.8        # Seconds of holding spacebar to build
-const BRIDGE_PREVIEW_DEPTH: float = 4.9    # Must match the stylized bridge visual depth
+const BRIDGE_PREVIEW_DEPTH: float = 3.6    # Must match the stylized bridge visual depth
 var _nearby_river: Node = null
 var _space_hold_time: float = 0.0
 var _bridge_built_for_river: Node = null    # Track which river we already built a bridge for
@@ -715,6 +715,10 @@ func _fire_cyber_laser(target_rock: Node) -> void:
 	var start_pos := Vector3(global_position.x, 1.24, global_position.z - 0.35)
 	var target_pos := Vector3(target_rock.global_position.x, 1.5, target_rock.global_position.z)
 	var beam_length: float = start_pos.distance_to(target_pos)
+	var plasma_core := Color(1.0, 0.82, 0.26, 0.98)
+	var plasma_glow := Color(1.0, 0.36, 0.08, 0.44)
+	var core_emission := Color(1.0, 0.42, 0.06, 1.0)
+	var glow_emission := Color(1.0, 0.18, 0.04, 1.0)
 
 	var laser_root := Node3D.new()
 	laser_root.position = start_pos.lerp(target_pos, 0.5)
@@ -722,12 +726,12 @@ func _fire_cyber_laser(target_rock: Node) -> void:
 	get_tree().current_scene.add_child(laser_root)
 
 	var core_material := StandardMaterial3D.new()
-	core_material.albedo_color = Color(0.98, 0.56, 1.0, 0.98)
+	core_material.albedo_color = plasma_core
 	core_material.roughness = 0.02
 	core_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	core_material.emission_enabled = true
-	core_material.emission = Color(0.16, 0.96, 1.0, 1.0)
-	core_material.emission_energy_multiplier = 5.8
+	core_material.emission = core_emission
+	core_material.emission_energy_multiplier = 6.0
 	core_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	core_material.no_depth_test = true
 
@@ -740,12 +744,12 @@ func _fire_cyber_laser(target_rock: Node) -> void:
 	laser_root.add_child(beam_core)
 
 	var glow_material := StandardMaterial3D.new()
-	glow_material.albedo_color = Color(0.12, 0.92, 1.0, 0.42)
+	glow_material.albedo_color = plasma_glow
 	glow_material.roughness = 0.01
 	glow_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	glow_material.emission_enabled = true
-	glow_material.emission = Color(0.82, 0.30, 1.0, 1.0)
-	glow_material.emission_energy_multiplier = 3.9
+	glow_material.emission = glow_emission
+	glow_material.emission_energy_multiplier = 4.1
 	glow_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	glow_material.no_depth_test = true
 
@@ -757,17 +761,17 @@ func _fire_cyber_laser(target_rock: Node) -> void:
 	beam_glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	laser_root.add_child(beam_glow)
 
-	var muzzle := _create_laser_flash(Color(0.18, 0.95, 1.0, 0.88), Color(0.82, 0.30, 1.0, 1.0), 1.2)
+	var muzzle := _create_laser_flash(Color(1.0, 0.86, 0.38, 0.88), Color(1.0, 0.36, 0.08, 1.0), 1.3)
 	muzzle.position = Vector3(0.0, 0.0, beam_length * 0.5)
 	laser_root.add_child(muzzle)
 
-	var impact := _create_laser_flash(Color(0.92, 0.56, 1.0, 0.82), Color(0.16, 0.96, 1.0, 1.0), 1.6)
+	var impact := _create_laser_flash(Color(1.0, 0.78, 0.28, 0.84), Color(1.0, 0.18, 0.04, 1.0), 1.8)
 	impact.position = Vector3(0.0, 0.0, -beam_length * 0.5)
 	laser_root.add_child(impact)
 
 	var light := OmniLight3D.new()
-	light.light_color = Color(0.42, 0.92, 1.0)
-	light.light_energy = 3.8
+	light.light_color = Color(1.0, 0.54, 0.16)
+	light.light_energy = 4.4
 	light.omni_range = 7.0
 	laser_root.add_child(light)
 
@@ -776,8 +780,8 @@ func _fire_cyber_laser(target_rock: Node) -> void:
 	var fade_tween := get_tree().create_tween()
 	fade_tween.tween_method(func(alpha: float):
 		core_material.albedo_color.a = alpha
-		glow_material.albedo_color.a = alpha * 0.45
-		light.light_energy = 3.8 * alpha
+		glow_material.albedo_color.a = alpha * 0.50
+		light.light_energy = 4.4 * alpha
 	, 1.0, 0.0, 0.12)
 	fade_tween.parallel().tween_property(laser_root, "scale", Vector3(1.0, 1.55, 1.0), 0.12)
 	fade_tween.tween_callback(func():
@@ -931,7 +935,7 @@ func _update_bridge_preview(river: Node, progress: float) -> void:
 	var clamped_progress: float = clampf(progress, 0.0, 1.0)
 	river.set_meta("bridge_preview_lane_%d" % _bridge_preview_lane, clamped_progress)
 	var z_scale: float = lerpf(0.08, 1.0, clamped_progress)
-	var center_z: float = lerpf(1.95, 0.0, clamped_progress)
+	var center_z: float = lerpf(1.42, 0.0, clamped_progress)
 	_bridge_preview_node.scale = Vector3(1.0, lerpf(0.82, 1.0, clamped_progress), z_scale)
 	_bridge_preview_node.position.z = center_z
 	_bridge_preview_node.position.y = 0.14 + sin(Time.get_ticks_msec() / 120.0) * 0.02
@@ -1006,7 +1010,7 @@ func _build_stylized_bridge(parent: Node3D) -> void:
 		return
 
 	var bridge_width: float = GameManager.LANE_WIDTH * GameManager.LANE_COUNT + 1.0
-	var bridge_depth: float = 4.9
+	var bridge_depth: float = BRIDGE_PREVIEW_DEPTH
 
 	var deck := _create_bridge_box(
 		Vector3(bridge_width, 0.22, bridge_depth),
@@ -1093,7 +1097,7 @@ func _build_stylized_bridge(parent: Node3D) -> void:
 
 func _build_hologram_bridge(parent: Node3D) -> void:
 	var bridge_width: float = GameManager.LANE_WIDTH * GameManager.LANE_COUNT + 1.05
-	var bridge_depth: float = 4.9
+	var bridge_depth: float = BRIDGE_PREVIEW_DEPTH
 
 	var deck := _create_holo_bridge_part(
 		Vector3(bridge_width, 0.18, bridge_depth),
