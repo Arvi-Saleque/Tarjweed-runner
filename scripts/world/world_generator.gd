@@ -27,9 +27,9 @@ var coin_scenes: Dictionary = {}  # "gold" -> PackedScene, etc.
 var obstacle_material: StandardMaterial3D
 var coin_material: StandardMaterial3D
 var ground_material: StandardMaterial3D
+var road_alt_ground_material: StandardMaterial3D
 var road_detail_material: StandardMaterial3D
 var road_patch_material: StandardMaterial3D
-var road_alt_material: StandardMaterial3D
 var grass_material: StandardMaterial3D
 var path_edge_material: StandardMaterial3D
 var lane_marker_material: StandardMaterial3D
@@ -141,6 +141,12 @@ func _setup_materials() -> void:
 	ground_material = StandardMaterial3D.new()
 	ground_material.albedo_color = road_profile.get("ground", Color(0.60, 0.48, 0.31, 1.0))
 	ground_material.roughness = road_profile.get("ground_roughness", 0.96)
+	ground_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	ground_material.texture_repeat = BaseMaterial3D.TEXTURE_REPEAT_ENABLED
+
+	road_alt_ground_material = null
+	if theme_id == "nature":
+		road_alt_ground_material = _build_alt_nature_road_material()
 
 	road_detail_material = StandardMaterial3D.new()
 	road_detail_material.albedo_color = road_profile.get("detail", Color(0.68, 0.55, 0.36, 1.0))
@@ -153,20 +159,6 @@ func _setup_materials() -> void:
 		road_patch_material.emission_enabled = true
 		road_patch_material.emission = road_profile.get("patch_emission", Color(0.05, 0.52, 0.72, 1.0))
 		road_patch_material.emission_energy_multiplier = road_profile.get("patch_emission_energy", 0.85)
-
-	road_alt_material = null
-	if theme_id == "nature":
-		var cobble_diff_path := "res://road-asset/cobblestone_05_4k.blend/textures/cobblestone_05_diff_4k.jpg"
-		var cobble_rough_path := "res://road-asset/cobblestone_05_4k.blend/textures/cobblestone_05_rough_4k.jpg"
-		if ResourceLoader.exists(cobble_diff_path):
-			road_alt_material = StandardMaterial3D.new()
-			road_alt_material.albedo_texture = load(cobble_diff_path) as Texture2D
-			road_alt_material.albedo_color = Color(0.84, 0.80, 0.72, 1.0)
-			road_alt_material.uv1_scale = Vector3(1.7, 1.0, 4.2)
-			road_alt_material.roughness = 0.96
-			if ResourceLoader.exists(cobble_rough_path):
-				road_alt_material.roughness_texture = load(cobble_rough_path) as Texture2D
-			road_alt_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 
 	grass_material = StandardMaterial3D.new()
 	grass_material.albedo_color = road_profile.get("side", Color(0.31, 0.47, 0.24, 1.0))
@@ -204,6 +196,38 @@ func _setup_materials() -> void:
 	coin_material.emission_enabled = true
 	coin_material.emission = Color(1.0, 0.85, 0.1, 1.0)
 	coin_material.emission_energy_multiplier = 0.3
+
+
+func _build_alt_nature_road_material() -> StandardMaterial3D:
+	var diffuse_path := "res://assets/road/overgrown/textures/overgrown_diffuse.jpg"
+	var normal_path := "res://assets/road/overgrown/textures/overgrown_normal_gl.png"
+	var rough_path := "res://assets/road/overgrown/textures/overgrown_rough.png"
+	var ao_path := "res://assets/road/overgrown/textures/overgrown_ao.jpg"
+	if not ResourceLoader.exists(diffuse_path):
+		return null
+
+	var material := StandardMaterial3D.new()
+	material.albedo_texture = load(diffuse_path) as Texture2D
+	material.albedo_color = Color(0.78, 0.76, 0.68, 1.0)
+	material.roughness = 0.92
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	material.texture_repeat = BaseMaterial3D.TEXTURE_REPEAT_ENABLED
+	material.uv1_scale = Vector3(3.2, 1.0, 7.6)
+
+	if ResourceLoader.exists(normal_path):
+		material.normal_enabled = true
+		material.normal_texture = load(normal_path) as Texture2D
+		material.normal_scale = 0.75
+
+	if ResourceLoader.exists(rough_path):
+		material.roughness_texture = load(rough_path) as Texture2D
+
+	if ResourceLoader.exists(ao_path):
+		material.ao_enabled = true
+		material.ao_texture = load(ao_path) as Texture2D
+		material.ao_light_affect = 0.65
+
+	return material
 
 
 # --- Decoration Preloading ---

@@ -49,8 +49,9 @@ func _create_ground() -> void:
 	var mesh_inst := MeshInstance3D.new()
 	var box_mesh := BoxMesh.new()
 	box_mesh.size = Vector3(path_width, 0.2, chunk_length)
-	if _generator and _generator.ground_material:
-		box_mesh.material = _generator.ground_material
+	var ground_material: StandardMaterial3D = _get_chunk_ground_material()
+	if ground_material:
+		box_mesh.material = ground_material
 	mesh_inst.mesh = box_mesh
 	mesh_inst.position = Vector3(0, -0.1, -chunk_length / 2.0)
 	mesh_inst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
@@ -83,22 +84,18 @@ func _create_lane_markers() -> void:
 func _create_road_surface_details() -> void:
 	var detail_material: StandardMaterial3D = null
 	var patch_material: StandardMaterial3D = null
-	var alt_material: StandardMaterial3D = null
 	if _generator:
 		detail_material = _generator.get("road_detail_material")
 		patch_material = _generator.get("road_patch_material")
-		alt_material = _generator.get("road_alt_material")
 
-	var uses_cobble_strip: bool = _uses_cobble_mix()
-	var uses_cobble_patch: bool = _uses_cobble_patch()
+	if _uses_alt_full_road():
+		return
 
 	# Central worn strip keeps the track feeling intentional and helps camera framing.
 	var center_strip := MeshInstance3D.new()
 	var center_mesh := BoxMesh.new()
 	center_mesh.size = Vector3(path_width * 0.42, 0.02, chunk_length)
-	if uses_cobble_strip and alt_material:
-		center_mesh.material = alt_material
-	elif detail_material:
+	if detail_material:
 		center_mesh.material = detail_material
 	center_strip.mesh = center_mesh
 	center_strip.position = Vector3(0.0, 0.01, -chunk_length / 2.0)
@@ -110,9 +107,7 @@ func _create_road_surface_details() -> void:
 		var shoulder := MeshInstance3D.new()
 		var shoulder_mesh := BoxMesh.new()
 		shoulder_mesh.size = Vector3(0.55, 0.03, chunk_length)
-		if uses_cobble_patch and alt_material and side > 0.0:
-			shoulder_mesh.material = alt_material
-		elif patch_material:
+		if patch_material:
 			shoulder_mesh.material = patch_material
 		shoulder.mesh = shoulder_mesh
 		shoulder.position = Vector3(side * (path_width * 0.5 - 0.4), 0.012, -chunk_length / 2.0)
@@ -122,18 +117,13 @@ func _create_road_surface_details() -> void:
 	# Rotate between a few subtle chunk accents so the road is controlled but not flat.
 	match chunk_index % 3:
 		1:
-			_create_road_patch(Vector3(0.0, 0.014, -chunk_length * 0.28), Vector3(path_width * 0.34, 0.028, 2.8), alt_material if uses_cobble_patch and alt_material else patch_material)
+			_create_road_patch(Vector3(0.0, 0.014, -chunk_length * 0.28), Vector3(path_width * 0.34, 0.028, 2.8), patch_material)
 			_create_road_patch(Vector3(path_width * 0.18, 0.014, -chunk_length * 0.66), Vector3(1.2, 0.028, 2.2), detail_material)
 		2:
 			_create_road_patch(Vector3(-path_width * 0.18, 0.014, -chunk_length * 0.46), Vector3(1.4, 0.028, 3.0), patch_material)
-			_create_road_patch(Vector3(path_width * 0.16, 0.014, -chunk_length * 0.78), Vector3(1.0, 0.028, 1.8), alt_material if uses_cobble_strip and alt_material else detail_material)
+			_create_road_patch(Vector3(path_width * 0.16, 0.014, -chunk_length * 0.78), Vector3(1.0, 0.028, 1.8), detail_material)
 		_:
-			_create_road_patch(Vector3(0.0, 0.014, -chunk_length * 0.54), Vector3(path_width * 0.26, 0.028, 1.9), alt_material if uses_cobble_patch and alt_material else detail_material)
-
-	if uses_cobble_strip and alt_material:
-		_create_road_patch(Vector3(0.0, 0.015, -chunk_length * 0.82), Vector3(path_width * 0.48, 0.022, 1.1), alt_material)
-	elif uses_cobble_patch and alt_material:
-		_create_road_patch(Vector3(-path_width * 0.12, 0.015, -chunk_length * 0.18), Vector3(1.6, 0.022, 1.3), alt_material)
+			_create_road_patch(Vector3(0.0, 0.014, -chunk_length * 0.54), Vector3(path_width * 0.26, 0.028, 1.9), detail_material)
 
 
 func _create_road_patch(pos: Vector3, size: Vector3, material: StandardMaterial3D) -> void:
@@ -146,14 +136,6 @@ func _create_road_patch(pos: Vector3, size: Vector3, material: StandardMaterial3
 	patch.position = pos
 	patch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(patch)
-
-
-func _uses_cobble_mix() -> bool:
-	return not _is_cyber_theme() and chunk_index % 4 == 1
-
-
-func _uses_cobble_patch() -> bool:
-	return not _is_cyber_theme() and chunk_index % 5 == 2
 
 
 func _create_cyber_track_accents() -> void:
@@ -297,6 +279,21 @@ func _create_path_edges() -> void:
 
 func _is_cyber_theme() -> bool:
 	return _generator != null and _generator.get("theme_id") == "cyberprank"
+
+
+func _uses_alt_full_road() -> bool:
+	return _generator != null \
+		and _generator.get("theme_id") == "nature" \
+		and _generator.get("road_alt_ground_material") != null \
+		and chunk_index % 4 == 1
+
+
+func _get_chunk_ground_material() -> StandardMaterial3D:
+	if _uses_alt_full_road():
+		return _generator.road_alt_ground_material
+	if _generator and _generator.get("ground_material"):
+		return _generator.ground_material
+	return null
 
 
 # --- Obstacles ---

@@ -37,4 +37,6 @@ build/
 # Local planning / source dumps not needed in repo
 cyberprantk/
 nature-assets/
+road-asset/
 new_plan.md
+tmp_nature_*.png
