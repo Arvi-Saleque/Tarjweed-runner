@@ -167,6 +167,169 @@ const CYBERPRANK_PLAYER_VARIANTS: Dictionary = {
 	},
 }
 
+const NATURE_PLAYER_VARIANTS: Dictionary = {
+	"elf": {
+		"id": "elf",
+		"title": "ELF",
+		"subtitle": "Forest trail scout",
+		"color": Color(0.42, 0.82, 0.44),
+		"icon_text": "ELF",
+		"base_scene_path": "res://assets/Characters/nature_variants/Elf.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.58,
+		"style": "nature_original",
+		"preview_scale": 1.05,
+		"preview_height": -0.98,
+	},
+	"goblin_male": {
+		"id": "goblin_male",
+		"title": "GOBLIN",
+		"subtitle": "Playful forest trickster",
+		"color": Color(0.36, 0.74, 0.30),
+		"icon_text": "GOB",
+		"base_scene_path": "res://assets/Characters/nature_variants/Goblin_Male.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.56,
+		"style": "nature_original",
+		"preview_scale": 1.02,
+		"preview_height": -0.96,
+	},
+	"soldier_male": {
+		"id": "soldier_male",
+		"title": "SOLDIER",
+		"subtitle": "Steady trail guardian",
+		"color": Color(0.58, 0.76, 0.42),
+		"icon_text": "SOL",
+		"base_scene_path": "res://assets/Characters/nature_variants/Soldier_Male.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.58,
+		"style": "nature_original",
+		"preview_scale": 1.04,
+		"preview_height": -0.98,
+	},
+	"cowboy_male": {
+		"id": "cowboy_male",
+		"title": "COWBOY",
+		"subtitle": "Green range rider",
+		"color": Color(0.28, 0.84, 0.46),
+		"icon_text": "COW",
+		"base_scene_path": "res://assets/Characters/nature_variants/Cowboy_Male.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.58,
+		"style": "nature_green",
+		"preview_scale": 1.04,
+		"preview_height": -0.98,
+	},
+	"kimono_male": {
+		"id": "kimono_male",
+		"title": "KIMONO",
+		"subtitle": "Bamboo path traveler",
+		"color": Color(0.34, 0.84, 0.52),
+		"icon_text": "KIM",
+		"base_scene_path": "res://assets/Characters/nature_variants/Kimono_Male.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.58,
+		"style": "nature_green",
+		"preview_scale": 1.04,
+		"preview_height": -0.98,
+	},
+	"knight_male": {
+		"id": "knight_male",
+		"title": "KNIGHT",
+		"subtitle": "Emerald woodland knight",
+		"color": Color(0.30, 0.78, 0.38),
+		"icon_text": "KNT",
+		"base_scene_path": "res://assets/Characters/nature_variants/Knight_Male.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.58,
+		"style": "nature_green",
+		"preview_scale": 1.04,
+		"preview_height": -0.98,
+	},
+	"ninja_male": {
+		"id": "ninja_male",
+		"title": "NINJA",
+		"subtitle": "Silent moss runner",
+		"color": Color(0.26, 0.76, 0.40),
+		"icon_text": "NIN",
+		"base_scene_path": "res://assets/Characters/nature_variants/Ninja_Male.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.58,
+		"style": "nature_green",
+		"preview_scale": 1.04,
+		"preview_height": -0.98,
+	},
+	"pirate_male": {
+		"id": "pirate_male",
+		"title": "PIRATE",
+		"subtitle": "River trail rogue",
+		"color": Color(0.36, 0.78, 0.34),
+		"icon_text": "PIR",
+		"base_scene_path": "res://assets/Characters/nature_variants/Pirate_Male.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.58,
+		"style": "nature_green",
+		"preview_scale": 1.04,
+		"preview_height": -0.98,
+	},
+	"witch": {
+		"id": "witch",
+		"title": "WITCH",
+		"subtitle": "Greenwood spell runner",
+		"color": Color(0.44, 0.78, 0.54),
+		"icon_text": "WIT",
+		"base_scene_path": "res://assets/Characters/nature_variants/Witch.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.58,
+		"style": "nature_green",
+		"preview_scale": 1.06,
+		"preview_height": -1.0,
+	},
+	"wizard": {
+		"id": "wizard",
+		"title": "WIZARD",
+		"subtitle": "Ancient grove mage",
+		"color": Color(0.46, 0.82, 0.56),
+		"icon_text": "WIZ",
+		"base_scene_path": "res://assets/Characters/nature_variants/Wizard.gltf",
+		"fallback_scene_paths": [
+			"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb",
+		],
+		"extra_anim_scene_paths": [],
+		"visual_scale": 0.58,
+		"style": "nature_green",
+		"preview_scale": 1.06,
+		"preview_height": -1.0,
+	},
+}
+
 const NATURE_PROFILE: Dictionary = {
 	"id": "nature",
 	"road": {
@@ -517,11 +680,18 @@ static func get_profile(theme_id: String = "") -> Dictionary:
 			cyber_profile["player"] = get_player_profile(resolved_theme)
 			return cyber_profile
 		_:
-			return NATURE_PROFILE.duplicate(true)
+			var nature_profile: Dictionary = NATURE_PROFILE.duplicate(true)
+			nature_profile["player"] = get_player_profile("nature")
+			return nature_profile
 
 
 static func get_player_profile(theme_id: String = "", variant_id: String = "") -> Dictionary:
 	var resolved_theme: String = theme_id if not theme_id.is_empty() else GameManager.current_visual_theme
+	if resolved_theme == "nature":
+		var resolved_nature_variant: String = variant_id if not variant_id.is_empty() else GameManager.current_player_variant
+		if resolved_nature_variant.is_empty() or resolved_nature_variant == "nature_default" or not NATURE_PLAYER_VARIANTS.has(resolved_nature_variant):
+			resolved_nature_variant = "elf"
+		return NATURE_PLAYER_VARIANTS[resolved_nature_variant].duplicate(true)
 	if resolved_theme != "cyberprank":
 		return NATURE_PROFILE.get("player", {}).duplicate(true)
 
@@ -533,6 +703,17 @@ static func get_player_profile(theme_id: String = "", variant_id: String = "") -
 
 static func get_player_options(theme_id: String = "") -> Array[Dictionary]:
 	var resolved_theme: String = theme_id if not theme_id.is_empty() else GameManager.current_visual_theme
+	if resolved_theme == "nature":
+		var nature_order: Array[String] = [
+			"elf", "goblin_male", "soldier_male",
+			"cowboy_male", "kimono_male", "knight_male",
+			"ninja_male", "pirate_male", "witch", "wizard",
+		]
+		var nature_options: Array[Dictionary] = []
+		for variant_id in nature_order:
+			if NATURE_PLAYER_VARIANTS.has(variant_id):
+				nature_options.append(NATURE_PLAYER_VARIANTS[variant_id].duplicate(true))
+		return nature_options
 	if resolved_theme != "cyberprank":
 		return []
 

@@ -304,7 +304,7 @@ func _get_entries_for_step() -> Array[Dictionary]:
 		"mode":
 			return MODES
 		"runner":
-			return ThemeRegistryScript.get_player_options("cyberprank")
+			return ThemeRegistryScript.get_player_options(_selected_theme)
 		_:
 			return VISUAL_THEMES
 
@@ -339,10 +339,10 @@ func _refresh_cards() -> void:
 				_cards.append(card)
 		"runner":
 			_header_label.text = "CHOOSE RUNNER"
-			_sub.text = "Featured selection for Cyberprank normal mode"
+			_sub.text = "Pick your %s runner for normal mode" % _selected_theme.capitalize()
 			_cards_scroll.visible = false
 			_runner_stage.visible = true
-			_runner_options = ThemeRegistryScript.get_player_options("cyberprank")
+			_runner_options = ThemeRegistryScript.get_player_options(_selected_theme)
 			if _runner_options.is_empty():
 				return
 			if _selected_runner_id.is_empty():
@@ -582,8 +582,9 @@ func _refresh_featured_runner() -> void:
 
 	_runner_title.text = data.get("title", "")
 	_runner_subtitle.text = data.get("subtitle", "").to_upper()
-	_runner_meta.text = "NEURAL CLASS: %s\nBuilt for a bright, readable silhouette and a cleaner cockpit-style selection flow." % data.get("subtitle", "Cyber Runner")
-	_runner_confirm_btn.text = "  DEPLOY %s" % data.get("title", "")
+	var theme_label: String = _selected_theme.capitalize()
+	_runner_meta.text = "%s RUNNER\nChosen for a clean silhouette, readable motion, and a stronger %s-theme feel during gameplay." % [theme_label, _selected_theme]
+	_runner_confirm_btn.text = "  SELECT %s" % data.get("title", "")
 
 	for runner_id in _runner_tiles.keys():
 		var tile := _runner_tiles[runner_id] as PanelContainer
@@ -696,7 +697,8 @@ func _on_entry_selected(entry_id: String) -> void:
 		"theme":
 			_selected_theme = entry_id
 			GameManager.current_visual_theme = entry_id
-			if entry_id == "cyberprank":
+			_selected_runner_id = ""
+			if not ThemeRegistryScript.get_player_options(entry_id).is_empty():
 				_selection_step = "runner"
 				_refresh_cards()
 				_animate_in()
