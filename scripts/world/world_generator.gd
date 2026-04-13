@@ -198,24 +198,24 @@ func _setup_materials() -> void:
 
 
 func _build_alt_nature_road_material() -> StandardMaterial3D:
-	var diffuse_path := "res://assets/road/overgrown/textures/overgrown_diffuse.jpg"
-	var normal_path := "res://assets/road/overgrown/textures/overgrown_normal_gl.png"
-	var rough_path := "res://assets/road/overgrown/textures/overgrown_rough.png"
-	var ao_path := "res://assets/road/overgrown/textures/overgrown_ao.jpg"
+	var diffuse_path := "res://assets/road/cobblestone/textures/cobblestone_diffuse.jpg"
+	var normal_path := "res://assets/road/cobblestone/textures/cobblestone_normal_gl.png"
+	var rough_path := "res://assets/road/cobblestone/textures/cobblestone_rough.png"
+	var ao_path := "res://assets/road/cobblestone/textures/cobblestone_ao.jpg"
 	if not ResourceLoader.exists(diffuse_path):
 		return null
 
 	var material := StandardMaterial3D.new()
 	material.albedo_texture = load(diffuse_path) as Texture2D
-	material.albedo_color = Color(0.78, 0.76, 0.68, 1.0)
-	material.roughness = 0.92
+	material.albedo_color = Color(0.96, 0.94, 0.90, 1.0)
+	material.roughness = 0.76
 	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-	material.uv1_scale = Vector3(3.2, 1.0, 7.6)
+	material.uv1_scale = Vector3(2.2, 1.0, 4.4)
 
 	if ResourceLoader.exists(normal_path):
 		material.normal_enabled = true
 		material.normal_texture = load(normal_path) as Texture2D
-		material.normal_scale = 0.75
+		material.normal_scale = 1.1
 
 	if ResourceLoader.exists(rough_path):
 		material.roughness_texture = load(rough_path) as Texture2D
