@@ -27,7 +27,7 @@ static var ACTION_CONFIG: Dictionary = {
 	"jump": {
 		"label": "JUMP",
 		"hint": "Leap over hazards",
-		"defaults": [32, 4194320],
+		"defaults": [	32, 4194320],
 	},
 	"slide": {
 		"label": "SLIDE",
