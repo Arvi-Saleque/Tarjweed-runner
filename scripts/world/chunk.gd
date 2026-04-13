@@ -88,7 +88,7 @@ func _create_road_surface_details() -> void:
 		detail_material = _generator.get("road_detail_material")
 		patch_material = _generator.get("road_patch_material")
 
-	if _uses_alt_full_road():
+	if _uses_single_full_road():
 		return
 
 	# Central worn strip keeps the track feeling intentional and helps camera framing.
@@ -281,18 +281,11 @@ func _is_cyber_theme() -> bool:
 	return _generator != null and _generator.get("theme_id") == "cyberprank"
 
 
-func _uses_alt_full_road() -> bool:
-	var road_run_size: int = 6
-	var road_run_index: int = int(chunk_index / road_run_size)
-	return _generator != null \
-		and _generator.get("theme_id") == "nature" \
-		and _generator.get("road_alt_ground_material") != null \
-		and road_run_index % 2 == 1
+func _uses_single_full_road() -> bool:
+	return _generator != null and _generator.get("theme_id") == "nature"
 
 
 func _get_chunk_ground_material() -> StandardMaterial3D:
-	if _uses_alt_full_road():
-		return _generator.road_alt_ground_material
 	if _generator and _generator.get("ground_material"):
 		return _generator.ground_material
 	return null

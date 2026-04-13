@@ -27,7 +27,6 @@ var coin_scenes: Dictionary = {}  # "gold" -> PackedScene, etc.
 var obstacle_material: StandardMaterial3D
 var coin_material: StandardMaterial3D
 var ground_material: StandardMaterial3D
-var road_alt_ground_material: StandardMaterial3D
 var road_detail_material: StandardMaterial3D
 var road_patch_material: StandardMaterial3D
 var grass_material: StandardMaterial3D
@@ -138,14 +137,13 @@ func _clear_all_chunks() -> void:
 func _setup_materials() -> void:
 	var road_profile: Dictionary = theme_profile.get("road", {})
 
-	ground_material = StandardMaterial3D.new()
-	ground_material.albedo_color = road_profile.get("ground", Color(0.60, 0.48, 0.31, 1.0))
-	ground_material.roughness = road_profile.get("ground_roughness", 0.96)
-	ground_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-
-	road_alt_ground_material = null
 	if theme_id == "nature":
-		road_alt_ground_material = _build_alt_nature_road_material()
+		ground_material = _build_nature_road_material()
+	else:
+		ground_material = StandardMaterial3D.new()
+		ground_material.albedo_color = road_profile.get("ground", Color(0.60, 0.48, 0.31, 1.0))
+		ground_material.roughness = road_profile.get("ground_roughness", 0.96)
+		ground_material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
 
 	road_detail_material = StandardMaterial3D.new()
 	road_detail_material.albedo_color = road_profile.get("detail", Color(0.68, 0.55, 0.36, 1.0))
@@ -197,13 +195,17 @@ func _setup_materials() -> void:
 	coin_material.emission_energy_multiplier = 0.3
 
 
-func _build_alt_nature_road_material() -> StandardMaterial3D:
+func _build_nature_road_material() -> StandardMaterial3D:
 	var diffuse_path := "res://assets/road/cobblestone/textures/cobblestone_diffuse.jpg"
 	var normal_path := "res://assets/road/cobblestone/textures/cobblestone_normal_gl.png"
 	var rough_path := "res://assets/road/cobblestone/textures/cobblestone_rough.png"
 	var ao_path := "res://assets/road/cobblestone/textures/cobblestone_ao.jpg"
+	var road_profile: Dictionary = theme_profile.get("road", {})
 	if not ResourceLoader.exists(diffuse_path):
-		return null
+		var fallback := StandardMaterial3D.new()
+		fallback.albedo_color = road_profile.get("ground", Color(0.60, 0.48, 0.31, 1.0))
+		fallback.roughness = road_profile.get("ground_roughness", 0.96)
+		return fallback
 
 	var material := StandardMaterial3D.new()
 	material.albedo_texture = load(diffuse_path) as Texture2D
