@@ -16,6 +16,8 @@ const ROCK_COLLISION_FORWARD_OFFSET: float = 0.34
 const NATURE_ROCK_DIFFUSE_PATH: String = "res://assets/Obstacles/GiantRock/textures/namaqualand_boulder_02/diffuse.jpg"
 const NATURE_ROCK_NORMAL_PATH: String = "res://assets/Obstacles/GiantRock/textures/namaqualand_boulder_02/normal_gl.exr"
 const NATURE_ROCK_ROUGHNESS_PATH: String = "res://assets/Obstacles/GiantRock/textures/namaqualand_boulder_02/roughness.exr"
+const NATURE_WOOD_DIFFUSE_PATH: String = "res://assets/world/quaternius_nature/Bark_NormalTree.png"
+const NATURE_WOOD_NORMAL_PATH: String = "res://assets/world/quaternius_nature/Bark_NormalTree_Normal.png"
 
 var state: RockState = RockState.INTACT
 var _model: Node3D = null
@@ -24,6 +26,7 @@ var _hint_icon: Sprite3D = null
 var _shake_timer: float = 0.0
 var _debris_nodes: Array[Node3D] = []
 static var _cached_nature_rock_material: StandardMaterial3D = null
+static var _cached_nature_wood_material: StandardMaterial3D = null
 
 
 func setup(model_scene: PackedScene) -> void:
@@ -241,17 +244,9 @@ func _build_nature_blast_barricade() -> Node3D:
 	barricade.name = "NatureBlastBarricade"
 	barricade.position = Vector3(0.0, 0.02, -0.20)
 
-	var beam_material := StandardMaterial3D.new()
-	beam_material.albedo_color = Color(0.41, 0.28, 0.16, 1.0)
-	beam_material.roughness = 0.95
-
-	var post_material := StandardMaterial3D.new()
-	post_material.albedo_color = Color(0.30, 0.20, 0.11, 1.0)
-	post_material.roughness = 0.98
-
-	var packed_fill := StandardMaterial3D.new()
-	packed_fill.albedo_color = Color(0.56, 0.41, 0.24, 1.0)
-	packed_fill.roughness = 0.99
+	var beam_material := _get_nature_wood_material()
+	var post_material := _get_nature_wood_material()
+	var packed_fill := _get_nature_rock_material()
 
 	_add_barricade_piece(barricade, Vector3(0.0, 0.26, 0.22), Vector3(6.9, 0.44, 0.40), beam_material)
 	_add_barricade_piece(barricade, Vector3(-2.18, 0.78, 0.08), Vector3(0.22, 1.02, 0.22), post_material)
@@ -275,7 +270,31 @@ func _add_barricade_piece(parent: Node3D, pos: Vector3, size: Vector3, material:
 	piece.mesh = mesh
 	piece.position = pos
 	piece.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	if material != null:
+		var applied := material.duplicate() as StandardMaterial3D
+		applied.uv1_scale = Vector3(1.0, 1.0, 1.0)
+		piece.material_override = applied
 	parent.add_child(piece)
+
+
+func _get_nature_wood_material() -> StandardMaterial3D:
+	if _cached_nature_wood_material != null:
+		return _cached_nature_wood_material
+
+	var material := StandardMaterial3D.new()
+	material.albedo_color = Color(0.50, 0.34, 0.20, 1.0)
+	material.roughness = 0.95
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+
+	if ResourceLoader.exists(NATURE_WOOD_DIFFUSE_PATH):
+		material.albedo_texture = load(NATURE_WOOD_DIFFUSE_PATH) as Texture2D
+	if ResourceLoader.exists(NATURE_WOOD_NORMAL_PATH):
+		material.normal_enabled = true
+		material.normal_texture = load(NATURE_WOOD_NORMAL_PATH) as Texture2D
+		material.normal_scale = 0.8
+
+	_cached_nature_wood_material = material
+	return _cached_nature_wood_material
 
 
 func _apply_glow_tint(node: Node, color: Color) -> void:
