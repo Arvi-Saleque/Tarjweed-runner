@@ -576,12 +576,33 @@ func _handle_collision(node: Node) -> void:
 func _die() -> void:
 	current_state = PlayerState.DEAD
 	vertical_velocity = 0.0
+	velocity = Vector3.ZERO
 	footstep_timer.stop()
+	coyote_timer.stop()
+	_slide_timer = 0.0
+	_stumble_timer = 0.0
+	_jump_anticipation_timer = 0.0
+	_land_impact_timer = 0.0
+	_lane_lean_impulse = 0.0
 
-	# Death stumble animation placeholder
+	# Restore the standing collider so the collapsed body reads cleanly on the road.
+	collision_shape.shape = _stand_shape
+	collision_shape.position.y = STAND_HEIGHT / 2.0
+	hit_shape.shape = _stand_shape.duplicate()
+	hit_shape.position = Vector3(0.0, STAND_HEIGHT / 2.0, HIT_AREA_FORWARD_BIAS)
+
+	# Collapse sideways onto the road instead of flipping out of frame.
+	var side_dir: float = 0.65
+	if current_lane == 0:
+		side_dir = 1.0
+	elif current_lane == 2:
+		side_dir = -1.0
+	var fallen_position := player_model.position + Vector3(0.16 * side_dir, 0.08, 0.18)
+	var fallen_rotation := Vector3(deg_to_rad(6.0), 0.0, deg_to_rad(86.0 * side_dir))
 	var tween: Tween = create_tween()
-	tween.tween_property(player_model, "rotation:x", deg_to_rad(-90), 0.4).set_ease(Tween.EASE_IN)
-	tween.parallel().tween_property(player_model, "position:y", 0.0, 0.4)
+	tween.tween_property(player_model, "rotation", fallen_rotation, 0.38).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(player_model, "position", fallen_position, 0.38).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(player_model, "scale", Vector3.ONE, 0.2)
 
 
 func _on_game_over() -> void:
