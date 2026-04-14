@@ -39,8 +39,14 @@ func setup(model_scene: PackedScene) -> void:
 		else:
 			_model = model_scene.instantiate()
 			add_child(_model)
-			_model.scale = Vector3(3.5, 3.0, 3.0)
-			if not GameManager.is_cyberprank_theme():
+			var model_scale := Vector3(3.5, 3.0, 3.0)
+			var model_offset := Vector3.ZERO
+			if model_scene.resource_path.contains("GiantRock/Large/"):
+				model_scale = Vector3(1.15, 1.15, 1.15)
+				model_offset = Vector3(0.0, 0.05, 0.0)
+			_model.scale = model_scale
+			_model.position = model_offset
+			if not GameManager.is_cyberprank_theme() and not model_scene.resource_path.contains("GiantRock/Large/"):
 				_apply_nature_rock_material(_model)
 
 	var col := CollisionShape3D.new()
