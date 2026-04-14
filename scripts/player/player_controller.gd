@@ -563,17 +563,17 @@ func _handle_collision(node: Node) -> void:
 		hit_obstacle.emit()
 		AudioManager.play_impact()
 		GameManager.trigger_game_over()
-		_die()
+		_die(node)
 		return
 
 	if node.is_in_group("obstacles") and not node.is_in_group("river_kill_zones"):
 		hit_obstacle.emit()
 		AudioManager.play_impact()
 		GameManager.trigger_game_over()
-		_die()
+		_die(node)
 
 
-func _die() -> void:
+func _die(hit_node: Node = null) -> void:
 	current_state = PlayerState.DEAD
 	vertical_velocity = 0.0
 	velocity = Vector3.ZERO
@@ -599,6 +599,11 @@ func _die() -> void:
 		side_dir = -1.0
 	var fallen_position := player_model.position + Vector3(0.16 * side_dir, 0.08, 0.18)
 	var fallen_rotation := Vector3(deg_to_rad(6.0), 0.0, deg_to_rad(86.0 * side_dir))
+	if hit_node != null and hit_node.is_in_group("giant_rocks"):
+		# Giant rocks fill the whole front space, so collapse backward onto the road
+		# instead of sideways into the blocker volume.
+		fallen_position = player_model.position + Vector3(0.05 * side_dir, 0.05, 0.52)
+		fallen_rotation = Vector3(deg_to_rad(-10.0), 0.0, deg_to_rad(62.0 * side_dir))
 	var tween: Tween = create_tween()
 	tween.tween_property(player_model, "rotation", fallen_rotation, 0.38).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	tween.parallel().tween_property(player_model, "position", fallen_position, 0.38).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
