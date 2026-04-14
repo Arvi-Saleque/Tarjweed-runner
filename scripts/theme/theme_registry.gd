@@ -454,6 +454,8 @@ const NATURE_PROFILE: Dictionary = {
 		],
 		"giant": [
 			"res://assets/Obstacles/GiantRock/BlastRocks/Rocks.glb",
+			"res://assets/Obstacles/GiantRock/Large/Rock_Large_1.glb",
+			"res://assets/Obstacles/GiantRock/Large/Rock_Large_2.glb",
 		],
 	},
 	"player": {
