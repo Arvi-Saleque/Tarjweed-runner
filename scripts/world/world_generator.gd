@@ -158,8 +158,11 @@ func _setup_materials() -> void:
 		road_patch_material.emission_energy_multiplier = road_profile.get("patch_emission_energy", 0.85)
 
 	grass_material = StandardMaterial3D.new()
-	grass_material.albedo_color = road_profile.get("side", Color(0.31, 0.47, 0.24, 1.0))
-	grass_material.roughness = road_profile.get("side_roughness", 0.95)
+	if theme_id == "nature":
+		grass_material = _build_nature_side_material()
+	else:
+		grass_material.albedo_color = road_profile.get("side", Color(0.31, 0.47, 0.24, 1.0))
+		grass_material.roughness = road_profile.get("side_roughness", 0.95)
 
 	path_edge_material = StandardMaterial3D.new()
 	path_edge_material.albedo_color = road_profile.get("edge", Color(0.33, 0.26, 0.18, 1.0))
@@ -226,6 +229,42 @@ func _build_nature_road_material() -> StandardMaterial3D:
 		material.ao_enabled = true
 		material.ao_texture = load(ao_path) as Texture2D
 		material.ao_light_affect = 0.65
+
+	return material
+
+
+func _build_nature_side_material() -> StandardMaterial3D:
+	var diffuse_path := "res://assets/ground/nature_rocky_side/textures/rocky_terrain_02_diff_2k.jpg"
+	var normal_path := "res://assets/ground/nature_rocky_side/textures/rocky_terrain_02_nor_gl_2k.png"
+	var rough_path := "res://assets/ground/nature_rocky_side/textures/rocky_terrain_02_rough_2k.png"
+	var ao_path := "res://assets/ground/nature_rocky_side/textures/rocky_terrain_02_ao_2k.jpg"
+	var road_profile: Dictionary = theme_profile.get("road", {})
+	var fallback := StandardMaterial3D.new()
+	fallback.albedo_color = road_profile.get("side", Color(0.31, 0.47, 0.24, 1.0))
+	fallback.roughness = road_profile.get("side_roughness", 0.95)
+
+	if not ResourceLoader.exists(diffuse_path):
+		return fallback
+
+	var material := StandardMaterial3D.new()
+	material.albedo_texture = load(diffuse_path) as Texture2D
+	material.albedo_color = Color(1.0, 1.0, 1.0, 1.0)
+	material.roughness = 0.9
+	material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
+	material.uv1_scale = Vector3(6.0, 1.0, 8.0)
+
+	if ResourceLoader.exists(normal_path):
+		material.normal_enabled = true
+		material.normal_texture = load(normal_path) as Texture2D
+		material.normal_scale = 0.75
+
+	if ResourceLoader.exists(rough_path):
+		material.roughness_texture = load(rough_path) as Texture2D
+
+	if ResourceLoader.exists(ao_path):
+		material.ao_enabled = true
+		material.ao_texture = load(ao_path) as Texture2D
+		material.ao_light_affect = 0.55
 
 	return material
 
