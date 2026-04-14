@@ -698,30 +698,54 @@ func _fire_blast_projectile(target_rock: Node) -> void:
 
 	## Spawn a glowing energy ball that flies from the player to the rock.
 	var projectile := MeshInstance3D.new()
-	var sphere := SphereMesh.new()
-	sphere.radius = 0.25
-	sphere.height = 0.5
-
 	var mat := StandardMaterial3D.new()
-	var blast_color := Color(0.2, 0.8, 1.0, 0.9)
-	var emission_color := Color(0.1, 0.6, 1.0)
-	var light_color := Color(0.2, 0.7, 1.0)
+	var blast_color := Color(0.84, 0.72, 0.42, 0.92)
+	var emission_color := Color(0.46, 0.82, 0.36)
+	var light_color := Color(0.88, 0.78, 0.42)
 	if GameManager.is_cyberprank_theme():
 		blast_color = Color(0.72, 0.26, 1.0, 0.92)
 		emission_color = Color(0.18, 0.95, 1.0)
 		light_color = Color(0.42, 0.92, 1.0)
+	else:
+		var capsule := CapsuleMesh.new()
+		capsule.radius = 0.12
+		capsule.mid_height = 0.42
+		projectile.mesh = capsule
+		projectile.rotation.z = deg_to_rad(90.0)
+		var halo := MeshInstance3D.new()
+		var halo_torus := TorusMesh.new()
+		halo_torus.inner_radius = 0.18
+		halo_torus.outer_radius = 0.28
+		var halo_mat := StandardMaterial3D.new()
+		halo_mat.albedo_color = Color(0.70, 1.0, 0.62, 0.42)
+		halo_mat.emission_enabled = true
+		halo_mat.emission = Color(0.44, 0.92, 0.30)
+		halo_mat.emission_energy_multiplier = 2.6
+		halo_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		halo_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		halo_torus.material = halo_mat
+		halo.mesh = halo_torus
+		halo.rotation.x = deg_to_rad(90.0)
+		projectile.add_child(halo)
+	if projectile.mesh == null:
+		var sphere := SphereMesh.new()
+		sphere.radius = 0.25
+		sphere.height = 0.5
+		projectile.mesh = sphere
 	mat.albedo_color = blast_color
 	mat.emission_enabled = true
 	mat.emission = emission_color
-	mat.emission_energy_multiplier = 5.0
+	mat.emission_energy_multiplier = 4.0 if GameManager.is_nature_theme() else 5.0
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	sphere.material = mat
-	projectile.mesh = sphere
+	mat.roughness = 0.18 if GameManager.is_nature_theme() else 0.02
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED if GameManager.is_cyberprank_theme() else BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	if projectile.mesh is PrimitiveMesh:
+		(projectile.mesh as PrimitiveMesh).material = mat
 
 	# Add a point light to the projectile for glow
 	var light := OmniLight3D.new()
 	light.light_color = light_color
-	light.light_energy = 4.0
+	light.light_energy = 3.0 if GameManager.is_nature_theme() else 4.0
 	light.omni_range = 5.0
 	projectile.add_child(light)
 
@@ -739,7 +763,9 @@ func _fire_blast_projectile(target_rock: Node) -> void:
 
 	var tween := get_tree().create_tween()
 	tween.tween_property(projectile, "position", target_pos, travel_time).set_ease(Tween.EASE_IN)
-	tween.parallel().tween_property(projectile, "scale", Vector3(1.5, 1.5, 1.5), travel_time)
+	tween.parallel().tween_property(projectile, "scale", Vector3(1.3, 1.3, 1.3) if GameManager.is_nature_theme() else Vector3(1.5, 1.5, 1.5), travel_time)
+	if GameManager.is_nature_theme():
+		tween.parallel().tween_property(projectile, "rotation:y", projectile.rotation.y + deg_to_rad(220.0), travel_time)
 	AudioManager.play_blast_fire()
 
 	# On hit: instantly destroy the rock
@@ -755,7 +781,7 @@ func _fire_blast_projectile(target_rock: Node) -> void:
 
 		# Fade and remove projectile
 		var fade_tween := get_tree().create_tween()
-		fade_tween.tween_property(projectile, "scale", Vector3(3.0, 3.0, 3.0), 0.2)
+		fade_tween.tween_property(projectile, "scale", Vector3(2.2, 2.2, 2.2) if GameManager.is_nature_theme() else Vector3(3.0, 3.0, 3.0), 0.2)
 		fade_tween.parallel().tween_callback(func(): mat.albedo_color.a = 0.0)
 		fade_tween.tween_callback(projectile.queue_free)
 	)
