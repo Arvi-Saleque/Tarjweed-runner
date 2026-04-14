@@ -709,7 +709,7 @@ func _fire_blast_projectile(target_rock: Node) -> void:
 	else:
 		var capsule := CapsuleMesh.new()
 		capsule.radius = 0.12
-		capsule.mid_height = 0.42
+		capsule.height = 0.66
 		projectile.mesh = capsule
 		projectile.rotation.z = deg_to_rad(90.0)
 		var halo := MeshInstance3D.new()
