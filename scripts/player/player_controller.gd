@@ -82,6 +82,9 @@ const RIVER_BRIDGE_RANGE: float = 30.0     # Can build bridge within this range
 const RIVER_NO_JUMP_RANGE: float = 20.0    # No jumping within this range of a river
 const BRIDGE_HOLD_TIME: float = 0.8        # Seconds of holding spacebar to build
 const BRIDGE_PREVIEW_DEPTH: float = 3.6    # Must match the stylized bridge visual depth
+const NATURE_BRIDGE_SCENE_PATH: String = "res://assets/Obstacles/bridges/Nature/Bridge.glb"
+const NATURE_BRIDGE_MODEL_SCALE: Vector3 = Vector3(2.0, 1.55, 1.7)
+const NATURE_BRIDGE_MODEL_OFFSET: Vector3 = Vector3(0.0, -0.06, 0.0)
 var _nearby_river: Node = null
 var _space_hold_time: float = 0.0
 var _bridge_built_for_river: Node = null    # Track which river we already built a bridge for
@@ -1040,6 +1043,8 @@ func _build_stylized_bridge(parent: Node3D) -> void:
 	if GameManager.is_cyberprank_theme():
 		_build_hologram_bridge(parent)
 		return
+	if _build_nature_bridge_model(parent):
+		return
 
 	var bridge_width: float = GameManager.LANE_WIDTH * GameManager.LANE_COUNT + 1.0
 	var bridge_depth: float = BRIDGE_PREVIEW_DEPTH
@@ -1125,6 +1130,21 @@ func _build_stylized_bridge(parent: Node3D) -> void:
 	)
 	support_right.position = Vector3(1.45, -0.14, 0.0)
 	parent.add_child(support_right)
+
+
+func _build_nature_bridge_model(parent: Node3D) -> bool:
+	if not ResourceLoader.exists(NATURE_BRIDGE_SCENE_PATH):
+		return false
+	var scene := load(NATURE_BRIDGE_SCENE_PATH) as PackedScene
+	if scene == null:
+		return false
+	var bridge_model := scene.instantiate() as Node3D
+	if bridge_model == null:
+		return false
+	bridge_model.scale = NATURE_BRIDGE_MODEL_SCALE
+	bridge_model.position = NATURE_BRIDGE_MODEL_OFFSET
+	parent.add_child(bridge_model)
+	return true
 
 
 func _build_hologram_bridge(parent: Node3D) -> void:
