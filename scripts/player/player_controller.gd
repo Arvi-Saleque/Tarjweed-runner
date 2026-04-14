@@ -525,12 +525,12 @@ func _update_runner_presentation(delta: float) -> void:
 		target_pitch = deg_to_rad(6.0 * (_land_impact_timer / 0.18))
 
 	if GameManager.is_nature_theme() and current_state == PlayerState.RUNNING:
-		var bridge_normalized_z := _get_active_nature_bridge_normalized_z()
-		if bridge_normalized_z != null:
-			var arch_ratio: float = cos(float(bridge_normalized_z) * PI * 0.5)
+		var bridge_normalized_z: float = _get_active_nature_bridge_normalized_z()
+		if bridge_normalized_z > -9.0:
+			var arch_ratio: float = cos(bridge_normalized_z * PI * 0.5)
 			target_visual_pos.y += arch_ratio * NATURE_BRIDGE_ARC_HEIGHT
 			target_visual_pos.z += arch_ratio * NATURE_BRIDGE_ARC_FORWARD_SHIFT
-			target_pitch += deg_to_rad(-float(bridge_normalized_z) * NATURE_BRIDGE_ARC_PITCH_DEGREES)
+			target_pitch += deg_to_rad(-bridge_normalized_z * NATURE_BRIDGE_ARC_PITCH_DEGREES)
 
 	player_model.rotation.x = lerpf(player_model.rotation.x, target_pitch, delta * 10.0)
 	player_model.rotation.z = lerpf(player_model.rotation.z, target_roll, delta * 10.0)
@@ -1044,7 +1044,7 @@ func _is_player_inside_river_zone(river_zone: Node) -> bool:
 	)
 
 
-func _get_active_nature_bridge_normalized_z() -> Variant:
+func _get_active_nature_bridge_normalized_z() -> float:
 	for river_zone in get_tree().get_nodes_in_group("river_kill_zones"):
 		if not is_instance_valid(river_zone):
 			continue
@@ -1070,7 +1070,7 @@ func _get_active_nature_bridge_normalized_z() -> Variant:
 		var local_player: Vector3 = reference_node.to_local(global_position)
 		return clampf(local_player.z / (BRIDGE_PREVIEW_DEPTH * 0.5), -1.0, 1.0)
 
-	return null
+	return -10.0
 
 
 func _apply_bridge_preview_look(node: Node) -> void:
