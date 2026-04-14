@@ -13,6 +13,8 @@ const ROCK_WIDTH: float = 7.0        # Spans all 3 lanes
 const ROCK_HEIGHT: float = 3.5       # Tall enough to block everything
 const ROCK_COLLISION_DEPTH: float = 2.35
 const ROCK_COLLISION_FORWARD_OFFSET: float = 0.34
+const NATURE_BARRIER_SCALE: Vector3 = Vector3(2.35, 2.1, 2.0)
+const NATURE_BARRIER_OFFSET: Vector3 = Vector3(0.0, 0.02, -0.22)
 const NATURE_ROCK_DIFFUSE_PATH: String = "res://assets/Obstacles/GiantRock/textures/namaqualand_boulder_02/diffuse.jpg"
 const NATURE_ROCK_NORMAL_PATH: String = "res://assets/Obstacles/GiantRock/textures/namaqualand_boulder_02/normal_gl.exr"
 const NATURE_ROCK_ROUGHNESS_PATH: String = "res://assets/Obstacles/GiantRock/textures/namaqualand_boulder_02/roughness.exr"
@@ -35,7 +37,12 @@ func setup(model_scene: PackedScene) -> void:
 	add_to_group("obstacles")
 	add_to_group("giant_rocks")
 
-	if not GameManager.is_cyberprank_theme():
+	if not GameManager.is_cyberprank_theme() and model_scene:
+		_model = model_scene.instantiate()
+		add_child(_model)
+		_model.scale = NATURE_BARRIER_SCALE
+		_model.position = NATURE_BARRIER_OFFSET
+	elif not GameManager.is_cyberprank_theme():
 		_model = _build_nature_blast_barricade()
 		add_child(_model)
 	elif model_scene:
