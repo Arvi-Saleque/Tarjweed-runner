@@ -5,6 +5,7 @@ extends RefCounted
 
 const OBSTACLE_SCRIPT: String = "res://scripts/obstacles/obstacle.gd"
 const GIANT_ROCK_SCRIPT: String = "res://scripts/obstacles/giant_rock.gd"
+const NATURE_WATER_SHADER_PATH: String = "res://assets/Shaders/Water/water_toon_runtime.gdshader"
 
 # Natural mode settings
 const SLOT_SPACING: float = 5.0
@@ -346,15 +347,18 @@ static func _add_river_visuals(river: Node3D) -> void:
 		return
 
 	var river_width: float = RIVER_ROAD_WIDTH + 2.0
-
-	river.add_child(_create_river_plane(
-		Vector2(river_width, RIVER_DEPTH),
-		0.11,
-		Color(0.10, 0.36, 0.28, 0.86),
-		0.18,
-		Color(0.05, 0.14, 0.11, 1.0),
-		0.35
-	))
+	var shader_surface := _create_nature_water_surface(Vector2(river_width, RIVER_DEPTH), 0.11)
+	if shader_surface != null:
+		river.add_child(shader_surface)
+	else:
+		river.add_child(_create_river_plane(
+			Vector2(river_width, RIVER_DEPTH),
+			0.11,
+			Color(0.10, 0.36, 0.28, 0.86),
+			0.18,
+			Color(0.05, 0.14, 0.11, 1.0),
+			0.35
+		))
 
 	river.add_child(_create_river_plane(
 		Vector2(river_width + 0.35, RIVER_DEPTH + 0.55),
@@ -367,6 +371,44 @@ static func _add_river_visuals(river: Node3D) -> void:
 	river.add_child(_create_river_bank(river_width, RIVER_DEPTH * 0.5 + 0.35))
 	river.add_child(_create_foam_strip(river_width - 0.4, -RIVER_DEPTH * 0.5 + 0.18))
 	river.add_child(_create_foam_strip(river_width - 0.4, RIVER_DEPTH * 0.5 - 0.18))
+
+
+static func _create_nature_water_surface(size: Vector2, y: float) -> MeshInstance3D:
+	if not ResourceLoader.exists(NATURE_WATER_SHADER_PATH):
+		return null
+
+	var shader := load(NATURE_WATER_SHADER_PATH) as Shader
+	if shader == null:
+		return null
+
+	var mesh_instance := MeshInstance3D.new()
+	var plane := PlaneMesh.new()
+	plane.size = size
+
+	var material := ShaderMaterial.new()
+	material.shader = shader
+	material.set_shader_parameter("surface_color", Color(0.18, 0.56, 0.46, 0.88))
+	material.set_shader_parameter("depth_color", Color(0.04, 0.14, 0.13, 0.96))
+	material.set_shader_parameter("foam_color", Color(0.86, 0.95, 0.88, 0.92))
+	material.set_shader_parameter("highlight_color", Color(0.70, 0.96, 0.84, 1.0))
+	material.set_shader_parameter("depth_size", 3.8)
+	material.set_shader_parameter("alpha_strength", 0.90)
+	material.set_shader_parameter("primary_scale", 0.52)
+	material.set_shader_parameter("detail_scale", 1.65)
+	material.set_shader_parameter("primary_velocity", Vector2(0.05, 0.015))
+	material.set_shader_parameter("detail_velocity", Vector2(-0.025, 0.04))
+	material.set_shader_parameter("displacement_amount", 0.06)
+	material.set_shader_parameter("refraction_amount", 0.006)
+	material.set_shader_parameter("highlight_amount", 0.12)
+	material.set_shader_parameter("edge_foam_strength", 1.05)
+	material.set_shader_parameter("wave_foam_threshold", 0.70)
+	material.set_shader_parameter("wave_foam_softness", 0.16)
+
+	plane.material = material
+	mesh_instance.mesh = plane
+	mesh_instance.position = Vector3(0.0, y, 0.0)
+	mesh_instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	return mesh_instance
 
 
 static func _add_cyber_trench_visuals(river: Node3D) -> void:
