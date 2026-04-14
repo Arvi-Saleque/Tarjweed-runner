@@ -87,6 +87,9 @@ const NATURE_BRIDGE_MODEL_SCALE: Vector3 = Vector3(0.30, 0.058, 0.070)
 const NATURE_BRIDGE_SOURCE_CENTER: Vector3 = Vector3(72.2364, 11.0247, -3.0039)
 const NATURE_BRIDGE_SOURCE_MIN_Y: float = -3.0746
 const NATURE_BRIDGE_MODEL_OFFSET: Vector3 = Vector3(0.0, -0.62, 0.0)
+const NATURE_BRIDGE_ARC_HEIGHT: float = 0.42
+const NATURE_BRIDGE_ARC_FORWARD_SHIFT: float = 0.04
+const NATURE_BRIDGE_ARC_PITCH_DEGREES: float = 8.0
 var _nearby_river: Node = null
 var _space_hold_time: float = 0.0
 var _bridge_built_for_river: Node = null    # Track which river we already built a bridge for
@@ -512,6 +515,7 @@ func _update_runner_presentation(delta: float) -> void:
 	var lane_diff: float = target_x - position.x
 	var target_roll: float = clampf(-lane_diff * 0.18, -0.24, 0.24) + _lane_lean_impulse
 	var target_pitch: float = deg_to_rad(-4.0) if current_state == PlayerState.RUNNING else 0.0
+	var target_visual_pos := Vector3.ZERO
 
 	if current_state == PlayerState.SLIDING:
 		target_pitch = deg_to_rad(-60.0)
@@ -520,8 +524,17 @@ func _update_runner_presentation(delta: float) -> void:
 	elif _land_impact_timer > 0.0:
 		target_pitch = deg_to_rad(6.0 * (_land_impact_timer / 0.18))
 
+	if GameManager.is_nature_theme() and current_state == PlayerState.RUNNING:
+		var bridge_normalized_z := _get_active_nature_bridge_normalized_z()
+		if bridge_normalized_z != null:
+			var arch_ratio: float = cos(float(bridge_normalized_z) * PI * 0.5)
+			target_visual_pos.y += arch_ratio * NATURE_BRIDGE_ARC_HEIGHT
+			target_visual_pos.z += arch_ratio * NATURE_BRIDGE_ARC_FORWARD_SHIFT
+			target_pitch += deg_to_rad(-float(bridge_normalized_z) * NATURE_BRIDGE_ARC_PITCH_DEGREES)
+
 	player_model.rotation.x = lerpf(player_model.rotation.x, target_pitch, delta * 10.0)
 	player_model.rotation.z = lerpf(player_model.rotation.z, target_roll, delta * 10.0)
+	player_model.position = player_model.position.lerp(target_visual_pos, delta * 9.0)
 
 	var target_scale := Vector3.ONE
 	if _jump_anticipation_timer > 0.0:
@@ -1029,6 +1042,35 @@ func _is_player_inside_river_zone(river_zone: Node) -> bool:
 		absf(local_player.x - center.x) <= (box.size.x * 0.5) + 0.18 and
 		absf(local_player.z - center.z) <= (box.size.z * 0.5) + 0.12
 	)
+
+
+func _get_active_nature_bridge_normalized_z() -> Variant:
+	for river_zone in get_tree().get_nodes_in_group("river_kill_zones"):
+		if not is_instance_valid(river_zone):
+			continue
+		if river_zone.get_meta("lane_index", -1) != current_lane:
+			continue
+		if not _is_player_inside_river_zone(river_zone):
+			continue
+		if not _is_supported_on_river_zone(river_zone):
+			continue
+
+		var river := river_zone.get_parent()
+		if river == null:
+			continue
+
+		var reference_node: Node3D = null
+		if river == _bridge_preview_river and _bridge_preview_lane == current_lane and _bridge_preview_node and is_instance_valid(_bridge_preview_node):
+			reference_node = _bridge_preview_node
+		else:
+			reference_node = river.get_node_or_null("Bridge_Lane%d" % current_lane) as Node3D
+		if reference_node == null:
+			continue
+
+		var local_player: Vector3 = reference_node.to_local(global_position)
+		return clampf(local_player.z / (BRIDGE_PREVIEW_DEPTH * 0.5), -1.0, 1.0)
+
+	return null
 
 
 func _apply_bridge_preview_look(node: Node) -> void:
