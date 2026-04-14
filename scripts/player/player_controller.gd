@@ -72,7 +72,7 @@ const TOUCH_HOLD_THRESHOLD: float = 0.3   # Seconds before touch counts as hold
 const DOUBLE_TAP_WINDOW: float = 0.6   # window for double-tap detection
 const GIANT_ROCK_DETECT_RANGE: float = 45.0  # show hint at this distance
 const GIANT_ROCK_BLAST_RANGE: float = 35.0   # can blast within this range
-const GIANT_ROCK_IMPACT_Z: float = -1.55     # force a clean hit before visual clipping
+const GIANT_ROCK_IMPACT_Z: float = -2.15     # force a clean hit before visual clipping
 var _last_space_time: float = -1.0
 var _nearby_giant_rock: Node = null
 
