@@ -13,7 +13,8 @@ var _active: bool = false
 func start() -> void:
 	_active = true
 	_timer = 0.0
-	_create_shockwave_ring()
+	if GameManager.is_cyberprank_theme():
+		_create_shockwave_ring()
 	_create_sparks()
 	_create_smoke()
 	_create_flash()
