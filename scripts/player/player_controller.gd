@@ -83,8 +83,10 @@ const RIVER_NO_JUMP_RANGE: float = 20.0    # No jumping within this range of a r
 const BRIDGE_HOLD_TIME: float = 0.8        # Seconds of holding spacebar to build
 const BRIDGE_PREVIEW_DEPTH: float = 3.6    # Must match the stylized bridge visual depth
 const NATURE_BRIDGE_SCENE_PATH: String = "res://assets/Obstacles/bridges/Nature/Bridge.glb"
-const NATURE_BRIDGE_MODEL_SCALE: Vector3 = Vector3(2.0, 1.55, 1.7)
-const NATURE_BRIDGE_MODEL_OFFSET: Vector3 = Vector3(0.0, -0.06, 0.0)
+const NATURE_BRIDGE_MODEL_SCALE: Vector3 = Vector3(0.30, 0.058, 0.070)
+const NATURE_BRIDGE_SOURCE_CENTER: Vector3 = Vector3(72.2364, 11.0247, -3.0039)
+const NATURE_BRIDGE_SOURCE_MIN_Y: float = -3.0746
+const NATURE_BRIDGE_MODEL_OFFSET: Vector3 = Vector3(0.0, 0.10, 0.0)
 var _nearby_river: Node = null
 var _space_hold_time: float = 0.0
 var _bridge_built_for_river: Node = null    # Track which river we already built a bridge for
@@ -969,11 +971,19 @@ func _update_bridge_preview(river: Node, progress: float) -> void:
 
 	var clamped_progress: float = clampf(progress, 0.0, 1.0)
 	river.set_meta("bridge_preview_lane_%d" % _bridge_preview_lane, clamped_progress)
-	var z_scale: float = lerpf(0.08, 1.0, clamped_progress)
-	var center_z: float = lerpf(1.42, 0.0, clamped_progress)
-	_bridge_preview_node.scale = Vector3(1.0, lerpf(0.82, 1.0, clamped_progress), z_scale)
-	_bridge_preview_node.position.z = center_z
-	_bridge_preview_node.position.y = 0.14 + sin(Time.get_ticks_msec() / 120.0) * 0.02
+	if GameManager.is_nature_theme():
+		var z_scale: float = lerpf(0.22, 1.0, clamped_progress)
+		var center_z: float = lerpf(1.18, 0.0, clamped_progress)
+		var uniform_xy: float = lerpf(0.94, 1.0, clamped_progress)
+		_bridge_preview_node.scale = Vector3(uniform_xy, uniform_xy, z_scale)
+		_bridge_preview_node.position.z = center_z
+		_bridge_preview_node.position.y = 0.16 + sin(Time.get_ticks_msec() / 120.0) * 0.015
+	else:
+		var z_scale: float = lerpf(0.08, 1.0, clamped_progress)
+		var center_z: float = lerpf(1.42, 0.0, clamped_progress)
+		_bridge_preview_node.scale = Vector3(1.0, lerpf(0.82, 1.0, clamped_progress), z_scale)
+		_bridge_preview_node.position.z = center_z
+		_bridge_preview_node.position.y = 0.14 + sin(Time.get_ticks_msec() / 120.0) * 0.02
 
 
 func _clear_bridge_preview() -> void:
@@ -1141,9 +1151,17 @@ func _build_nature_bridge_model(parent: Node3D) -> bool:
 	var bridge_model := scene.instantiate() as Node3D
 	if bridge_model == null:
 		return false
-	bridge_model.scale = NATURE_BRIDGE_MODEL_SCALE
-	bridge_model.position = NATURE_BRIDGE_MODEL_OFFSET
-	parent.add_child(bridge_model)
+	var bridge_root := Node3D.new()
+	bridge_root.name = "NatureBridgeModel"
+	bridge_root.scale = NATURE_BRIDGE_MODEL_SCALE
+	bridge_root.position = NATURE_BRIDGE_MODEL_OFFSET
+	parent.add_child(bridge_root)
+	bridge_model.position = Vector3(
+		-NATURE_BRIDGE_SOURCE_CENTER.x,
+		-NATURE_BRIDGE_SOURCE_MIN_Y,
+		-NATURE_BRIDGE_SOURCE_CENTER.z
+	)
+	bridge_root.add_child(bridge_model)
 	return true
 
 
