@@ -72,6 +72,7 @@ const TOUCH_HOLD_THRESHOLD: float = 0.3   # Seconds before touch counts as hold
 const DOUBLE_TAP_WINDOW: float = 0.6   # window for double-tap detection
 const GIANT_ROCK_DETECT_RANGE: float = 45.0  # show hint at this distance
 const GIANT_ROCK_BLAST_RANGE: float = 35.0   # can blast within this range
+const GIANT_ROCK_IMPACT_Z: float = -1.55     # force a clean hit before visual clipping
 var _last_space_time: float = -1.0
 var _nearby_giant_rock: Node = null
 
@@ -608,6 +609,10 @@ func _scan_for_giant_rocks() -> void:
 		var rock_z: float = rock.global_position.z
 		if rock_z > 2.0:
 			continue  # Rock already passed behind us
+		var rock_state = rock.get("state")
+		if rock_state != null and rock_state < 1 and rock_z >= GIANT_ROCK_IMPACT_Z:
+			_handle_collision(rock)
+			return
 		var abs_dist: float = absf(rock_z)
 		if abs_dist < GIANT_ROCK_DETECT_RANGE:
 			if rock.has_method("show_hint"):
