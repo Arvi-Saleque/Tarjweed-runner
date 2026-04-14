@@ -23,6 +23,7 @@ const STAND_HEIGHT: float = 1.8
 const STAND_RADIUS: float = 0.35
 const SLIDE_HEIGHT: float = 0.6
 const SLIDE_RADIUS: float = 0.45
+const HIT_AREA_FORWARD_BIAS: float = -0.18
 const PLAYER_VISUAL_SCALE: float = 0.58
 const PLAYER_BASE_SCENE_PATH: String = "res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb"
 const PLAYER_EXTRA_ANIM_SCENE_PATHS: Array[String] = [
@@ -125,7 +126,7 @@ func _ready() -> void:
 	collision_shape.shape = _stand_shape
 	collision_shape.position.y = STAND_HEIGHT / 2.0
 	hit_shape.shape = _stand_shape.duplicate()
-	hit_shape.position.y = STAND_HEIGHT / 2.0
+	hit_shape.position = Vector3(0.0, STAND_HEIGHT / 2.0, HIT_AREA_FORWARD_BIAS)
 
 	# Set initial lane position
 	target_x = GameManager.LANE_POSITIONS[current_lane]
@@ -397,7 +398,7 @@ func _start_slide() -> void:
 	collision_shape.shape = _slide_shape
 	collision_shape.position.y = SLIDE_HEIGHT / 2.0
 	hit_shape.shape = _slide_shape.duplicate()
-	hit_shape.position.y = SLIDE_HEIGHT / 2.0
+	hit_shape.position = Vector3(0.0, SLIDE_HEIGHT / 2.0, HIT_AREA_FORWARD_BIAS)
 
 	# Tilt model forward
 	player_model.rotation.x = deg_to_rad(-60)
@@ -415,7 +416,7 @@ func _end_slide() -> void:
 	collision_shape.shape = _stand_shape
 	collision_shape.position.y = STAND_HEIGHT / 2.0
 	hit_shape.shape = _stand_shape.duplicate()
-	hit_shape.position.y = STAND_HEIGHT / 2.0
+	hit_shape.position = Vector3(0.0, STAND_HEIGHT / 2.0, HIT_AREA_FORWARD_BIAS)
 
 	# Reset model tilt
 	player_model.rotation.x = 0.0

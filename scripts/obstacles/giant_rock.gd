@@ -11,6 +11,9 @@ const DETECTION_RANGE: float = 35.0  # How far ahead player can see/target the r
 const BLAST_RANGE: float = 25.0      # Must be within this range for blast to work
 const ROCK_WIDTH: float = 7.0        # Spans all 3 lanes
 const ROCK_HEIGHT: float = 3.5       # Tall enough to block everything
+const ROCK_COLLISION_DEPTH: float = 2.05
+const ROCK_COLLISION_FORWARD_OFFSET: float = 0.22
+const LARGE_NATURE_ROCK_SCALE: Vector3 = Vector3(0.96, 0.96, 0.96)
 const NATURE_ROCK_DIFFUSE_PATH: String = "res://assets/Obstacles/GiantRock/textures/namaqualand_boulder_02/diffuse.jpg"
 const NATURE_ROCK_NORMAL_PATH: String = "res://assets/Obstacles/GiantRock/textures/namaqualand_boulder_02/normal_gl.exr"
 const NATURE_ROCK_ROUGHNESS_PATH: String = "res://assets/Obstacles/GiantRock/textures/namaqualand_boulder_02/roughness.exr"
@@ -42,8 +45,8 @@ func setup(model_scene: PackedScene) -> void:
 			var model_scale := Vector3(3.5, 3.0, 3.0)
 			var model_offset := Vector3.ZERO
 			if model_scene.resource_path.contains("GiantRock/Large/"):
-				model_scale = Vector3(1.15, 1.15, 1.15)
-				model_offset = Vector3(0.0, 0.05, 0.0)
+				model_scale = LARGE_NATURE_ROCK_SCALE
+				model_offset = Vector3(0.0, 0.02, 0.0)
 			_model.scale = model_scale
 			_model.position = model_offset
 			if not GameManager.is_cyberprank_theme() and not model_scene.resource_path.contains("GiantRock/Large/"):
@@ -51,9 +54,9 @@ func setup(model_scene: PackedScene) -> void:
 
 	var col := CollisionShape3D.new()
 	var box := BoxShape3D.new()
-	box.size = Vector3(ROCK_WIDTH, ROCK_HEIGHT, 1.5)
+	box.size = Vector3(ROCK_WIDTH, ROCK_HEIGHT, ROCK_COLLISION_DEPTH)
 	col.shape = box
-	col.position.y = ROCK_HEIGHT / 2.0
+	col.position = Vector3(0.0, ROCK_HEIGHT / 2.0, ROCK_COLLISION_FORWARD_OFFSET)
 	col.name = "RockCollision"
 	add_child(col)
 
