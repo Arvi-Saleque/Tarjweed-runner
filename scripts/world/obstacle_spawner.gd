@@ -23,6 +23,8 @@ const RIVER_CHANCE: float = 0.25              # 25% per eligible chunk
 const RIVER_MIN_DISTANCE: float = 50.0        # minimum meters between rivers
 const RIVER_ROAD_WIDTH: float = 8.0           # Width to cover all 3 lanes
 const RIVER_DEPTH: float = 4.0                # River depth (Z direction)
+const RIVER_KILL_HEIGHT: float = 5.2          # Tall enough that jumping cannot bypass the river
+const RIVER_KILL_DEPTH: float = RIVER_DEPTH + 0.35
 const RIVER_CLEARANCE: float = 20.0           # No obstacles/coins within this distance before river
 
 # Quiz mode settings — 4 obstacle types tied to math operations
@@ -320,7 +322,7 @@ static func _create_quiz_row_typed(parent: Node3D, z_pos: float, generator: Node
 				var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
 				var kill_zone := Area3D.new()
 				kill_zone.name = "RiverKillZone_Lane%d" % lane_idx
-				kill_zone.position = Vector3(lane_x, 0.5, 0.0)
+				kill_zone.position = Vector3(lane_x, 1.6, 0.0)
 				kill_zone.collision_layer = 4
 				kill_zone.collision_mask = 0
 				kill_zone.add_to_group("obstacles")
@@ -328,7 +330,7 @@ static func _create_quiz_row_typed(parent: Node3D, z_pos: float, generator: Node
 				kill_zone.set_meta("lane_index", lane_idx)
 				var col := CollisionShape3D.new()
 				var box := BoxShape3D.new()
-				box.size = Vector3(GameManager.LANE_WIDTH, 1.5, RIVER_DEPTH - 0.2)
+				box.size = Vector3(GameManager.LANE_WIDTH, RIVER_KILL_HEIGHT, RIVER_KILL_DEPTH)
 				col.shape = box
 				kill_zone.add_child(col)
 				river.add_child(kill_zone)
@@ -671,7 +673,7 @@ static func _spawn_river_crossing(chunk: Node3D, chunk_length: float, chunk_dist
 		var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
 		var kill_zone := Area3D.new()
 		kill_zone.name = "RiverKillZone_Lane%d" % lane_idx
-		kill_zone.position = Vector3(lane_x, 0.5, 0.0)
+		kill_zone.position = Vector3(lane_x, 1.6, 0.0)
 		kill_zone.collision_layer = 4
 		kill_zone.collision_mask = 0
 		kill_zone.add_to_group("obstacles")
@@ -680,7 +682,7 @@ static func _spawn_river_crossing(chunk: Node3D, chunk_length: float, chunk_dist
 
 		var col := CollisionShape3D.new()
 		var box := BoxShape3D.new()
-		box.size = Vector3(GameManager.LANE_WIDTH, 1.5, RIVER_DEPTH - 0.2)
+		box.size = Vector3(GameManager.LANE_WIDTH, RIVER_KILL_HEIGHT, RIVER_KILL_DEPTH)
 		col.shape = box
 		kill_zone.add_child(col)
 		river.add_child(kill_zone)
