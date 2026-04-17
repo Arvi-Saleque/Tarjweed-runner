@@ -73,6 +73,14 @@ const RIVER_NO_JUMP_RANGE: float = PlayerTuning.RIVER_NO_JUMP_RANGE    # No jump
 const BRIDGE_HOLD_TIME: float = PlayerTuning.BRIDGE_HOLD_TIME        # Seconds of holding spacebar to build
 const NATURE_BRIDGE_HOLD_TIME: float = PlayerTuning.NATURE_BRIDGE_HOLD_TIME
 const BRIDGE_PREVIEW_DEPTH: float = PlayerTuning.BRIDGE_PREVIEW_DEPTH    # Must match the stylized bridge visual depth
+const NATURE_BRIDGE_SCENE_PATH: String = "res://assets/Obstacles/bridges/Nature/Bridge.glb"
+const NATURE_BRIDGE_MODEL_SCALE: Vector3 = Vector3(0.30, 0.058, 0.070)
+const NATURE_BRIDGE_SOURCE_CENTER: Vector3 = Vector3(72.2364, 11.0247, -3.0039)
+const NATURE_BRIDGE_SOURCE_MIN_Y: float = -3.0746
+const NATURE_BRIDGE_MODEL_OFFSET: Vector3 = Vector3(0.0, -0.62, 0.0)
+const NATURE_BRIDGE_ARC_HEIGHT: float = 0.42
+const NATURE_BRIDGE_ARC_FORWARD_SHIFT: float = 0.04
+const NATURE_BRIDGE_ARC_PITCH_DEGREES: float = 8.0
 var _nearby_river: Node = null
 var _space_hold_time: float = 0.0
 var _bridge_built_for_river: Node = null    # Track which river we already built a bridge for
@@ -498,6 +506,7 @@ func _update_runner_presentation(delta: float) -> void:
 	var lane_diff: float = target_x - position.x
 	var target_roll: float = clampf(-lane_diff * 0.18, -0.24, 0.24) + _lane_lean_impulse
 	var target_pitch: float = deg_to_rad(-4.0) if current_state == PlayerState.RUNNING else 0.0
+	var target_visual_pos := Vector3.ZERO
 
 	if current_state == PlayerState.SLIDING:
 		target_pitch = deg_to_rad(-60.0)
@@ -506,8 +515,17 @@ func _update_runner_presentation(delta: float) -> void:
 	elif _land_impact_timer > 0.0:
 		target_pitch = deg_to_rad(6.0 * (_land_impact_timer / 0.18))
 
+	if GameManager.is_nature_theme() and current_state == PlayerState.RUNNING:
+		var bridge_normalized_z: float = _get_active_nature_bridge_normalized_z()
+		if bridge_normalized_z > -9.0:
+			var arch_ratio: float = cos(bridge_normalized_z * PI * 0.5)
+			target_visual_pos.y += arch_ratio * NATURE_BRIDGE_ARC_HEIGHT
+			target_visual_pos.z += arch_ratio * NATURE_BRIDGE_ARC_FORWARD_SHIFT
+			target_pitch += deg_to_rad(-bridge_normalized_z * NATURE_BRIDGE_ARC_PITCH_DEGREES)
+
 	player_model.rotation.x = lerpf(player_model.rotation.x, target_pitch, delta * 10.0)
 	player_model.rotation.z = lerpf(player_model.rotation.z, target_roll, delta * 10.0)
+	player_model.position = player_model.position.lerp(target_visual_pos, delta * 9.0)
 
 	var target_scale := Vector3.ONE
 	if _jump_anticipation_timer > 0.0:
@@ -671,30 +689,54 @@ func _fire_blast_projectile(target_rock: Node) -> void:
 
 	## Spawn a glowing energy ball that flies from the player to the rock.
 	var projectile := MeshInstance3D.new()
-	var sphere := SphereMesh.new()
-	sphere.radius = 0.25
-	sphere.height = 0.5
-
 	var mat := StandardMaterial3D.new()
-	var blast_color := Color(0.2, 0.8, 1.0, 0.9)
-	var emission_color := Color(0.1, 0.6, 1.0)
-	var light_color := Color(0.2, 0.7, 1.0)
+	var blast_color := Color(0.84, 0.72, 0.42, 0.92)
+	var emission_color := Color(0.46, 0.82, 0.36)
+	var light_color := Color(0.88, 0.78, 0.42)
 	if GameManager.is_cyberprank_theme():
 		blast_color = Color(0.72, 0.26, 1.0, 0.92)
 		emission_color = Color(0.18, 0.95, 1.0)
 		light_color = Color(0.42, 0.92, 1.0)
+	else:
+		var capsule := CapsuleMesh.new()
+		capsule.radius = 0.12
+		capsule.height = 0.66
+		projectile.mesh = capsule
+		projectile.rotation.z = deg_to_rad(90.0)
+		var halo := MeshInstance3D.new()
+		var halo_torus := TorusMesh.new()
+		halo_torus.inner_radius = 0.18
+		halo_torus.outer_radius = 0.28
+		var halo_mat := StandardMaterial3D.new()
+		halo_mat.albedo_color = Color(0.70, 1.0, 0.62, 0.42)
+		halo_mat.emission_enabled = true
+		halo_mat.emission = Color(0.44, 0.92, 0.30)
+		halo_mat.emission_energy_multiplier = 2.6
+		halo_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		halo_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		halo_torus.material = halo_mat
+		halo.mesh = halo_torus
+		halo.rotation.x = deg_to_rad(90.0)
+		projectile.add_child(halo)
+	if projectile.mesh == null:
+		var sphere := SphereMesh.new()
+		sphere.radius = 0.25
+		sphere.height = 0.5
+		projectile.mesh = sphere
 	mat.albedo_color = blast_color
 	mat.emission_enabled = true
 	mat.emission = emission_color
-	mat.emission_energy_multiplier = 5.0
+	mat.emission_energy_multiplier = 4.0 if GameManager.is_nature_theme() else 5.0
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	sphere.material = mat
-	projectile.mesh = sphere
+	mat.roughness = 0.18 if GameManager.is_nature_theme() else 0.02
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED if GameManager.is_cyberprank_theme() else BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	if projectile.mesh is PrimitiveMesh:
+		(projectile.mesh as PrimitiveMesh).material = mat
 
 	# Add a point light to the projectile for glow
 	var light := OmniLight3D.new()
 	light.light_color = light_color
-	light.light_energy = 4.0
+	light.light_energy = 3.0 if GameManager.is_nature_theme() else 4.0
 	light.omni_range = 5.0
 	projectile.add_child(light)
 
@@ -712,7 +754,9 @@ func _fire_blast_projectile(target_rock: Node) -> void:
 
 	var tween := get_tree().create_tween()
 	tween.tween_property(projectile, "position", target_pos, travel_time).set_ease(Tween.EASE_IN)
-	tween.parallel().tween_property(projectile, "scale", Vector3(1.5, 1.5, 1.5), travel_time)
+	tween.parallel().tween_property(projectile, "scale", Vector3(1.3, 1.3, 1.3) if GameManager.is_nature_theme() else Vector3(1.5, 1.5, 1.5), travel_time)
+	if GameManager.is_nature_theme():
+		tween.parallel().tween_property(projectile, "rotation:y", projectile.rotation.y + deg_to_rad(220.0), travel_time)
 	AudioManager.play_blast_fire()
 
 	# On hit: instantly destroy the rock
@@ -728,7 +772,7 @@ func _fire_blast_projectile(target_rock: Node) -> void:
 
 		# Fade and remove projectile
 		var fade_tween := get_tree().create_tween()
-		fade_tween.tween_property(projectile, "scale", Vector3(3.0, 3.0, 3.0), 0.2)
+		fade_tween.tween_property(projectile, "scale", Vector3(2.2, 2.2, 2.2) if GameManager.is_nature_theme() else Vector3(3.0, 3.0, 3.0), 0.2)
 		fade_tween.parallel().tween_callback(func(): mat.albedo_color.a = 0.0)
 		fade_tween.tween_callback(projectile.queue_free)
 	)
@@ -958,11 +1002,19 @@ func _update_bridge_preview(river: Node, progress: float) -> void:
 
 	var clamped_progress: float = clampf(progress, 0.0, 1.0)
 	river.set_meta("bridge_preview_lane_%d" % _bridge_preview_lane, clamped_progress)
-	var z_scale: float = lerpf(0.08, 1.0, clamped_progress)
-	var center_z: float = lerpf(1.42, 0.0, clamped_progress)
-	_bridge_preview_node.scale = Vector3(1.0, lerpf(0.82, 1.0, clamped_progress), z_scale)
-	_bridge_preview_node.position.z = center_z
-	_bridge_preview_node.position.y = 0.14 + sin(Time.get_ticks_msec() / 120.0) * 0.02
+	if GameManager.is_nature_theme():
+		var z_scale: float = lerpf(0.22, 1.0, clamped_progress)
+		var center_z: float = lerpf(1.18, 0.0, clamped_progress)
+		var uniform_xy: float = lerpf(0.94, 1.0, clamped_progress)
+		_bridge_preview_node.scale = Vector3(uniform_xy, uniform_xy, z_scale)
+		_bridge_preview_node.position.z = center_z
+		_bridge_preview_node.position.y = 0.16 + sin(Time.get_ticks_msec() / 120.0) * 0.015
+	else:
+		var z_scale: float = lerpf(0.08, 1.0, clamped_progress)
+		var center_z: float = lerpf(1.42, 0.0, clamped_progress)
+		_bridge_preview_node.scale = Vector3(1.0, lerpf(0.82, 1.0, clamped_progress), z_scale)
+		_bridge_preview_node.position.z = center_z
+		_bridge_preview_node.position.y = 0.14 + sin(Time.get_ticks_msec() / 120.0) * 0.02
 
 
 func _clear_bridge_preview() -> void:
@@ -1010,6 +1062,35 @@ func _is_player_inside_river_zone(river_zone: Node) -> bool:
 	)
 
 
+func _get_active_nature_bridge_normalized_z() -> float:
+	for river_zone in get_tree().get_nodes_in_group("river_kill_zones"):
+		if not is_instance_valid(river_zone):
+			continue
+		if river_zone.get_meta("lane_index", -1) != current_lane:
+			continue
+		if not _is_player_inside_river_zone(river_zone):
+			continue
+		if not _is_supported_on_river_zone(river_zone):
+			continue
+
+		var river := river_zone.get_parent()
+		if river == null:
+			continue
+
+		var reference_node: Node3D = null
+		if river == _bridge_preview_river and _bridge_preview_lane == current_lane and _bridge_preview_node and is_instance_valid(_bridge_preview_node):
+			reference_node = _bridge_preview_node
+		else:
+			reference_node = river.get_node_or_null("Bridge_Lane%d" % current_lane) as Node3D
+		if reference_node == null:
+			continue
+
+		var local_player: Vector3 = reference_node.to_local(global_position)
+		return clampf(local_player.z / (BRIDGE_PREVIEW_DEPTH * 0.5), -1.0, 1.0)
+
+	return -10.0
+
+
 func _apply_bridge_preview_look(node: Node) -> void:
 	if node is MeshInstance3D:
 		var mesh_instance := node as MeshInstance3D
@@ -1031,6 +1112,8 @@ func _apply_bridge_preview_look(node: Node) -> void:
 func _build_stylized_bridge(parent: Node3D) -> void:
 	if GameManager.is_cyberprank_theme():
 		_build_hologram_bridge(parent)
+		return
+	if _build_nature_bridge_model(parent):
 		return
 
 	var bridge_width: float = GameManager.LANE_WIDTH * GameManager.LANE_COUNT + 1.0
@@ -1117,6 +1200,29 @@ func _build_stylized_bridge(parent: Node3D) -> void:
 	)
 	support_right.position = Vector3(1.45, -0.14, 0.0)
 	parent.add_child(support_right)
+
+
+func _build_nature_bridge_model(parent: Node3D) -> bool:
+	if not ResourceLoader.exists(NATURE_BRIDGE_SCENE_PATH):
+		return false
+	var scene := load(NATURE_BRIDGE_SCENE_PATH) as PackedScene
+	if scene == null:
+		return false
+	var bridge_model := scene.instantiate() as Node3D
+	if bridge_model == null:
+		return false
+	var bridge_root := Node3D.new()
+	bridge_root.name = "NatureBridgeModel"
+	bridge_root.scale = NATURE_BRIDGE_MODEL_SCALE
+	bridge_root.position = NATURE_BRIDGE_MODEL_OFFSET
+	parent.add_child(bridge_root)
+	bridge_model.position = Vector3(
+		-NATURE_BRIDGE_SOURCE_CENTER.x,
+		-NATURE_BRIDGE_SOURCE_MIN_Y,
+		-NATURE_BRIDGE_SOURCE_CENTER.z
+	)
+	bridge_root.add_child(bridge_model)
+	return true
 
 
 func _build_hologram_bridge(parent: Node3D) -> void:
