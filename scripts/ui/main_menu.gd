@@ -140,6 +140,7 @@ func _create_layout() -> void:
 	_vbox.add_child(spacer_top)
 
 	_title_label = UITheme.make_banner("Runner Realms", UITheme.FONT_TITLE, UITheme.get_color("text_ink", MENU_SKIN), MENU_SKIN)
+	_title_label.custom_minimum_size = Vector2(500, 108)
 	_title_label.modulate.a = 0.0
 	_vbox.add_child(_title_label)
 
