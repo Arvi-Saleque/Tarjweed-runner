@@ -2,6 +2,7 @@ extends Control
 ## Settings — Audio settings popup with toggle buttons and volume sliders.
 
 const ControlsManager = preload("res://scripts/input/controls_manager.gd")
+const SETTINGS_SKIN := "nature"
 
 var _overlay: ColorRect
 var _panel: PanelContainer
@@ -38,7 +39,7 @@ func _create_popup() -> void:
 	_overlay.anchors_preset = Control.PRESET_FULL_RECT
 	_overlay.anchor_right = 1.0
 	_overlay.anchor_bottom = 1.0
-	_overlay.color = Color(0, 0, 0, 0.5)
+	_overlay.color = UITheme.get_color("overlay", SETTINGS_SKIN)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_overlay)
 
@@ -50,7 +51,7 @@ func _create_popup() -> void:
 	_overlay.add_child(center)
 
 	# Panel
-	_panel = UITheme.make_panel()
+	_panel = UITheme.make_panel("dark", SETTINGS_SKIN)
 	_panel.custom_minimum_size = Vector2(520, 0)
 	center.add_child(_panel)
 
@@ -63,12 +64,12 @@ func _create_popup() -> void:
 	header.add_theme_constant_override("separation", 8)
 	vbox.add_child(header)
 
-	var title := UITheme.make_label("SETTINGS", UITheme.FONT_HEADING, UITheme.COLOR_TEXT)
+	var title := UITheme.make_label("SETTINGS", UITheme.FONT_HEADING, UITheme.get_color("text", SETTINGS_SKIN), SETTINGS_SKIN)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	header.add_child(title)
 
-	_close_btn = UITheme.make_icon_button(UITheme.icon_cross, "Close")
+	_close_btn = UITheme.make_icon_button(UITheme.icon_cross, "Close", "dark", SETTINGS_SKIN)
 	_close_btn.custom_minimum_size = Vector2(44, 44)
 	_close_btn.pressed.connect(_on_close_pressed)
 	header.add_child(_close_btn)
@@ -76,7 +77,7 @@ func _create_popup() -> void:
 	# Separator
 	var sep := HSeparator.new()
 	var sep_style := StyleBoxFlat.new()
-	sep_style.bg_color = Color(1, 1, 1, 0.1)
+	sep_style.bg_color = UITheme.get_color("panel_line", SETTINGS_SKIN)
 	sep_style.content_margin_top = 1.0
 	sep_style.content_margin_bottom = 4.0
 	sep.add_theme_stylebox_override("separator", sep_style)
@@ -123,7 +124,7 @@ func _create_audio_row(parent: VBoxContainer, label_text: String, icon: Texture2
 	toggle.custom_minimum_size = Vector2(48, 48)
 
 	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(0.3, 0.3, 0.35)
+	normal.bg_color = Color(0.29, 0.22, 0.15, 0.96)
 	normal.corner_radius_top_left = 8
 	normal.corner_radius_top_right = 8
 	normal.corner_radius_bottom_left = 8
@@ -131,18 +132,18 @@ func _create_audio_row(parent: VBoxContainer, label_text: String, icon: Texture2
 	toggle.add_theme_stylebox_override("normal", normal)
 
 	var pressed_style := normal.duplicate() as StyleBoxFlat
-	pressed_style.bg_color = UITheme.COLOR_PRIMARY
+	pressed_style.bg_color = UITheme.get_color("primary", SETTINGS_SKIN)
 	toggle.add_theme_stylebox_override("pressed", pressed_style)
 
 	var hover_style := normal.duplicate() as StyleBoxFlat
-	hover_style.bg_color = Color(0.4, 0.4, 0.45)
+	hover_style.bg_color = Color(0.39, 0.30, 0.20, 0.98)
 	toggle.add_theme_stylebox_override("hover", hover_style)
 
 	toggle.toggled.connect(toggle_callback)
 	hbox.add_child(toggle)
 
 	# Label
-	var lbl := UITheme.make_label(label_text, UITheme.FONT_BODY, UITheme.COLOR_TEXT)
+	var lbl := UITheme.make_label(label_text, UITheme.FONT_BODY, UITheme.get_color("text", SETTINGS_SKIN), SETTINGS_SKIN)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hbox.add_child(lbl)
@@ -169,7 +170,7 @@ func _create_audio_row(parent: VBoxContainer, label_text: String, icon: Texture2
 
 func _style_slider(slider: HSlider) -> void:
 	var grabber := StyleBoxFlat.new()
-	grabber.bg_color = UITheme.COLOR_PRIMARY
+	grabber.bg_color = UITheme.get_color("primary", SETTINGS_SKIN)
 	grabber.corner_radius_top_left = 10
 	grabber.corner_radius_top_right = 10
 	grabber.corner_radius_bottom_left = 10
@@ -181,7 +182,7 @@ func _style_slider(slider: HSlider) -> void:
 	slider.add_theme_stylebox_override("grabber_area", grabber)
 
 	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.2, 0.2, 0.25)
+	bg.bg_color = Color(0.24, 0.18, 0.12, 0.94)
 	bg.corner_radius_top_left = 4
 	bg.corner_radius_top_right = 4
 	bg.corner_radius_bottom_left = 4
@@ -194,24 +195,24 @@ func _style_slider(slider: HSlider) -> void:
 func _create_controls_section(parent: VBoxContainer) -> void:
 	var sep := HSeparator.new()
 	var sep_style := StyleBoxFlat.new()
-	sep_style.bg_color = Color(1, 1, 1, 0.1)
+	sep_style.bg_color = UITheme.get_color("panel_line", SETTINGS_SKIN)
 	sep_style.content_margin_top = 1.0
 	sep_style.content_margin_bottom = 6.0
 	sep.add_theme_stylebox_override("separator", sep_style)
 	parent.add_child(sep)
 
-	var title := UITheme.make_label("CONTROLS", UITheme.FONT_BODY, UITheme.COLOR_TEXT)
+	var title := UITheme.make_label("CONTROLS", UITheme.FONT_BODY, UITheme.get_color("text", SETTINGS_SKIN), SETTINGS_SKIN)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	parent.add_child(title)
 
-	_listening_hint = UITheme.make_label("Choose a control to rebind it.", UITheme.FONT_SMALL, Color(0.82, 0.84, 0.9))
+	_listening_hint = UITheme.make_label("Choose a control to rebind it.", UITheme.FONT_SMALL, UITheme.get_color("text_dim", SETTINGS_SKIN), SETTINGS_SKIN)
 	_listening_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	parent.add_child(_listening_hint)
 
 	for action_info in ControlsManager.get_actions():
 		_create_binding_row(parent, action_info)
 
-	var reset_btn := UITheme.make_button("RESET CONTROLS", null, UITheme.FONT_SMALL, "secondary")
+	var reset_btn := UITheme.make_button("RESET CONTROLS", null, UITheme.FONT_SMALL, "secondary", SETTINGS_SKIN)
 	reset_btn.custom_minimum_size = Vector2(240, 58)
 	reset_btn.pressed.connect(_on_reset_controls_pressed)
 	parent.add_child(reset_btn)
@@ -227,17 +228,17 @@ func _create_binding_row(parent: VBoxContainer, action_info: Dictionary) -> void
 	copy.add_theme_constant_override("separation", 2)
 	row.add_child(copy)
 
-	var label := UITheme.make_label(String(action_info.get("label", "")), UITheme.FONT_BODY, UITheme.COLOR_TEXT)
+	var label := UITheme.make_label(String(action_info.get("label", "")), UITheme.FONT_BODY, UITheme.get_color("text", SETTINGS_SKIN), SETTINGS_SKIN)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	copy.add_child(label)
 
 	var hint_text: String = String(action_info.get("hint", ""))
-	var hint := UITheme.make_label(hint_text, UITheme.FONT_SMALL, Color(0.70, 0.72, 0.8))
+	var hint := UITheme.make_label(hint_text, UITheme.FONT_SMALL, UITheme.get_color("text_dim", SETTINGS_SKIN), SETTINGS_SKIN)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	copy.add_child(hint)
 
 	var action_name: String = String(action_info.get("action", ""))
-	var button := UITheme.make_button(ControlsManager.get_binding_display(action_name), null, UITheme.FONT_SMALL, "secondary")
+	var button := UITheme.make_button(ControlsManager.get_binding_display(action_name), null, UITheme.FONT_SMALL, "secondary", SETTINGS_SKIN)
 	button.custom_minimum_size = Vector2(180, 56)
 	button.size_flags_horizontal = Control.SIZE_SHRINK_END
 	button.pressed.connect(func(): _begin_rebind(action_name))
