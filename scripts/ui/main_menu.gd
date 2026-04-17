@@ -127,16 +127,16 @@ func _create_layout() -> void:
 	add_child(center)
 
 	_hero_panel = UITheme.make_panel("dark", MENU_SKIN)
-	_hero_panel.custom_minimum_size = Vector2(450, 0)
+	_hero_panel.custom_minimum_size = Vector2(520, 0)
 	center.add_child(_hero_panel)
 
 	_vbox = VBoxContainer.new()
 	_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	_vbox.add_theme_constant_override("separation", 16)
+	_vbox.add_theme_constant_override("separation", 20)
 	_hero_panel.add_child(_vbox)
 
 	var spacer_top := Control.new()
-	spacer_top.custom_minimum_size = Vector2(0, 40)
+	spacer_top.custom_minimum_size = Vector2(0, 52)
 	_vbox.add_child(spacer_top)
 
 	_title_label = UITheme.make_banner("Runner Realms", UITheme.FONT_TITLE, UITheme.get_color("text_ink", MENU_SKIN), MENU_SKIN)
@@ -150,10 +150,11 @@ func _create_layout() -> void:
 		MENU_SKIN
 	)
 	_subtitle_label.modulate.a = 0.0
+	_subtitle_label.custom_minimum_size = Vector2(420, 0)
 	_vbox.add_child(_subtitle_label)
 
 	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 40)
+	spacer.custom_minimum_size = Vector2(0, 28)
 	_vbox.add_child(spacer)
 
 	_play_btn = UITheme.make_button("  Play", UITheme.icon_play, UITheme.FONT_BODY, "primary", MENU_SKIN)
@@ -177,12 +178,12 @@ func _create_layout() -> void:
 	_vbox.set_meta("quit_btn", quit_btn)
 
 	var spacer2 := Control.new()
-	spacer2.custom_minimum_size = Vector2(0, 30)
+	spacer2.custom_minimum_size = Vector2(0, 18)
 	_vbox.add_child(spacer2)
 
 	var stats_panel := UITheme.make_panel("light", MENU_SKIN)
 	stats_panel.modulate.a = 0.0
-	stats_panel.custom_minimum_size = Vector2(320, 0)
+	stats_panel.custom_minimum_size = Vector2(360, 0)
 	_vbox.add_child(stats_panel)
 
 	var stats_vbox := VBoxContainer.new()
