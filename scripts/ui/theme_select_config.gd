@@ -1,6 +1,8 @@
 extends RefCounted
 
-const ACTIVE_UI_SKIN := "nature"
+const UISkinIds = preload("res://scripts/ui/ui_skin_ids.gd")
+
+const ACTIVE_UI_SKIN := UISkinIds.NATURE
 
 const PREVIEW_IDLE_ANIMS: Array[String] = [
 	"Idle", "Idle_Neutral", "Idle_No_Loop", "Idle_A", "Idle_Gun_Pointing",

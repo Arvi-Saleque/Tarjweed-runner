@@ -1,6 +1,7 @@
 extends Node
 
 const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
+const UISkinIds = preload("res://scripts/ui/ui_skin_ids.gd")
 const UIThemeTokens = preload("res://scripts/ui/ui_theme_tokens.gd")
 ## UITheme — Centralized UI theme and font management.
 ## Provides consistent fonts, colors, and styling across all UI screens.
@@ -137,7 +138,7 @@ func _try_load_tex(path: String) -> Texture2D:
 # --- Theme Helpers ---
 
 func get_gameplay_skin() -> String:
-	return ThemeRegistryScript.get_profile().get("ui", {}).get("skin", "nature")
+	return ThemeRegistryScript.get_profile().get("ui", {}).get("skin", UISkinIds.NATURE)
 
 
 func get_color(color_id: String, skin_override: String = "") -> Color:
@@ -343,7 +344,7 @@ func _resolve_skin(skin_override: String = "") -> String:
 
 
 func _get_skin_colors(skin_id: String) -> Dictionary:
-	if skin_id == "cyberprank":
+	if skin_id == UISkinIds.CYBERPRANK:
 		return {
 			"primary": Color(0.14, 0.86, 1.0),
 			"primary_dark": Color(0.08, 0.28, 0.38),

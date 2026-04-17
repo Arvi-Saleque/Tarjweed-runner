@@ -1,6 +1,7 @@
 extends Control
 
-const PRONUNCIATION_SKIN := "nature"
+const UISkinIds = preload("res://scripts/ui/ui_skin_ids.gd")
+const PRONUNCIATION_SKIN := UISkinIds.NATURE
 
 var _word_label: Label
 var _hint_label: Label
