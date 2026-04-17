@@ -427,12 +427,12 @@ func _create_runner_preview(data: Dictionary, size: Vector2, use_3d_fallback: bo
 	var frame := PanelContainer.new()
 	frame.custom_minimum_size = size
 	var frame_style := StyleBoxFlat.new()
-	frame_style.bg_color = Color(0.03, 0.07, 0.11, 0.96)
+	frame_style.bg_color = Color(0.22, 0.16, 0.10, 0.96)
 	frame_style.border_width_left = 2
 	frame_style.border_width_top = 2
 	frame_style.border_width_right = 2
 	frame_style.border_width_bottom = 2
-	frame_style.border_color = accent_color.lightened(0.18)
+	frame_style.border_color = accent_color.lerp(UITheme.get_color("accent", ACTIVE_UI_SKIN), 0.35).lightened(0.10)
 	frame_style.corner_radius_top_left = 18
 	frame_style.corner_radius_top_right = 18
 	frame_style.corner_radius_bottom_left = 18
@@ -475,8 +475,8 @@ func _create_runner_preview(data: Dictionary, size: Vector2, use_3d_fallback: bo
 	environment.background_mode = Environment.BG_CLEAR_COLOR
 	environment.background_color = Color(0.0, 0.0, 0.0, 0.0)
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color(0.58, 0.76, 0.92, 1.0)
-	environment.ambient_light_energy = 1.6
+	environment.ambient_light_color = Color(0.90, 0.86, 0.74, 1.0)
+	environment.ambient_light_energy = 1.35
 	env.environment = environment
 	root.add_child(env)
 
@@ -486,15 +486,15 @@ func _create_runner_preview(data: Dictionary, size: Vector2, use_3d_fallback: bo
 	root.add_child(camera)
 
 	var key_light := DirectionalLight3D.new()
-	key_light.light_color = Color(0.72, 0.92, 1.0)
-	key_light.light_energy = 2.3
-	key_light.rotation_degrees = Vector3(-38.0, 24.0, 0.0)
+	key_light.light_color = Color(0.98, 0.92, 0.78)
+	key_light.light_energy = 2.0
+	key_light.rotation_degrees = Vector3(-42.0, 18.0, 0.0)
 	root.add_child(key_light)
 
 	var rim_light := OmniLight3D.new()
 	rim_light.position = Vector3(-1.6, 1.6, 1.8)
-	rim_light.light_color = accent_color
-	rim_light.light_energy = 1.5
+	rim_light.light_color = accent_color.lerp(Color(1.0, 0.9, 0.72), 0.35)
+	rim_light.light_energy = 1.2
 	rim_light.omni_range = 7.0
 	root.add_child(rim_light)
 
@@ -504,10 +504,8 @@ func _create_runner_preview(data: Dictionary, size: Vector2, use_3d_fallback: bo
 	floor_mesh.bottom_radius = 1.45
 	floor_mesh.height = 0.08
 	var floor_mat := StandardMaterial3D.new()
-	floor_mat.albedo_color = Color(0.06, 0.10, 0.16, 0.94)
-	floor_mat.emission_enabled = true
-	floor_mat.emission = accent_color.darkened(0.15)
-	floor_mat.emission_energy_multiplier = 0.45
+	floor_mat.albedo_color = Color(0.48, 0.36, 0.21, 0.96)
+	floor_mat.roughness = 0.92
 	floor_mesh.material = floor_mat
 	floor.mesh = floor_mesh
 	floor.position = Vector3(0.0, -1.0, 0.0)
@@ -553,7 +551,7 @@ func _refresh_featured_runner() -> void:
 		var accent_color: Color = tile.get_meta("accent_color", UITheme.get_color("primary", ACTIVE_UI_SKIN))
 		var focus_btn := tile.get_meta("focus_btn", null) as Button
 		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.03, 0.07, 0.11, 0.95)
+		style.bg_color = Color(0.20, 0.15, 0.10, 0.95)
 		style.corner_radius_top_left = 18
 		style.corner_radius_top_right = 18
 		style.corner_radius_bottom_left = 18
@@ -564,14 +562,14 @@ func _refresh_featured_runner() -> void:
 		style.border_width_bottom = 2
 		if runner_id == _selected_runner_id:
 			style.border_color = accent_color.lightened(0.25)
-			style.shadow_color = accent_color.darkened(0.2)
+			style.shadow_color = accent_color.darkened(0.28)
 			style.shadow_size = 10
 			if focus_btn:
 				focus_btn.text = "  READY"
 				focus_btn.disabled = true
 		else:
-			style.border_color = Color(0.12, 0.36, 0.48, 0.75)
-			style.shadow_color = Color(0, 0, 0, 0.0)
+			style.border_color = Color(0.46, 0.34, 0.21, 0.82)
+			style.shadow_color = Color(0.12, 0.08, 0.03, 0.18)
 			style.shadow_size = 0
 			if focus_btn:
 				focus_btn.text = "  VIEW"
