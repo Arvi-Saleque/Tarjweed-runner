@@ -1,6 +1,8 @@
 extends Control
 ## MainMenu - Entry flow into the active nature-first play path.
 
+const MENU_SKIN := "nature"
+
 var _title_label: Control
 var _subtitle_label: Label
 var _play_btn: Button
@@ -30,7 +32,7 @@ func _create_background() -> void:
 	_bg_gradient.anchors_preset = Control.PRESET_FULL_RECT
 	_bg_gradient.anchor_right = 1.0
 	_bg_gradient.anchor_bottom = 1.0
-	_bg_gradient.color = Color(0.02, 0.04, 0.08, 1.0)
+	_bg_gradient.color = Color(0.84, 0.91, 0.74, 1.0)
 	add_child(_bg_gradient)
 
 	var top_glow := ColorRect.new()
@@ -42,7 +44,7 @@ func _create_background() -> void:
 	top_glow.offset_top = 30.0
 	top_glow.offset_right = 340.0
 	top_glow.offset_bottom = 290.0
-	top_glow.color = Color(0.18, 0.88, 1.0, 0.10)
+	top_glow.color = Color(0.98, 0.92, 0.70, 0.28)
 	top_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(top_glow)
 
@@ -52,7 +54,7 @@ func _create_background() -> void:
 	side_glow_left.anchor_right = 0.0
 	side_glow_left.anchor_bottom = 0.92
 	side_glow_left.offset_right = 220.0
-	side_glow_left.color = Color(0.95, 0.18, 1.0, 0.05)
+	side_glow_left.color = Color(0.32, 0.52, 0.18, 0.18)
 	side_glow_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(side_glow_left)
 
@@ -62,7 +64,7 @@ func _create_background() -> void:
 	side_glow_right.anchor_right = 1.0
 	side_glow_right.anchor_bottom = 0.88
 	side_glow_right.offset_left = -260.0
-	side_glow_right.color = Color(0.12, 0.86, 1.0, 0.06)
+	side_glow_right.color = Color(0.22, 0.42, 0.15, 0.22)
 	side_glow_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(side_glow_right)
 
@@ -72,7 +74,7 @@ func _create_background() -> void:
 	horizon.anchor_right = 1.0
 	horizon.anchor_bottom = 1.0
 	horizon.offset_top = -190.0
-	horizon.color = Color(0.03, 0.07, 0.12, 0.94)
+	horizon.color = Color(0.18, 0.24, 0.10, 0.94)
 	horizon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(horizon)
 
@@ -84,7 +86,7 @@ func _create_background() -> void:
 		skyline_band.anchor_bottom = 1.0
 		skyline_band.offset_top = -float(188 + i * 20)
 		skyline_band.offset_bottom = -float(166 + i * 20)
-		skyline_band.color = Color(0.04 + i * 0.01, 0.07 + i * 0.012, 0.11 + i * 0.015, 0.58 - i * 0.06)
+		skyline_band.color = Color(0.15 + i * 0.02, 0.22 + i * 0.02, 0.10 + i * 0.01, 0.52 - i * 0.06)
 		skyline_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(skyline_band)
 
@@ -96,20 +98,20 @@ func _create_background() -> void:
 		lane_strip.anchor_bottom = 1.0
 		lane_strip.offset_top = -150.0
 		lane_strip.offset_bottom = -120.0
-		lane_strip.color = Color(0.16, 0.84, 1.0, 0.30 if i % 2 == 0 else 0.18)
+		lane_strip.color = Color(0.76, 0.63, 0.36, 0.26 if i % 2 == 0 else 0.16)
 		lane_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(lane_strip)
 
 	for i in 4:
-		var scan_line := ColorRect.new()
-		scan_line.anchor_left = 0.0
-		scan_line.anchor_top = 0.18 + i * 0.14
-		scan_line.anchor_right = 1.0
-		scan_line.anchor_bottom = 0.18 + i * 0.14
-		scan_line.offset_bottom = 2.0
-		scan_line.color = Color(0.18, 0.84, 1.0, 0.05 if i % 2 == 0 else 0.03)
-		scan_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(scan_line)
+		var mist_band := ColorRect.new()
+		mist_band.anchor_left = 0.0
+		mist_band.anchor_top = 0.18 + i * 0.14
+		mist_band.anchor_right = 1.0
+		mist_band.anchor_bottom = 0.18 + i * 0.14
+		mist_band.offset_bottom = 28.0
+		mist_band.color = Color(0.96, 0.94, 0.84, 0.04 if i % 2 == 0 else 0.02)
+		mist_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(mist_band)
 
 
 func _create_layout() -> void:
@@ -119,8 +121,8 @@ func _create_layout() -> void:
 	center.anchor_bottom = 1.0
 	add_child(center)
 
-	_hero_panel = UITheme.make_panel("dark", "cyberprank")
-	_hero_panel.custom_minimum_size = Vector2(430, 0)
+	_hero_panel = UITheme.make_panel("dark", MENU_SKIN)
+	_hero_panel.custom_minimum_size = Vector2(450, 0)
 	center.add_child(_hero_panel)
 
 	_vbox = VBoxContainer.new()
@@ -132,15 +134,15 @@ func _create_layout() -> void:
 	spacer_top.custom_minimum_size = Vector2(0, 40)
 	_vbox.add_child(spacer_top)
 
-	_title_label = UITheme.make_banner("RUNNER REALMS", UITheme.FONT_BODY, UITheme.get_color("text_ink", "cyberprank"), "cyberprank")
+	_title_label = UITheme.make_banner("RUNNER REALMS", UITheme.FONT_BODY, UITheme.get_color("text_ink", MENU_SKIN), MENU_SKIN)
 	_title_label.modulate.a = 0.0
 	_vbox.add_child(_title_label)
 
 	_subtitle_label = UITheme.make_label(
 		"Choose a mode, pick a runner, and start the journey",
 		UITheme.FONT_SMALL,
-		UITheme.get_color("text_dim", "cyberprank"),
-		"cyberprank"
+		UITheme.get_color("text_dim", MENU_SKIN),
+		MENU_SKIN
 	)
 	_subtitle_label.modulate.a = 0.0
 	_vbox.add_child(_subtitle_label)
@@ -149,20 +151,20 @@ func _create_layout() -> void:
 	spacer.custom_minimum_size = Vector2(0, 40)
 	_vbox.add_child(spacer)
 
-	_play_btn = UITheme.make_button("  PLAY", UITheme.icon_play, UITheme.FONT_HEADING, "primary", "cyberprank")
+	_play_btn = UITheme.make_button("  PLAY", UITheme.icon_play, UITheme.FONT_HEADING, "primary", MENU_SKIN)
 	_play_btn.custom_minimum_size = Vector2(320, 72)
 	_play_btn.modulate.a = 0.0
 	_play_btn.pressed.connect(_on_play_pressed)
 	_play_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	_vbox.add_child(_play_btn)
 
-	_settings_btn = UITheme.make_button("  SETTINGS", UITheme.icon_gear, UITheme.FONT_BODY, "secondary", "cyberprank")
+	_settings_btn = UITheme.make_button("  SETTINGS", UITheme.icon_gear, UITheme.FONT_BODY, "secondary", MENU_SKIN)
 	_settings_btn.modulate.a = 0.0
 	_settings_btn.pressed.connect(_on_settings_pressed)
 	_settings_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	_vbox.add_child(_settings_btn)
 
-	var quit_btn := UITheme.make_button("  QUIT", UITheme.icon_cross, UITheme.FONT_BODY, "danger", "cyberprank")
+	var quit_btn := UITheme.make_button("  QUIT", UITheme.icon_cross, UITheme.FONT_BODY, "danger", MENU_SKIN)
 	quit_btn.modulate.a = 0.0
 	quit_btn.pressed.connect(_on_quit_pressed)
 	quit_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
@@ -173,7 +175,7 @@ func _create_layout() -> void:
 	spacer2.custom_minimum_size = Vector2(0, 30)
 	_vbox.add_child(spacer2)
 
-	var stats_panel := UITheme.make_panel("light", "cyberprank")
+	var stats_panel := UITheme.make_panel("light", MENU_SKIN)
 	stats_panel.modulate.a = 0.0
 	stats_panel.custom_minimum_size = Vector2(320, 0)
 	_vbox.add_child(stats_panel)
@@ -183,14 +185,14 @@ func _create_layout() -> void:
 	stats_panel.add_child(stats_vbox)
 
 	var hs_val: int = SaveManager.get_high_score()
-	_high_score_label = UITheme.make_label("BEST: %d" % hs_val, UITheme.FONT_BODY, UITheme.get_color("text_ink", "cyberprank"), "cyberprank")
+	_high_score_label = UITheme.make_label("BEST: %d" % hs_val, UITheme.FONT_BODY, UITheme.get_color("text_ink", MENU_SKIN), MENU_SKIN)
 	stats_vbox.add_child(_high_score_label)
 
 	var coins_val: int = SaveManager.get_total_coins()
-	_coins_label = UITheme.make_label("COINS: %d" % coins_val, UITheme.FONT_SMALL, UITheme.get_color("accent", "cyberprank"), "cyberprank")
+	_coins_label = UITheme.make_label("COINS: %d" % coins_val, UITheme.FONT_SMALL, UITheme.get_color("accent", MENU_SKIN), MENU_SKIN)
 	stats_vbox.add_child(_coins_label)
 
-	var footer := UITheme.make_label("v0.5 - Nature Journey", UITheme.FONT_SMALL - 4, UITheme.get_color("text_dim", "cyberprank"), "cyberprank")
+	var footer := UITheme.make_label("v0.5 - Nature Journey", UITheme.FONT_SMALL - 4, UITheme.get_color("text_dim", MENU_SKIN), MENU_SKIN)
 	footer.modulate.a = 0.0
 	_vbox.add_child(footer)
 
