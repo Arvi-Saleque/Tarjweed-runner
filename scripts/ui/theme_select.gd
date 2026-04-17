@@ -337,10 +337,10 @@ func _create_card(data: Dictionary, button_text: String, is_disabled: bool) -> P
 	var icon_panel := UITheme.make_panel("light", ACTIVE_UI_SKIN)
 	icon_panel.custom_minimum_size = Vector2(124, 124)
 	icon_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	icon_panel.modulate = accent_color.lightened(0.18)
+	icon_panel.modulate = accent_color.lightened(0.34)
 	vbox.add_child(icon_panel)
 
-	var icon_label := UITheme.make_label(data.get("icon_text", "?"), 30, UITheme.get_color("text_ink", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
+	var icon_label := UITheme.make_label(data.get("icon_text", "?"), 32, UITheme.get_color("text", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
 	icon_label.anchors_preset = Control.PRESET_FULL_RECT
 	icon_label.anchor_right = 1.0
 	icon_label.anchor_bottom = 1.0
@@ -349,7 +349,7 @@ func _create_card(data: Dictionary, button_text: String, is_disabled: bool) -> P
 	var title := UITheme.make_label(data["title"], UITheme.FONT_HEADING, UITheme.get_color("text", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
 	vbox.add_child(title)
 
-	var subtitle := UITheme.make_label(data["subtitle"], UITheme.FONT_SMALL, UITheme.get_color("text_dim", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
+	var subtitle := UITheme.make_label(data["subtitle"], UITheme.FONT_SMALL, UITheme.get_color("text", ACTIVE_UI_SKIN).darkened(0.18), ACTIVE_UI_SKIN)
 	vbox.add_child(subtitle)
 
 	var spacer := Control.new()
