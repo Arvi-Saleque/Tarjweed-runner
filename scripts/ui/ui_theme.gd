@@ -5,8 +5,9 @@ const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
 ## Provides consistent fonts, colors, and styling across all UI screens.
 
 # --- Fonts ---
-var font_primary: FontFile
-var font_narrow: FontFile
+var font_primary: Font
+var font_narrow: Font
+var font_display: Font
 
 # --- Colors ---
 const COLOR_PRIMARY := Color(0.58, 0.39, 0.18)         # Warm brown
@@ -75,8 +76,9 @@ func _ready() -> void:
 
 
 func _load_fonts() -> void:
-	font_primary = _try_load_font("res://assets/UI/Fonts/Kenney Future.ttf")
+	font_primary = ThemeDB.fallback_font if ThemeDB.fallback_font != null else _try_load_font("res://assets/UI/Fonts/Kenney Future.ttf")
 	font_narrow = _try_load_font("res://assets/UI/Fonts/Kenney Future Narrow.ttf")
+	font_display = _try_load_font("res://assets/UI/Fonts/Kenney Future.ttf")
 
 
 func _load_textures() -> void:
@@ -279,6 +281,8 @@ func make_banner(text: String, size: int = FONT_HEADING, color: Color = COLOR_TE
 	label.anchor_bottom = 1.0
 	label.position.y = -4.0
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if font_display:
+		label.add_theme_font_override("font", font_display)
 	banner.add_child(label)
 	return banner
 
