@@ -1,6 +1,7 @@
 extends Node
 
 const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
+const UIThemeTokens = preload("res://scripts/ui/ui_theme_tokens.gd")
 ## UITheme — Centralized UI theme and font management.
 ## Provides consistent fonts, colors, and styling across all UI screens.
 
@@ -10,24 +11,24 @@ var font_narrow: Font
 var font_display: Font
 
 # --- Colors ---
-const COLOR_PRIMARY := Color(0.58, 0.39, 0.18)         # Warm brown
-const COLOR_PRIMARY_DARK := Color(0.42, 0.27, 0.10)
-const COLOR_ACCENT := Color(0.98, 0.85, 0.33)          # Gold
-const COLOR_DANGER := Color(0.78, 0.25, 0.18)          # Clay red
-const COLOR_TEXT := Color(0.97, 0.95, 0.89)            # Parchment white
-const COLOR_TEXT_DIM := Color(0.76, 0.72, 0.63)        # Warm dim text
-const COLOR_TEXT_INK := Color(0.18, 0.12, 0.07)        # Dark readable text on light UI
-const COLOR_TEXT_INK_SOFT := Color(0.28, 0.19, 0.11)
-const COLOR_PANEL_BG := Color(0.18, 0.14, 0.09, 0.96) # Dark wood panel
-const COLOR_PANEL_LIGHT := Color(0.34, 0.25, 0.16, 0.92)
-const COLOR_OVERLAY := Color(0.05, 0.03, 0.02, 0.62)  # Dim overlay
+const COLOR_PRIMARY := UIThemeTokens.COLOR_PRIMARY         # Warm brown
+const COLOR_PRIMARY_DARK := UIThemeTokens.COLOR_PRIMARY_DARK
+const COLOR_ACCENT := UIThemeTokens.COLOR_ACCENT          # Gold
+const COLOR_DANGER := UIThemeTokens.COLOR_DANGER          # Clay red
+const COLOR_TEXT := UIThemeTokens.COLOR_TEXT              # Parchment white
+const COLOR_TEXT_DIM := UIThemeTokens.COLOR_TEXT_DIM      # Warm dim text
+const COLOR_TEXT_INK := UIThemeTokens.COLOR_TEXT_INK      # Dark readable text on light UI
+const COLOR_TEXT_INK_SOFT := UIThemeTokens.COLOR_TEXT_INK_SOFT
+const COLOR_PANEL_BG := UIThemeTokens.COLOR_PANEL_BG      # Dark wood panel
+const COLOR_PANEL_LIGHT := UIThemeTokens.COLOR_PANEL_LIGHT
+const COLOR_OVERLAY := UIThemeTokens.COLOR_OVERLAY        # Dim overlay
 
 # --- Font Sizes ---
-const FONT_TITLE: int = 52
-const FONT_HEADING: int = 36
-const FONT_BODY: int = 24
-const FONT_SMALL: int = 18
-const FONT_HUD: int = 28
+const FONT_TITLE: int = UIThemeTokens.FONT_TITLE
+const FONT_HEADING: int = UIThemeTokens.FONT_HEADING
+const FONT_BODY: int = UIThemeTokens.FONT_BODY
+const FONT_SMALL: int = UIThemeTokens.FONT_SMALL
+const FONT_HUD: int = UIThemeTokens.FONT_HUD
 
 # --- Button and Panel Textures ---
 var btn_primary_texture: Texture2D
