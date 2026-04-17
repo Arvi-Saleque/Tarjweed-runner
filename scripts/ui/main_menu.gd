@@ -1,5 +1,5 @@
 extends Control
-## MainMenu - Entry flow with a shared cyber-arcade presentation.
+## MainMenu - Entry flow into the active nature-first play path.
 
 var _title_label: Control
 var _subtitle_label: Label
@@ -137,7 +137,7 @@ func _create_layout() -> void:
 	_vbox.add_child(_title_label)
 
 	_subtitle_label = UITheme.make_label(
-		"Choose a mode, then launch into Nature or Cyberprank",
+		"Choose a mode, pick a runner, and start the journey",
 		UITheme.FONT_SMALL,
 		UITheme.get_color("text_dim", "cyberprank"),
 		"cyberprank"
@@ -190,7 +190,7 @@ func _create_layout() -> void:
 	_coins_label = UITheme.make_label("COINS: %d" % coins_val, UITheme.FONT_SMALL, UITheme.get_color("accent", "cyberprank"), "cyberprank")
 	stats_vbox.add_child(_coins_label)
 
-	var footer := UITheme.make_label("v0.5 - Cyberprank Polish", UITheme.FONT_SMALL - 4, UITheme.get_color("text_dim", "cyberprank"), "cyberprank")
+	var footer := UITheme.make_label("v0.5 - Nature Journey", UITheme.FONT_SMALL - 4, UITheme.get_color("text_dim", "cyberprank"), "cyberprank")
 	footer.modulate.a = 0.0
 	_vbox.add_child(footer)
 

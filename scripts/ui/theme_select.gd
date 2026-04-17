@@ -1,5 +1,5 @@
 extends Control
-## ThemeSelect - Multi-step mode/theme/player selection shown after pressing PLAY.
+## ThemeSelect - Mode and runner selection shown after pressing PLAY.
 
 const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
 const ACTIVE_UI_SKIN := "nature"
