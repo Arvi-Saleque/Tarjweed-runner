@@ -81,6 +81,7 @@ const RIVER_DETECT_RANGE: float = 40.0     # Start detecting river at this dista
 const RIVER_BRIDGE_RANGE: float = 30.0     # Can build bridge within this range
 const RIVER_NO_JUMP_RANGE: float = 20.0    # No jumping within this range of a river
 const BRIDGE_HOLD_TIME: float = 0.8        # Seconds of holding spacebar to build
+const NATURE_BRIDGE_HOLD_TIME: float = 0.55
 const BRIDGE_PREVIEW_DEPTH: float = 3.6    # Must match the stylized bridge visual depth
 var _nearby_river: Node = null
 var _space_hold_time: float = 0.0
@@ -869,6 +870,7 @@ func _scan_for_rivers() -> void:
 
 func _update_bridge_hold(delta: float) -> void:
 	## Track bridge-action/touch hold to build bridge over river.
+	var bridge_hold_time: float = NATURE_BRIDGE_HOLD_TIME if not GameManager.is_cyberprank_theme() else BRIDGE_HOLD_TIME
 	if _nearby_river == null or not is_instance_valid(_nearby_river):
 		_space_hold_time = 0.0
 		_touch_hold_building = false
@@ -893,8 +895,8 @@ func _update_bridge_hold(delta: float) -> void:
 
 	if is_holding:
 		_space_hold_time += delta
-		_update_bridge_preview(_nearby_river, clampf(_space_hold_time / BRIDGE_HOLD_TIME, 0.0, 1.0))
-		if _space_hold_time >= BRIDGE_HOLD_TIME:
+		_update_bridge_preview(_nearby_river, clampf(_space_hold_time / bridge_hold_time, 0.0, 1.0))
+		if _space_hold_time >= bridge_hold_time:
 			_build_bridge(_nearby_river)
 			_space_hold_time = 0.0
 	else:
