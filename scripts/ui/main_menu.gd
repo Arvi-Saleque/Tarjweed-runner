@@ -2,6 +2,11 @@ extends Control
 ## MainMenu - Entry flow into the active nature-first play path.
 
 const MENU_SKIN := "nature"
+const SKY_COLOR := Color(0.86, 0.92, 0.80, 1.0)
+const SUN_GLOW_COLOR := Color(0.99, 0.94, 0.78, 0.26)
+const FOLIAGE_COLOR := Color(0.37, 0.55, 0.26, 0.18)
+const HORIZON_COLOR := Color(0.24, 0.30, 0.16, 0.94)
+const PATH_GLOW_COLOR := Color(0.79, 0.68, 0.42, 0.22)
 
 var _title_label: Control
 var _subtitle_label: Label
@@ -32,7 +37,7 @@ func _create_background() -> void:
 	_bg_gradient.anchors_preset = Control.PRESET_FULL_RECT
 	_bg_gradient.anchor_right = 1.0
 	_bg_gradient.anchor_bottom = 1.0
-	_bg_gradient.color = Color(0.84, 0.91, 0.74, 1.0)
+	_bg_gradient.color = SKY_COLOR
 	add_child(_bg_gradient)
 
 	var top_glow := ColorRect.new()
@@ -44,7 +49,7 @@ func _create_background() -> void:
 	top_glow.offset_top = 30.0
 	top_glow.offset_right = 340.0
 	top_glow.offset_bottom = 290.0
-	top_glow.color = Color(0.98, 0.92, 0.70, 0.28)
+	top_glow.color = SUN_GLOW_COLOR
 	top_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(top_glow)
 
@@ -54,7 +59,7 @@ func _create_background() -> void:
 	side_glow_left.anchor_right = 0.0
 	side_glow_left.anchor_bottom = 0.92
 	side_glow_left.offset_right = 220.0
-	side_glow_left.color = Color(0.32, 0.52, 0.18, 0.18)
+	side_glow_left.color = FOLIAGE_COLOR
 	side_glow_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(side_glow_left)
 
@@ -64,7 +69,7 @@ func _create_background() -> void:
 	side_glow_right.anchor_right = 1.0
 	side_glow_right.anchor_bottom = 0.88
 	side_glow_right.offset_left = -260.0
-	side_glow_right.color = Color(0.22, 0.42, 0.15, 0.22)
+	side_glow_right.color = FOLIAGE_COLOR.darkened(0.12)
 	side_glow_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(side_glow_right)
 
@@ -74,7 +79,7 @@ func _create_background() -> void:
 	horizon.anchor_right = 1.0
 	horizon.anchor_bottom = 1.0
 	horizon.offset_top = -190.0
-	horizon.color = Color(0.18, 0.24, 0.10, 0.94)
+	horizon.color = HORIZON_COLOR
 	horizon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(horizon)
 
@@ -98,7 +103,7 @@ func _create_background() -> void:
 		lane_strip.anchor_bottom = 1.0
 		lane_strip.offset_top = -150.0
 		lane_strip.offset_bottom = -120.0
-		lane_strip.color = Color(0.76, 0.63, 0.36, 0.26 if i % 2 == 0 else 0.16)
+		lane_strip.color = PATH_GLOW_COLOR if i % 2 == 0 else PATH_GLOW_COLOR * Color(1, 1, 1, 0.72)
 		lane_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(lane_strip)
 
