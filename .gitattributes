@@ -1,0 +1,13 @@
+# Keep Godot project text files stable across platforms so Windows checkouts
+# do not show newline-only modifications that block pulls.
+*.gd text eol=lf
+*.tscn text eol=lf
+*.tres text eol=lf
+*.godot text eol=lf
+*.import text eol=lf
+*.cfg text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
