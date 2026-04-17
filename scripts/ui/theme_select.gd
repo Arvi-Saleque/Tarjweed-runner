@@ -2,36 +2,7 @@ extends Control
 ## ThemeSelect - Mode and runner selection shown after pressing PLAY.
 
 const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
-const ACTIVE_UI_SKIN := "nature"
-
-const PREVIEW_IDLE_ANIMS: Array[String] = [
-	"Idle", "Idle_Neutral", "Idle_No_Loop", "Idle_A", "Idle_Gun_Pointing",
-	"Running_A", "Run", "Walk",
-]
-
-const MODES: Array[Dictionary] = [
-	{
-		"id": "normal",
-		"title": "NORMAL",
-		"subtitle": "Classic endless run",
-		"color": Color(0.20, 0.72, 0.33),
-		"icon_text": "RUN",
-	},
-	{
-		"id": "quiz",
-		"title": "QUIZ",
-		"subtitle": "Math challenges",
-		"color": Color(0.30, 0.55, 0.95),
-		"icon_text": "123",
-	},
-	{
-		"id": "pronunciation",
-		"title": "PRONUNCIATION",
-		"subtitle": "Word pronunciation",
-		"color": Color(0.70, 0.35, 0.90),
-		"icon_text": "MIC",
-	},
-]
+const ThemeSelectConfig = preload("res://scripts/ui/theme_select_config.gd")
 
 signal selection_confirmed(mode_id: String, theme_id: String)
 signal back_pressed
@@ -140,12 +111,12 @@ func _create_layout() -> void:
 	_container.custom_minimum_size = Vector2(1200, 0)
 	center.add_child(_container)
 
-	_header = UITheme.make_banner("CHOOSE MODE", UITheme.FONT_BODY, UITheme.get_color("text_ink", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
+	_header = UITheme.make_banner("CHOOSE MODE", UITheme.FONT_BODY, UITheme.get_color("text_ink", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	_header_label = _header.get_child(1) as Label
 	_header.modulate.a = 0.0
 	_container.add_child(_header)
 
-	_sub = UITheme.make_label("Select a mode, then choose your runner", UITheme.FONT_SMALL, UITheme.get_color("text_dim", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
+	_sub = UITheme.make_label("Select a mode, then choose your runner", UITheme.FONT_SMALL, UITheme.get_color("text_dim", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	_sub.modulate.a = 0.0
 	_container.add_child(_sub)
 
@@ -170,12 +141,12 @@ func _create_layout() -> void:
 
 	_create_runner_stage()
 
-	_notice = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("accent", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
+	_notice = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("accent", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	_notice.visible = false
 	_notice.modulate.a = 0.0
 	_container.add_child(_notice)
 
-	_back_btn = UITheme.make_button("  BACK", UITheme.icon_cross, UITheme.FONT_BODY, "secondary", ACTIVE_UI_SKIN)
+	_back_btn = UITheme.make_button("  BACK", UITheme.icon_cross, UITheme.FONT_BODY, "secondary", ThemeSelectConfig.ACTIVE_UI_SKIN)
 	_back_btn.custom_minimum_size = Vector2(220, 56)
 	_back_btn.modulate.a = 0.0
 	_back_btn.pressed.connect(_on_back)
@@ -184,7 +155,7 @@ func _create_layout() -> void:
 
 
 func _create_runner_stage() -> void:
-	_runner_showcase = UITheme.make_panel("dark", ACTIVE_UI_SKIN)
+	_runner_showcase = UITheme.make_panel("dark", ThemeSelectConfig.ACTIVE_UI_SKIN)
 	_runner_showcase.custom_minimum_size = Vector2(460, 650)
 	_runner_showcase.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_runner_stage.add_child(_runner_showcase)
@@ -200,7 +171,7 @@ func _create_runner_stage() -> void:
 	showcase_vbox.add_theme_constant_override("separation", 14)
 	showcase_margin.add_child(showcase_vbox)
 
-	var feature_label := UITheme.make_label("FEATURED RUNNER", UITheme.FONT_SMALL, UITheme.get_color("primary", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
+	var feature_label := UITheme.make_label("FEATURED RUNNER", UITheme.FONT_SMALL, UITheme.get_color("primary", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	feature_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	showcase_vbox.add_child(feature_label)
 
@@ -208,15 +179,15 @@ func _create_runner_stage() -> void:
 	_runner_preview_host.custom_minimum_size = Vector2(400, 330)
 	showcase_vbox.add_child(_runner_preview_host)
 
-	_runner_title = UITheme.make_label("", UITheme.FONT_HEADING, UITheme.get_color("text", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
+	_runner_title = UITheme.make_label("", UITheme.FONT_HEADING, UITheme.get_color("text", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	_runner_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	showcase_vbox.add_child(_runner_title)
 
-	_runner_subtitle = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("accent", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
+	_runner_subtitle = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("accent", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	_runner_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	showcase_vbox.add_child(_runner_subtitle)
 
-	_runner_meta = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("text_dim", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
+	_runner_meta = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("text_dim", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	_runner_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_runner_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	showcase_vbox.add_child(_runner_meta)
@@ -225,13 +196,13 @@ func _create_runner_stage() -> void:
 	meta_spacer.custom_minimum_size = Vector2(0, 6)
 	showcase_vbox.add_child(meta_spacer)
 
-	_runner_confirm_btn = UITheme.make_button("  SELECT RUNNER", UITheme.icon_play, UITheme.FONT_BODY, "primary", ACTIVE_UI_SKIN)
+	_runner_confirm_btn = UITheme.make_button("  SELECT RUNNER", UITheme.icon_play, UITheme.FONT_BODY, "primary", ThemeSelectConfig.ACTIVE_UI_SKIN)
 	_runner_confirm_btn.custom_minimum_size = Vector2(300, 60)
 	_runner_confirm_btn.pressed.connect(_confirm_selected_runner)
 	_runner_confirm_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	showcase_vbox.add_child(_runner_confirm_btn)
 
-	var roster_panel := UITheme.make_panel("light", ACTIVE_UI_SKIN)
+	var roster_panel := UITheme.make_panel("light", ThemeSelectConfig.ACTIVE_UI_SKIN)
 	roster_panel.custom_minimum_size = Vector2(660, 650)
 	roster_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_runner_stage.add_child(roster_panel)
@@ -247,11 +218,11 @@ func _create_runner_stage() -> void:
 	roster_vbox.add_theme_constant_override("separation", 12)
 	roster_margin.add_child(roster_vbox)
 
-	var roster_header := UITheme.make_label("RUNNER ROSTER", UITheme.FONT_SMALL, UITheme.get_color("text_ink", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
+	var roster_header := UITheme.make_label("RUNNER ROSTER", UITheme.FONT_SMALL, UITheme.get_color("text_ink", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	roster_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	roster_vbox.add_child(roster_header)
 
-	var roster_sub := UITheme.make_label("Choose the runner whose silhouette feels clearest for this mode.", UITheme.FONT_SMALL - 2, UITheme.get_color("text_ink_soft", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
+	var roster_sub := UITheme.make_label("Choose the runner whose silhouette feels clearest for this mode.", UITheme.FONT_SMALL - 2, UITheme.get_color("text_ink_soft", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	roster_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	roster_vbox.add_child(roster_sub)
 
@@ -283,7 +254,7 @@ func _clear_cards() -> void:
 func _get_entries_for_step() -> Array[Dictionary]:
 	match _selection_step:
 		"mode":
-			return MODES
+			return ThemeSelectConfig.MODES
 		"runner":
 			return ThemeRegistryScript.get_player_options(_selected_theme)
 		_:
@@ -303,7 +274,7 @@ func _refresh_cards() -> void:
 			_header_label.text = "CHOOSE MODE"
 			_sub.text = "Select a mode, then choose your runner"
 			_cards_grid.columns = 3
-			for data in MODES:
+			for data in ThemeSelectConfig.MODES:
 				var card := _create_card(data, "  PLAY", false)
 				_cards_grid.add_child(card)
 				_cards.append(card)
@@ -324,32 +295,32 @@ func _refresh_cards() -> void:
 
 
 func _create_card(data: Dictionary, button_text: String, is_disabled: bool) -> PanelContainer:
-	var card := UITheme.make_panel("dark", ACTIVE_UI_SKIN)
+	var card := UITheme.make_panel("dark", ThemeSelectConfig.ACTIVE_UI_SKIN)
 	card.custom_minimum_size = Vector2(320, 360)
 	card.modulate.a = 0.0
 
-	var accent_color: Color = data.get("color", UITheme.get_color("primary", ACTIVE_UI_SKIN))
+	var accent_color: Color = data.get("color", UITheme.get_color("primary", ThemeSelectConfig.ACTIVE_UI_SKIN))
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_theme_constant_override("separation", 16)
 	card.add_child(vbox)
 
-	var icon_panel := UITheme.make_panel("light", ACTIVE_UI_SKIN)
+	var icon_panel := UITheme.make_panel("light", ThemeSelectConfig.ACTIVE_UI_SKIN)
 	icon_panel.custom_minimum_size = Vector2(124, 124)
 	icon_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	icon_panel.modulate = accent_color.lightened(0.18)
+	icon_panel.modulate = accent_color.lightened(0.34)
 	vbox.add_child(icon_panel)
 
-	var icon_label := UITheme.make_label(data.get("icon_text", "?"), 30, UITheme.get_color("text_ink", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
+	var icon_label := UITheme.make_label(data.get("icon_text", "?"), 32, UITheme.get_color("text", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	icon_label.anchors_preset = Control.PRESET_FULL_RECT
 	icon_label.anchor_right = 1.0
 	icon_label.anchor_bottom = 1.0
 	icon_panel.add_child(icon_label)
 
-	var title := UITheme.make_label(data["title"], UITheme.FONT_HEADING, UITheme.get_color("text", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
+	var title := UITheme.make_label(data["title"], UITheme.FONT_HEADING, UITheme.get_color("text", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	vbox.add_child(title)
 
-	var subtitle := UITheme.make_label(data["subtitle"], UITheme.FONT_SMALL, UITheme.get_color("text_dim", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
+	var subtitle := UITheme.make_label(data["subtitle"], UITheme.FONT_SMALL, UITheme.get_color("text", ThemeSelectConfig.ACTIVE_UI_SKIN).darkened(0.18), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	vbox.add_child(subtitle)
 
 	var spacer := Control.new()
@@ -357,7 +328,7 @@ func _create_card(data: Dictionary, button_text: String, is_disabled: bool) -> P
 	vbox.add_child(spacer)
 
 	var variant := "secondary" if is_disabled else "primary"
-	var play_btn := UITheme.make_button(button_text, null, UITheme.FONT_BODY, variant, ACTIVE_UI_SKIN)
+	var play_btn := UITheme.make_button(button_text, null, UITheme.FONT_BODY, variant, ThemeSelectConfig.ACTIVE_UI_SKIN)
 	play_btn.custom_minimum_size = Vector2(220, 52)
 	play_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	play_btn.disabled = is_disabled
@@ -388,8 +359,8 @@ func _build_runner_roster() -> void:
 
 
 func _create_runner_tile(data: Dictionary) -> PanelContainer:
-	var accent_color: Color = data.get("color", UITheme.get_color("primary", ACTIVE_UI_SKIN))
-	var tile := UITheme.make_panel("dark", ACTIVE_UI_SKIN)
+	var accent_color: Color = data.get("color", UITheme.get_color("primary", ThemeSelectConfig.ACTIVE_UI_SKIN))
+	var tile := UITheme.make_panel("dark", ThemeSelectConfig.ACTIVE_UI_SKIN)
 	tile.custom_minimum_size = Vector2(280, 260)
 
 	var margin := MarginContainer.new()
@@ -405,13 +376,13 @@ func _create_runner_tile(data: Dictionary) -> PanelContainer:
 
 	vbox.add_child(_create_runner_preview(data, Vector2(248, 150), true))
 
-	var title := UITheme.make_label(data.get("title", ""), UITheme.FONT_SMALL, UITheme.get_color("text", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
+	var title := UITheme.make_label(data.get("title", ""), UITheme.FONT_SMALL, UITheme.get_color("text", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	vbox.add_child(title)
 
-	var subtitle := UITheme.make_label(data.get("subtitle", ""), UITheme.FONT_SMALL - 2, accent_color, ACTIVE_UI_SKIN)
+	var subtitle := UITheme.make_label(data.get("subtitle", ""), UITheme.FONT_SMALL - 2, accent_color, ThemeSelectConfig.ACTIVE_UI_SKIN)
 	vbox.add_child(subtitle)
 
-	var focus_btn := UITheme.make_button("  VIEW", null, UITheme.FONT_SMALL, "secondary", ACTIVE_UI_SKIN)
+	var focus_btn := UITheme.make_button("  VIEW", null, UITheme.FONT_SMALL, "secondary", ThemeSelectConfig.ACTIVE_UI_SKIN)
 	focus_btn.custom_minimum_size = Vector2(180, 46)
 	focus_btn.pressed.connect(func(): _set_selected_runner(data.get("id", "")))
 	focus_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
@@ -423,7 +394,7 @@ func _create_runner_tile(data: Dictionary) -> PanelContainer:
 
 
 func _create_runner_preview(data: Dictionary, size: Vector2, use_3d_fallback: bool = true) -> Control:
-	var accent_color: Color = data.get("color", UITheme.get_color("primary", ACTIVE_UI_SKIN))
+	var accent_color: Color = data.get("color", UITheme.get_color("primary", ThemeSelectConfig.ACTIVE_UI_SKIN))
 	var frame := PanelContainer.new()
 	frame.custom_minimum_size = size
 	var frame_style := StyleBoxFlat.new()
@@ -432,7 +403,7 @@ func _create_runner_preview(data: Dictionary, size: Vector2, use_3d_fallback: bo
 	frame_style.border_width_top = 2
 	frame_style.border_width_right = 2
 	frame_style.border_width_bottom = 2
-	frame_style.border_color = accent_color.lerp(UITheme.get_color("accent", ACTIVE_UI_SKIN), 0.35).lightened(0.10)
+	frame_style.border_color = accent_color.lerp(UITheme.get_color("accent", ThemeSelectConfig.ACTIVE_UI_SKIN), 0.35).lightened(0.10)
 	frame_style.corner_radius_top_left = 18
 	frame_style.corner_radius_top_right = 18
 	frame_style.corner_radius_bottom_left = 18
@@ -548,7 +519,7 @@ func _refresh_featured_runner() -> void:
 		var tile := _runner_tiles[runner_id] as PanelContainer
 		if tile == null:
 			continue
-		var accent_color: Color = tile.get_meta("accent_color", UITheme.get_color("primary", ACTIVE_UI_SKIN))
+		var accent_color: Color = tile.get_meta("accent_color", UITheme.get_color("primary", ThemeSelectConfig.ACTIVE_UI_SKIN))
 		var focus_btn := tile.get_meta("focus_btn", null) as Button
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color(0.20, 0.15, 0.10, 0.95)
@@ -605,7 +576,7 @@ func _play_preview_animation(node: Node) -> void:
 	var anim_player := _find_anim_player(node)
 	if anim_player == null:
 		return
-	for anim_name in PREVIEW_IDLE_ANIMS:
+	for anim_name in ThemeSelectConfig.PREVIEW_IDLE_ANIMS:
 		if anim_player.has_animation(anim_name):
 			anim_player.play(anim_name)
 			return

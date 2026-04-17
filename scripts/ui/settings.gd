@@ -2,7 +2,8 @@ extends Control
 ## Settings — Audio settings popup with toggle buttons and volume sliders.
 
 const ControlsManager = preload("res://scripts/input/controls_manager.gd")
-const SETTINGS_SKIN := "nature"
+const UISkinIds = preload("res://scripts/ui/ui_skin_ids.gd")
+const SETTINGS_SKIN := UISkinIds.NATURE
 
 var _overlay: ColorRect
 var _panel: PanelContainer

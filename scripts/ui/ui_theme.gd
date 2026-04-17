@@ -1,32 +1,36 @@
 extends Node
 
 const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
+const UISkinIds = preload("res://scripts/ui/ui_skin_ids.gd")
+const UIThemeAssets = preload("res://scripts/ui/ui_theme_assets.gd")
+const UIThemeTokens = preload("res://scripts/ui/ui_theme_tokens.gd")
 ## UITheme — Centralized UI theme and font management.
 ## Provides consistent fonts, colors, and styling across all UI screens.
 
 # --- Fonts ---
-var font_primary: FontFile
-var font_narrow: FontFile
+var font_primary: Font
+var font_narrow: Font
+var font_display: Font
 
 # --- Colors ---
-const COLOR_PRIMARY := Color(0.58, 0.39, 0.18)         # Warm brown
-const COLOR_PRIMARY_DARK := Color(0.42, 0.27, 0.10)
-const COLOR_ACCENT := Color(0.98, 0.85, 0.33)          # Gold
-const COLOR_DANGER := Color(0.78, 0.25, 0.18)          # Clay red
-const COLOR_TEXT := Color(0.97, 0.95, 0.89)            # Parchment white
-const COLOR_TEXT_DIM := Color(0.76, 0.72, 0.63)        # Warm dim text
-const COLOR_TEXT_INK := Color(0.18, 0.12, 0.07)        # Dark readable text on light UI
-const COLOR_TEXT_INK_SOFT := Color(0.28, 0.19, 0.11)
-const COLOR_PANEL_BG := Color(0.18, 0.14, 0.09, 0.96) # Dark wood panel
-const COLOR_PANEL_LIGHT := Color(0.34, 0.25, 0.16, 0.92)
-const COLOR_OVERLAY := Color(0.05, 0.03, 0.02, 0.62)  # Dim overlay
+const COLOR_PRIMARY := UIThemeTokens.COLOR_PRIMARY         # Warm brown
+const COLOR_PRIMARY_DARK := UIThemeTokens.COLOR_PRIMARY_DARK
+const COLOR_ACCENT := UIThemeTokens.COLOR_ACCENT          # Gold
+const COLOR_DANGER := UIThemeTokens.COLOR_DANGER          # Clay red
+const COLOR_TEXT := UIThemeTokens.COLOR_TEXT              # Parchment white
+const COLOR_TEXT_DIM := UIThemeTokens.COLOR_TEXT_DIM      # Warm dim text
+const COLOR_TEXT_INK := UIThemeTokens.COLOR_TEXT_INK      # Dark readable text on light UI
+const COLOR_TEXT_INK_SOFT := UIThemeTokens.COLOR_TEXT_INK_SOFT
+const COLOR_PANEL_BG := UIThemeTokens.COLOR_PANEL_BG      # Dark wood panel
+const COLOR_PANEL_LIGHT := UIThemeTokens.COLOR_PANEL_LIGHT
+const COLOR_OVERLAY := UIThemeTokens.COLOR_OVERLAY        # Dim overlay
 
 # --- Font Sizes ---
-const FONT_TITLE: int = 52
-const FONT_HEADING: int = 36
-const FONT_BODY: int = 24
-const FONT_SMALL: int = 18
-const FONT_HUD: int = 28
+const FONT_TITLE: int = UIThemeTokens.FONT_TITLE
+const FONT_HEADING: int = UIThemeTokens.FONT_HEADING
+const FONT_BODY: int = UIThemeTokens.FONT_BODY
+const FONT_SMALL: int = UIThemeTokens.FONT_SMALL
+const FONT_HUD: int = UIThemeTokens.FONT_HUD
 
 # --- Button and Panel Textures ---
 var btn_primary_texture: Texture2D
@@ -75,48 +79,49 @@ func _ready() -> void:
 
 
 func _load_fonts() -> void:
-	font_primary = _try_load_font("res://assets/UI/Fonts/Kenney Future.ttf")
-	font_narrow = _try_load_font("res://assets/UI/Fonts/Kenney Future Narrow.ttf")
+	font_primary = ThemeDB.fallback_font if ThemeDB.fallback_font != null else _try_load_font(UIThemeAssets.FONT_PRIMARY)
+	font_narrow = _try_load_font(UIThemeAssets.FONT_NARROW)
+	font_display = _try_load_font(UIThemeAssets.FONT_DISPLAY)
 
 
 func _load_textures() -> void:
-	btn_primary_texture = _try_load_tex("res://assets/UI/kenney_adventure/button_brown.png")
-	btn_secondary_texture = _try_load_tex("res://assets/UI/kenney_adventure/button_grey.png")
-	btn_danger_texture = _try_load_tex("res://assets/UI/kenney_adventure/button_red.png")
-	btn_round_texture = _try_load_tex("res://assets/UI/kenney_adventure/round_brown.png")
-	btn_round_dark_texture = _try_load_tex("res://assets/UI/kenney_adventure/round_brown_dark.png")
-	panel_texture = _try_load_tex("res://assets/UI/kenney_adventure/panel_brown.png")
-	panel_dark_texture = _try_load_tex("res://assets/UI/kenney_adventure/panel_brown_dark.png")
-	banner_texture = _try_load_tex("res://assets/UI/kenney_adventure/banner_modern.png")
-	progress_green_texture = _try_load_tex("res://assets/UI/kenney_adventure/progress_green.png")
-	progress_red_texture = _try_load_tex("res://assets/UI/kenney_adventure/progress_red.png")
-	progress_white_texture = _try_load_tex("res://assets/UI/kenney_adventure/progress_white.png")
-	cyber_btn_primary_texture = _try_load_tex("res://assets/UI/cyberprank/space_expansion/blue/button_square_header_large_rectangle_screws.png")
-	cyber_btn_secondary_texture = _try_load_tex("res://assets/UI/cyberprank/space_expansion/blue/button_square_header_notch_rectangle_screws.png")
-	cyber_btn_danger_texture = _try_load_tex("res://assets/UI/cyberprank/space_expansion/extra/button_rectangle_depth.png")
-	cyber_btn_round_texture = _try_load_tex("res://assets/UI/cyberprank/space_expansion/blue/button_square_header_large_square_screws.png")
-	cyber_btn_round_dark_texture = _try_load_tex("res://assets/UI/cyberprank/space_expansion/blue/button_square_header_blade_square_screws.png")
-	cyber_panel_texture = _try_load_tex("res://assets/UI/cyberprank/space_expansion/extra/panel_rectangle_screws.png")
-	cyber_panel_dark_texture = _try_load_tex("res://assets/UI/cyberprank/space_expansion/extra/panel_glass_screws.png")
-	cyber_banner_texture = _try_load_tex("res://assets/UI/cyberprank/space_expansion/blue/button_square_header_blade_rectangle_screws.png")
-	cyber_progress_fill_texture = _try_load_tex("res://assets/UI/cyberprank/space_expansion/blue/bar_round_gloss_large.png")
-	cyber_progress_alert_texture = _try_load_tex("res://assets/UI/cyberprank/space_expansion/blue/bar_square_gloss_large.png")
-	cyber_progress_back_texture = _try_load_tex("res://assets/UI/cyberprank/space_expansion/extra/bar_shadow_round_outline_large.png")
+	btn_primary_texture = _try_load_tex(UIThemeAssets.BTN_PRIMARY)
+	btn_secondary_texture = _try_load_tex(UIThemeAssets.BTN_SECONDARY)
+	btn_danger_texture = _try_load_tex(UIThemeAssets.BTN_DANGER)
+	btn_round_texture = _try_load_tex(UIThemeAssets.BTN_ROUND)
+	btn_round_dark_texture = _try_load_tex(UIThemeAssets.BTN_ROUND_DARK)
+	panel_texture = _try_load_tex(UIThemeAssets.PANEL)
+	panel_dark_texture = _try_load_tex(UIThemeAssets.PANEL_DARK)
+	banner_texture = _try_load_tex(UIThemeAssets.BANNER)
+	progress_green_texture = _try_load_tex(UIThemeAssets.PROGRESS_GREEN)
+	progress_red_texture = _try_load_tex(UIThemeAssets.PROGRESS_RED)
+	progress_white_texture = _try_load_tex(UIThemeAssets.PROGRESS_WHITE)
+	cyber_btn_primary_texture = _try_load_tex(UIThemeAssets.CYBER_BTN_PRIMARY)
+	cyber_btn_secondary_texture = _try_load_tex(UIThemeAssets.CYBER_BTN_SECONDARY)
+	cyber_btn_danger_texture = _try_load_tex(UIThemeAssets.CYBER_BTN_DANGER)
+	cyber_btn_round_texture = _try_load_tex(UIThemeAssets.CYBER_BTN_ROUND)
+	cyber_btn_round_dark_texture = _try_load_tex(UIThemeAssets.CYBER_BTN_ROUND_DARK)
+	cyber_panel_texture = _try_load_tex(UIThemeAssets.CYBER_PANEL)
+	cyber_panel_dark_texture = _try_load_tex(UIThemeAssets.CYBER_PANEL_DARK)
+	cyber_banner_texture = _try_load_tex(UIThemeAssets.CYBER_BANNER)
+	cyber_progress_fill_texture = _try_load_tex(UIThemeAssets.CYBER_PROGRESS_FILL)
+	cyber_progress_alert_texture = _try_load_tex(UIThemeAssets.CYBER_PROGRESS_ALERT)
+	cyber_progress_back_texture = _try_load_tex(UIThemeAssets.CYBER_PROGRESS_BACK)
 
-	icon_play = _try_load_tex("res://assets/UI/Icons/icon_play_light.png")
-	icon_pause = _try_load_tex("res://assets/UI/Icons/pause.png")
-	icon_home = _try_load_tex("res://assets/UI/Icons/home.png")
-	icon_gear = _try_load_tex("res://assets/UI/Icons/gear.png")
-	icon_trophy = _try_load_tex("res://assets/UI/Icons/trophy.png")
-	icon_cross = _try_load_tex("res://assets/UI/Icons/icon_cross.png")
-	icon_check = _try_load_tex("res://assets/UI/Icons/icon_checkmark.png")
-	icon_audio_on = _try_load_tex("res://assets/UI/Icons/audioOn.png")
-	icon_audio_off = _try_load_tex("res://assets/UI/Icons/audioOff.png")
-	icon_music_on = _try_load_tex("res://assets/UI/Icons/musicOn.png")
-	icon_music_off = _try_load_tex("res://assets/UI/Icons/musicOff.png")
-	icon_coin = _try_load_tex("res://assets/UI/kenney_adventure/minimap_icon_jewel_yellow.png")
-	icon_star = _try_load_tex("res://assets/UI/kenney_adventure/minimap_icon_star_yellow.png")
-	icon_warning = _try_load_tex("res://assets/UI/kenney_adventure/minimap_icon_exclamation_yellow.png")
+	icon_play = _try_load_tex(UIThemeAssets.ICON_PLAY)
+	icon_pause = _try_load_tex(UIThemeAssets.ICON_PAUSE)
+	icon_home = _try_load_tex(UIThemeAssets.ICON_HOME)
+	icon_gear = _try_load_tex(UIThemeAssets.ICON_GEAR)
+	icon_trophy = _try_load_tex(UIThemeAssets.ICON_TROPHY)
+	icon_cross = _try_load_tex(UIThemeAssets.ICON_CROSS)
+	icon_check = _try_load_tex(UIThemeAssets.ICON_CHECK)
+	icon_audio_on = _try_load_tex(UIThemeAssets.ICON_AUDIO_ON)
+	icon_audio_off = _try_load_tex(UIThemeAssets.ICON_AUDIO_OFF)
+	icon_music_on = _try_load_tex(UIThemeAssets.ICON_MUSIC_ON)
+	icon_music_off = _try_load_tex(UIThemeAssets.ICON_MUSIC_OFF)
+	icon_coin = _try_load_tex(UIThemeAssets.ICON_COIN)
+	icon_star = _try_load_tex(UIThemeAssets.ICON_STAR)
+	icon_warning = _try_load_tex(UIThemeAssets.ICON_WARNING)
 
 
 func _try_load_font(path: String) -> FontFile:
@@ -134,7 +139,7 @@ func _try_load_tex(path: String) -> Texture2D:
 # --- Theme Helpers ---
 
 func get_gameplay_skin() -> String:
-	return ThemeRegistryScript.get_profile().get("ui", {}).get("skin", "nature")
+	return ThemeRegistryScript.get_profile().get("ui", {}).get("skin", UISkinIds.NATURE)
 
 
 func get_color(color_id: String, skin_override: String = "") -> Color:
@@ -279,6 +284,8 @@ func make_banner(text: String, size: int = FONT_HEADING, color: Color = COLOR_TE
 	label.anchor_bottom = 1.0
 	label.position.y = -4.0
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if font_display:
+		label.add_theme_font_override("font", font_display)
 	banner.add_child(label)
 	return banner
 
@@ -338,7 +345,7 @@ func _resolve_skin(skin_override: String = "") -> String:
 
 
 func _get_skin_colors(skin_id: String) -> Dictionary:
-	if skin_id == "cyberprank":
+	if skin_id == UISkinIds.CYBERPRANK:
 		return {
 			"primary": Color(0.14, 0.86, 1.0),
 			"primary_dark": Color(0.08, 0.28, 0.38),

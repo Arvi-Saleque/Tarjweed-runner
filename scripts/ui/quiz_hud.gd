@@ -1,6 +1,7 @@
 extends Control
 
-const QUIZ_SKIN := "nature"
+const UISkinIds = preload("res://scripts/ui/ui_skin_ids.gd")
+const QUIZ_SKIN := UISkinIds.NATURE
 
 var _question_label: Label
 var _choices_container: HBoxContainer
