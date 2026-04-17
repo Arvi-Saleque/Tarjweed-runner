@@ -3,6 +3,7 @@ extends Node
 ## Manages score, coins, distance, speed, difficulty, and game state transitions.
 
 const ControlsManager = preload("res://scripts/input/controls_manager.gd")
+const MenuFlowCatalog = preload("res://scripts/ui/menu_flow_catalog.gd")
 
 # --- Signals ---
 signal game_started
@@ -41,6 +42,8 @@ var play_time: float = 0.0   # Seconds since game_started
 var current_mode: String = "normal"
 var current_visual_theme: String = "nature"
 var current_player_variant: String = "nature_default"
+var current_player_name: String = MenuFlowCatalog.DEFAULT_PLAYER_NAME
+var current_difficulty_id: String = MenuFlowCatalog.DEFAULT_DIFFICULTY
 var previous_high_score: int = 0
 
 # --- Obstacle Difficulty ---
@@ -51,6 +54,21 @@ var max_obstacle_frequency: float = 0.75
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS  # Keep processing even when paused
 	ControlsManager.ensure_controls_ready()
+	current_player_name = SaveManager.get_player_name()
+	current_difficulty_id = SaveManager.get_selected_difficulty()
+
+
+func apply_menu_setup(player_name: String, difficulty_id: String, runner_id: String = "") -> void:
+	current_player_name = player_name.strip_edges()
+	if current_player_name.is_empty():
+		current_player_name = MenuFlowCatalog.DEFAULT_PLAYER_NAME
+	SaveManager.set_player_name(current_player_name)
+
+	current_difficulty_id = difficulty_id if not difficulty_id.is_empty() else MenuFlowCatalog.DEFAULT_DIFFICULTY
+	SaveManager.set_selected_difficulty(current_difficulty_id)
+
+	if not runner_id.is_empty():
+		current_player_variant = runner_id
 
 
 func _process(delta: float) -> void:
