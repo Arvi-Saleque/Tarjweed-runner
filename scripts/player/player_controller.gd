@@ -4,6 +4,7 @@ extends CharacterBody3D
 
 const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
 const ControlsManager = preload("res://scripts/input/controls_manager.gd")
+const PlayerRunnerAssets = preload("res://scripts/player/player_runner_assets.gd")
 
 # --- Signals ---
 signal hit_obstacle
@@ -25,23 +26,11 @@ const SLIDE_HEIGHT: float = 0.6
 const SLIDE_RADIUS: float = 0.45
 const HIT_AREA_FORWARD_BIAS: float = -0.18
 const PLAYER_VISUAL_SCALE: float = 0.58
-const PLAYER_BASE_SCENE_PATH: String = "res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementBasic.glb"
-const PLAYER_EXTRA_ANIM_SCENE_PATHS: Array[String] = [
-	"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_MovementAdvanced.glb",
-	"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_General.glb",
-	"res://assets/Characters/Animations_GLTF/Rig_Medium/Rig_Medium_CombatMelee.glb",
-]
-const PLAYER_IDLE_ANIM_OPTIONS: Array[String] = [
-	"Idle_No_Loop", "Idle_Rail_Loop", "Idle_A", "Idle", "Idle_Neutral",
-	"Idle_Gun_Pointing", "Idle_Gun_Shoot",
-]
-const PLAYER_RUN_ANIM_OPTIONS: Array[String] = [
-	"Running_A", "Running_B", "Run", "Walk_Carry_Loop", "Zombie_Walk_Fwd_Loop",
-	"Walk", "Run_Holding", "Run_Tall",
-]
-const PLAYER_JUMP_ANIM_OPTIONS: Array[String] = [
-	"Jump_Start", "NinjaJump_Start", "Jump", "Jump_Idle", "NinjaJump_Idle_Loop",
-]
+const PLAYER_BASE_SCENE_PATH: String = PlayerRunnerAssets.BASE_SCENE_PATH
+const PLAYER_EXTRA_ANIM_SCENE_PATHS: Array[String] = PlayerRunnerAssets.EXTRA_ANIM_SCENE_PATHS
+const PLAYER_IDLE_ANIM_OPTIONS: Array[String] = PlayerRunnerAssets.IDLE_ANIM_OPTIONS
+const PLAYER_RUN_ANIM_OPTIONS: Array[String] = PlayerRunnerAssets.RUN_ANIM_OPTIONS
+const PLAYER_JUMP_ANIM_OPTIONS: Array[String] = PlayerRunnerAssets.JUMP_ANIM_OPTIONS
 
 # --- State ---
 enum PlayerState { RUNNING, JUMPING, SLIDING, STUMBLE, DEAD }
