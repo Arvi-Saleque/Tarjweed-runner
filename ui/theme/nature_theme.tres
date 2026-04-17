@@ -1,0 +1,16 @@
+[gd_resource type="Theme" load_steps=3 format=3]
+
+[ext_resource type="FontFile" path="res://assets/UI/Fonts/Kenney Future.ttf" id="1_font_primary"]
+[ext_resource type="FontFile" path="res://assets/UI/Fonts/Kenney Future Narrow.ttf" id="2_font_accent"]
+
+[resource]
+default_font = ExtResource("1_font_primary")
+default_font_size = 24
+Button/fonts/font = ExtResource("1_font_primary")
+Button/font_sizes/font_size = 24
+Label/fonts/font = ExtResource("1_font_primary")
+Label/font_sizes/font_size = 24
+LineEdit/fonts/font = ExtResource("2_font_accent")
+LineEdit/font_sizes/font_size = 24
+TextEdit/fonts/font = ExtResource("2_font_accent")
+TextEdit/font_sizes/font_size = 24
