@@ -178,6 +178,10 @@ func _refresh_runner_preview() -> void:
 	_runner_subtitle.text = runner.get("subtitle", "")
 
 
+func refresh_selected_runner() -> void:
+	_refresh_runner_preview()
+
+
 func _on_start_pressed() -> void:
 	AudioManager.play_ui_sound(AudioManager.ui_click)
 	var player_name := _name_input.text.strip_edges()
