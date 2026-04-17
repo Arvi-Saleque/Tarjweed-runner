@@ -5,6 +5,7 @@ extends CharacterBody3D
 const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
 const ControlsManager = preload("res://scripts/input/controls_manager.gd")
 const PlayerRunnerAssets = preload("res://scripts/player/player_runner_assets.gd")
+const PlayerTuning = preload("res://scripts/player/player_tuning.gd")
 
 # --- Signals ---
 signal hit_obstacle
@@ -50,28 +51,28 @@ var _input_buffer_slide: bool = false
 var _buffer_timer: float = 0.0
 
 # --- Touch / Swipe ---
-const SWIPE_MIN_DISTANCE: float = 50.0  # minimum pixels to register a swipe
+const SWIPE_MIN_DISTANCE: float = PlayerTuning.SWIPE_MIN_DISTANCE  # minimum pixels to register a swipe
 var _touch_start: Vector2 = Vector2.ZERO
 var _touch_active: bool = false
 var _touch_start_time: float = 0.0        # When touch began (for hold detection)
 var _touch_hold_building: bool = false     # True while touch-holding to build bridge
-const TOUCH_HOLD_THRESHOLD: float = 0.3   # Seconds before touch counts as hold
+const TOUCH_HOLD_THRESHOLD: float = PlayerTuning.TOUCH_HOLD_THRESHOLD   # Seconds before touch counts as hold
 
 # --- Giant Rock / Double-Tap Blast ---
-const DOUBLE_TAP_WINDOW: float = 0.6   # window for double-tap detection
-const GIANT_ROCK_DETECT_RANGE: float = 45.0  # show hint at this distance
-const GIANT_ROCK_BLAST_RANGE: float = 35.0   # can blast within this range
-const GIANT_ROCK_IMPACT_Z: float = -2.15     # force a clean hit before visual clipping
+const DOUBLE_TAP_WINDOW: float = PlayerTuning.DOUBLE_TAP_WINDOW   # window for double-tap detection
+const GIANT_ROCK_DETECT_RANGE: float = PlayerTuning.GIANT_ROCK_DETECT_RANGE  # show hint at this distance
+const GIANT_ROCK_BLAST_RANGE: float = PlayerTuning.GIANT_ROCK_BLAST_RANGE   # can blast within this range
+const GIANT_ROCK_IMPACT_Z: float = PlayerTuning.GIANT_ROCK_IMPACT_Z     # force a clean hit before visual clipping
 var _last_space_time: float = -1.0
 var _nearby_giant_rock: Node = null
 
 # --- River / Bridge ---
-const RIVER_DETECT_RANGE: float = 40.0     # Start detecting river at this distance
-const RIVER_BRIDGE_RANGE: float = 30.0     # Can build bridge within this range
-const RIVER_NO_JUMP_RANGE: float = 20.0    # No jumping within this range of a river
-const BRIDGE_HOLD_TIME: float = 0.8        # Seconds of holding spacebar to build
-const NATURE_BRIDGE_HOLD_TIME: float = 0.55
-const BRIDGE_PREVIEW_DEPTH: float = 3.6    # Must match the stylized bridge visual depth
+const RIVER_DETECT_RANGE: float = PlayerTuning.RIVER_DETECT_RANGE     # Start detecting river at this distance
+const RIVER_BRIDGE_RANGE: float = PlayerTuning.RIVER_BRIDGE_RANGE     # Can build bridge within this range
+const RIVER_NO_JUMP_RANGE: float = PlayerTuning.RIVER_NO_JUMP_RANGE    # No jumping within this range of a river
+const BRIDGE_HOLD_TIME: float = PlayerTuning.BRIDGE_HOLD_TIME        # Seconds of holding spacebar to build
+const NATURE_BRIDGE_HOLD_TIME: float = PlayerTuning.NATURE_BRIDGE_HOLD_TIME
+const BRIDGE_PREVIEW_DEPTH: float = PlayerTuning.BRIDGE_PREVIEW_DEPTH    # Must match the stylized bridge visual depth
 var _nearby_river: Node = null
 var _space_hold_time: float = 0.0
 var _bridge_built_for_river: Node = null    # Track which river we already built a bridge for
