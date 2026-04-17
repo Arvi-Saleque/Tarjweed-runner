@@ -3,17 +3,19 @@ extends Node
 ## Prefers the curated UAL2 clip set on the Quaternius runner rig.
 ## If no AnimationPlayer is found, falls back to code-driven transforms.
 
-const ANIM_IDLE_OPTIONS: Array[String] = ["Idle_No_Loop", "Idle_Rail_Loop", "Idle_A", "Idle", "Idle_Neutral"]
-const ANIM_RUN_OPTIONS: Array[String] = ["Running_A", "Running_B", "Run", "Walk_Carry_Loop", "Zombie_Walk_Fwd_Loop", "Walk"]
-const ANIM_JUMP_UP_OPTIONS: Array[String] = ["Jump_Start", "NinjaJump_Start", "Jump"]
-const ANIM_JUMP_FALL_OPTIONS: Array[String] = ["Jump_Idle", "NinjaJump_Idle_Loop", "Jump"]
-const ANIM_JUMP_LAND_OPTIONS: Array[String] = ["Jump_Land", "NinjaJump_Land", "Land", "Idle"]
-const ANIM_SLIDE_OPTIONS: Array[String] = ["Crouching", "Slide_Loop", "Duck", "Idle"]
-const ANIM_DEATH_OPTIONS: Array[String] = ["Death_A", "Death", "Hit_Knockback"]
-const ANIM_STUMBLE_OPTIONS: Array[String] = ["Hit_A", "Hit_Knockback", "HitRecieve_1", "HitRecieve_2", "HitRecieve", "HitReact"]
+const PlayerAnimationCatalog = preload("res://scripts/player/player_animation_catalog.gd")
 
-const XFADE: float = 0.15
-const XFADE_FAST: float = 0.08
+const ANIM_IDLE_OPTIONS: Array[String] = PlayerAnimationCatalog.IDLE_OPTIONS
+const ANIM_RUN_OPTIONS: Array[String] = PlayerAnimationCatalog.RUN_OPTIONS
+const ANIM_JUMP_UP_OPTIONS: Array[String] = PlayerAnimationCatalog.JUMP_UP_OPTIONS
+const ANIM_JUMP_FALL_OPTIONS: Array[String] = PlayerAnimationCatalog.JUMP_FALL_OPTIONS
+const ANIM_JUMP_LAND_OPTIONS: Array[String] = PlayerAnimationCatalog.JUMP_LAND_OPTIONS
+const ANIM_SLIDE_OPTIONS: Array[String] = PlayerAnimationCatalog.SLIDE_OPTIONS
+const ANIM_DEATH_OPTIONS: Array[String] = PlayerAnimationCatalog.DEATH_OPTIONS
+const ANIM_STUMBLE_OPTIONS: Array[String] = PlayerAnimationCatalog.STUMBLE_OPTIONS
+
+const XFADE: float = PlayerAnimationCatalog.XFADE
+const XFADE_FAST: float = PlayerAnimationCatalog.XFADE_FAST
 
 enum AnimState { IDLE, RUN, JUMP_UP, JUMP_FALL, SLIDE, LAND, DEATH, STUMBLE }
 
