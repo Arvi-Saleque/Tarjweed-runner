@@ -2,7 +2,7 @@ extends Control
 ## ThemeSelect - Multi-step mode/theme/player selection shown after pressing PLAY.
 
 const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
-const CYBER_UI_SKIN := "cyberprank"
+const ACTIVE_UI_SKIN := "nature"
 
 const PREVIEW_IDLE_ANIMS: Array[String] = [
 	"Idle", "Idle_Neutral", "Idle_No_Loop", "Idle_A", "Idle_Gun_Pointing",
@@ -30,25 +30,6 @@ const MODES: Array[Dictionary] = [
 		"subtitle": "Word pronunciation",
 		"color": Color(0.70, 0.35, 0.90),
 		"icon_text": "MIC",
-	},
-]
-
-const VISUAL_THEMES: Array[Dictionary] = [
-	{
-		"id": "nature",
-		"title": "NATURE",
-		"subtitle": "Forest trail adventure",
-		"color": Color(0.28, 0.70, 0.37),
-		"icon_text": "LEAF",
-		"available_modes": ["normal", "quiz", "pronunciation"],
-	},
-	{
-		"id": "cyberprank",
-		"title": "CYBERPRANK",
-		"subtitle": "Neon urban sprint",
-		"color": Color(0.18, 0.84, 0.98),
-		"icon_text": "CYBR",
-		"available_modes": ["normal"],
 	},
 ]
 
@@ -107,7 +88,7 @@ func _create_overlay() -> void:
 	_overlay.anchors_preset = Control.PRESET_FULL_RECT
 	_overlay.anchor_right = 1.0
 	_overlay.anchor_bottom = 1.0
-	_overlay.color = Color(0.02, 0.04, 0.08, 0.95)
+	_overlay.color = Color(0.08, 0.06, 0.03, 0.94)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_overlay)
 
@@ -120,19 +101,19 @@ func _create_overlay() -> void:
 	top_glow.offset_top = 40.0
 	top_glow.offset_right = 360.0
 	top_glow.offset_bottom = 280.0
-	top_glow.color = Color(0.16, 0.84, 1.0, 0.08)
+	top_glow.color = Color(0.88, 0.74, 0.36, 0.12)
 	top_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(top_glow)
 
-	var magenta_glow := ColorRect.new()
-	magenta_glow.anchor_left = 1.0
-	magenta_glow.anchor_top = 0.22
-	magenta_glow.anchor_right = 1.0
-	magenta_glow.anchor_bottom = 0.88
-	magenta_glow.offset_left = -260.0
-	magenta_glow.color = Color(0.96, 0.22, 1.0, 0.05)
-	magenta_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(magenta_glow)
+	var meadow_glow := ColorRect.new()
+	meadow_glow.anchor_left = 1.0
+	meadow_glow.anchor_top = 0.22
+	meadow_glow.anchor_right = 1.0
+	meadow_glow.anchor_bottom = 0.88
+	meadow_glow.offset_left = -260.0
+	meadow_glow.color = Color(0.30, 0.55, 0.22, 0.08)
+	meadow_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(meadow_glow)
 
 	for i in 5:
 		var line := ColorRect.new()
@@ -141,7 +122,7 @@ func _create_overlay() -> void:
 		line.anchor_right = 0.94
 		line.anchor_bottom = 0.14 + i * 0.14
 		line.offset_bottom = 2.0
-		line.color = Color(0.14, 0.82, 1.0, 0.03 if i % 2 == 0 else 0.02)
+		line.color = Color(0.88, 0.82, 0.54, 0.05 if i % 2 == 0 else 0.03)
 		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(line)
 
@@ -159,12 +140,12 @@ func _create_layout() -> void:
 	_container.custom_minimum_size = Vector2(1200, 0)
 	center.add_child(_container)
 
-	_header = UITheme.make_banner("CHOOSE MODE", UITheme.FONT_BODY, UITheme.get_color("text_ink", CYBER_UI_SKIN), CYBER_UI_SKIN)
+	_header = UITheme.make_banner("CHOOSE MODE", UITheme.FONT_BODY, UITheme.get_color("text_ink", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
 	_header_label = _header.get_child(1) as Label
 	_header.modulate.a = 0.0
 	_container.add_child(_header)
 
-	_sub = UITheme.make_label("Select a game mode to play", UITheme.FONT_SMALL, UITheme.get_color("text_dim", CYBER_UI_SKIN), CYBER_UI_SKIN)
+	_sub = UITheme.make_label("Select a mode, then choose your runner", UITheme.FONT_SMALL, UITheme.get_color("text_dim", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
 	_sub.modulate.a = 0.0
 	_container.add_child(_sub)
 
@@ -189,12 +170,12 @@ func _create_layout() -> void:
 
 	_create_runner_stage()
 
-	_notice = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("accent", CYBER_UI_SKIN), CYBER_UI_SKIN)
+	_notice = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("accent", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
 	_notice.visible = false
 	_notice.modulate.a = 0.0
 	_container.add_child(_notice)
 
-	_back_btn = UITheme.make_button("  BACK", UITheme.icon_cross, UITheme.FONT_BODY, "secondary", CYBER_UI_SKIN)
+	_back_btn = UITheme.make_button("  BACK", UITheme.icon_cross, UITheme.FONT_BODY, "secondary", ACTIVE_UI_SKIN)
 	_back_btn.custom_minimum_size = Vector2(220, 56)
 	_back_btn.modulate.a = 0.0
 	_back_btn.pressed.connect(_on_back)
@@ -203,7 +184,7 @@ func _create_layout() -> void:
 
 
 func _create_runner_stage() -> void:
-	_runner_showcase = UITheme.make_panel("dark", CYBER_UI_SKIN)
+	_runner_showcase = UITheme.make_panel("dark", ACTIVE_UI_SKIN)
 	_runner_showcase.custom_minimum_size = Vector2(460, 650)
 	_runner_showcase.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_runner_stage.add_child(_runner_showcase)
@@ -219,7 +200,7 @@ func _create_runner_stage() -> void:
 	showcase_vbox.add_theme_constant_override("separation", 14)
 	showcase_margin.add_child(showcase_vbox)
 
-	var feature_label := UITheme.make_label("FEATURED RUNNER", UITheme.FONT_SMALL, UITheme.get_color("primary", CYBER_UI_SKIN), CYBER_UI_SKIN)
+	var feature_label := UITheme.make_label("FEATURED RUNNER", UITheme.FONT_SMALL, UITheme.get_color("primary", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
 	feature_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	showcase_vbox.add_child(feature_label)
 
@@ -227,15 +208,15 @@ func _create_runner_stage() -> void:
 	_runner_preview_host.custom_minimum_size = Vector2(400, 330)
 	showcase_vbox.add_child(_runner_preview_host)
 
-	_runner_title = UITheme.make_label("", UITheme.FONT_HEADING, UITheme.get_color("text", CYBER_UI_SKIN), CYBER_UI_SKIN)
+	_runner_title = UITheme.make_label("", UITheme.FONT_HEADING, UITheme.get_color("text", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
 	_runner_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	showcase_vbox.add_child(_runner_title)
 
-	_runner_subtitle = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("accent", CYBER_UI_SKIN), CYBER_UI_SKIN)
+	_runner_subtitle = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("accent", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
 	_runner_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	showcase_vbox.add_child(_runner_subtitle)
 
-	_runner_meta = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("text_dim", CYBER_UI_SKIN), CYBER_UI_SKIN)
+	_runner_meta = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("text_dim", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
 	_runner_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_runner_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	showcase_vbox.add_child(_runner_meta)
@@ -244,13 +225,13 @@ func _create_runner_stage() -> void:
 	meta_spacer.custom_minimum_size = Vector2(0, 6)
 	showcase_vbox.add_child(meta_spacer)
 
-	_runner_confirm_btn = UITheme.make_button("  SELECT RUNNER", UITheme.icon_play, UITheme.FONT_BODY, "primary", CYBER_UI_SKIN)
+	_runner_confirm_btn = UITheme.make_button("  SELECT RUNNER", UITheme.icon_play, UITheme.FONT_BODY, "primary", ACTIVE_UI_SKIN)
 	_runner_confirm_btn.custom_minimum_size = Vector2(300, 60)
 	_runner_confirm_btn.pressed.connect(_confirm_selected_runner)
 	_runner_confirm_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	showcase_vbox.add_child(_runner_confirm_btn)
 
-	var roster_panel := UITheme.make_panel("light", CYBER_UI_SKIN)
+	var roster_panel := UITheme.make_panel("light", ACTIVE_UI_SKIN)
 	roster_panel.custom_minimum_size = Vector2(660, 650)
 	roster_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_runner_stage.add_child(roster_panel)
@@ -266,11 +247,11 @@ func _create_runner_stage() -> void:
 	roster_vbox.add_theme_constant_override("separation", 12)
 	roster_margin.add_child(roster_vbox)
 
-	var roster_header := UITheme.make_label("RUNNER ROSTER", UITheme.FONT_SMALL, UITheme.get_color("text_ink", CYBER_UI_SKIN), CYBER_UI_SKIN)
+	var roster_header := UITheme.make_label("RUNNER ROSTER", UITheme.FONT_SMALL, UITheme.get_color("text_ink", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
 	roster_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	roster_vbox.add_child(roster_header)
 
-	var roster_sub := UITheme.make_label("Pick a silhouette first, then launch from the featured panel.", UITheme.FONT_SMALL - 2, UITheme.get_color("text_ink_soft", CYBER_UI_SKIN), CYBER_UI_SKIN)
+	var roster_sub := UITheme.make_label("Choose the runner whose silhouette feels clearest for this mode.", UITheme.FONT_SMALL - 2, UITheme.get_color("text_ink_soft", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
 	roster_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	roster_vbox.add_child(roster_sub)
 
@@ -306,7 +287,7 @@ func _get_entries_for_step() -> Array[Dictionary]:
 		"runner":
 			return ThemeRegistryScript.get_player_options(_selected_theme)
 		_:
-			return VISUAL_THEMES
+			return []
 
 
 func _refresh_cards() -> void:
@@ -320,26 +301,15 @@ func _refresh_cards() -> void:
 	match _selection_step:
 		"mode":
 			_header_label.text = "CHOOSE MODE"
-			_sub.text = "Select a game mode to play"
+			_sub.text = "Select a mode, then choose your runner"
 			_cards_grid.columns = 3
 			for data in MODES:
 				var card := _create_card(data, "  PLAY", false)
 				_cards_grid.add_child(card)
 				_cards.append(card)
-		"theme":
-			_header_label.text = "CHOOSE THEME"
-			_sub.text = "Pick the visual theme for %s mode" % _selected_mode.capitalize()
-			_cards_grid.columns = 2
-			for data in VISUAL_THEMES:
-				var available_modes: Array = data.get("available_modes", [])
-				var is_disabled := _selected_mode not in available_modes
-				var button_text := "  START" if not is_disabled else "  SOON"
-				var card := _create_card(data, button_text, is_disabled)
-				_cards_grid.add_child(card)
-				_cards.append(card)
 		"runner":
 			_header_label.text = "CHOOSE RUNNER"
-			_sub.text = "Pick your %s runner for normal mode" % _selected_theme.capitalize()
+			_sub.text = "Pick a runner for %s mode in the Nature world" % _selected_mode.capitalize()
 			_cards_scroll.visible = false
 			_runner_stage.visible = true
 			_runner_options = ThemeRegistryScript.get_player_options(_selected_theme)
@@ -354,49 +324,40 @@ func _refresh_cards() -> void:
 
 
 func _create_card(data: Dictionary, button_text: String, is_disabled: bool) -> PanelContainer:
-	var card := UITheme.make_panel("dark", CYBER_UI_SKIN)
+	var card := UITheme.make_panel("dark", ACTIVE_UI_SKIN)
 	card.custom_minimum_size = Vector2(320, 360)
 	card.modulate.a = 0.0
 
-	var accent_color: Color = data.get("color", UITheme.get_color("primary", CYBER_UI_SKIN))
+	var accent_color: Color = data.get("color", UITheme.get_color("primary", ACTIVE_UI_SKIN))
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_theme_constant_override("separation", 16)
 	card.add_child(vbox)
 
-	var icon_panel := UITheme.make_panel("light", CYBER_UI_SKIN)
+	var icon_panel := UITheme.make_panel("light", ACTIVE_UI_SKIN)
 	icon_panel.custom_minimum_size = Vector2(124, 124)
 	icon_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	icon_panel.modulate = accent_color.lightened(0.18)
 	vbox.add_child(icon_panel)
 
-	var icon_label := UITheme.make_label(data.get("icon_text", "?"), 30, UITheme.get_color("text_ink", CYBER_UI_SKIN), CYBER_UI_SKIN)
+	var icon_label := UITheme.make_label(data.get("icon_text", "?"), 30, UITheme.get_color("text_ink", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
 	icon_label.anchors_preset = Control.PRESET_FULL_RECT
 	icon_label.anchor_right = 1.0
 	icon_label.anchor_bottom = 1.0
 	icon_panel.add_child(icon_label)
 
-	var title := UITheme.make_label(data["title"], UITheme.FONT_HEADING, UITheme.get_color("text", CYBER_UI_SKIN), CYBER_UI_SKIN)
+	var title := UITheme.make_label(data["title"], UITheme.FONT_HEADING, UITheme.get_color("text", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
 	vbox.add_child(title)
 
-	var subtitle := UITheme.make_label(data["subtitle"], UITheme.FONT_SMALL, UITheme.get_color("text_dim", CYBER_UI_SKIN), CYBER_UI_SKIN)
+	var subtitle := UITheme.make_label(data["subtitle"], UITheme.FONT_SMALL, UITheme.get_color("text_dim", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
 	vbox.add_child(subtitle)
-
-	if is_disabled:
-		var soon_badge := UITheme.make_label("CYBERPRANK COMING SOON", UITheme.FONT_SMALL, Color(0.95, 0.76, 0.30), CYBER_UI_SKIN)
-		vbox.add_child(soon_badge)
 
 	var spacer := Control.new()
 	spacer.custom_minimum_size = Vector2(0, 12)
 	vbox.add_child(spacer)
 
-	var variant := "primary"
-	if is_disabled:
-		variant = "secondary"
-	elif data.get("id", "") == "cyberprank":
-		variant = "danger"
-
-	var play_btn := UITheme.make_button(button_text, null, UITheme.FONT_BODY, variant, CYBER_UI_SKIN)
+	var variant := "secondary" if is_disabled else "primary"
+	var play_btn := UITheme.make_button(button_text, null, UITheme.FONT_BODY, variant, ACTIVE_UI_SKIN)
 	play_btn.custom_minimum_size = Vector2(220, 52)
 	play_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	play_btn.disabled = is_disabled
@@ -427,8 +388,8 @@ func _build_runner_roster() -> void:
 
 
 func _create_runner_tile(data: Dictionary) -> PanelContainer:
-	var accent_color: Color = data.get("color", UITheme.get_color("primary", CYBER_UI_SKIN))
-	var tile := UITheme.make_panel("dark", CYBER_UI_SKIN)
+	var accent_color: Color = data.get("color", UITheme.get_color("primary", ACTIVE_UI_SKIN))
+	var tile := UITheme.make_panel("dark", ACTIVE_UI_SKIN)
 	tile.custom_minimum_size = Vector2(280, 260)
 
 	var margin := MarginContainer.new()
@@ -444,13 +405,13 @@ func _create_runner_tile(data: Dictionary) -> PanelContainer:
 
 	vbox.add_child(_create_runner_preview(data, Vector2(248, 150), true))
 
-	var title := UITheme.make_label(data.get("title", ""), UITheme.FONT_SMALL, UITheme.get_color("text", CYBER_UI_SKIN), CYBER_UI_SKIN)
+	var title := UITheme.make_label(data.get("title", ""), UITheme.FONT_SMALL, UITheme.get_color("text", ACTIVE_UI_SKIN), ACTIVE_UI_SKIN)
 	vbox.add_child(title)
 
-	var subtitle := UITheme.make_label(data.get("subtitle", ""), UITheme.FONT_SMALL - 2, accent_color, CYBER_UI_SKIN)
+	var subtitle := UITheme.make_label(data.get("subtitle", ""), UITheme.FONT_SMALL - 2, accent_color, ACTIVE_UI_SKIN)
 	vbox.add_child(subtitle)
 
-	var focus_btn := UITheme.make_button("  VIEW", null, UITheme.FONT_SMALL, "secondary", CYBER_UI_SKIN)
+	var focus_btn := UITheme.make_button("  VIEW", null, UITheme.FONT_SMALL, "secondary", ACTIVE_UI_SKIN)
 	focus_btn.custom_minimum_size = Vector2(180, 46)
 	focus_btn.pressed.connect(func(): _set_selected_runner(data.get("id", "")))
 	focus_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
@@ -462,7 +423,7 @@ func _create_runner_tile(data: Dictionary) -> PanelContainer:
 
 
 func _create_runner_preview(data: Dictionary, size: Vector2, use_3d_fallback: bool = true) -> Control:
-	var accent_color: Color = data.get("color", UITheme.get_color("primary", CYBER_UI_SKIN))
+	var accent_color: Color = data.get("color", UITheme.get_color("primary", ACTIVE_UI_SKIN))
 	var frame := PanelContainer.new()
 	frame.custom_minimum_size = size
 	var frame_style := StyleBoxFlat.new()
@@ -582,15 +543,14 @@ func _refresh_featured_runner() -> void:
 
 	_runner_title.text = data.get("title", "")
 	_runner_subtitle.text = data.get("subtitle", "").to_upper()
-	var theme_label: String = _selected_theme.capitalize()
-	_runner_meta.text = "%s RUNNER\nChosen for a clear silhouette, readable motion, and a stronger %s-theme identity during gameplay." % [theme_label, _selected_theme]
+	_runner_meta.text = "%s MODE RUNNER\nChosen for clear motion, readable spacing, and a strong fit with the Nature presentation." % _selected_mode.capitalize()
 	_runner_confirm_btn.text = "  SELECT %s" % data.get("title", "")
 
 	for runner_id in _runner_tiles.keys():
 		var tile := _runner_tiles[runner_id] as PanelContainer
 		if tile == null:
 			continue
-		var accent_color: Color = tile.get_meta("accent_color", UITheme.get_color("primary", CYBER_UI_SKIN))
+		var accent_color: Color = tile.get_meta("accent_color", UITheme.get_color("primary", ACTIVE_UI_SKIN))
 		var focus_btn := tile.get_meta("focus_btn", null) as Button
 		var style := StyleBoxFlat.new()
 		style.bg_color = Color(0.03, 0.07, 0.11, 0.95)
@@ -688,47 +648,23 @@ func _on_entry_selected(entry_id: String) -> void:
 		"mode":
 			_selected_mode = entry_id
 			GameManager.current_mode = entry_id
-			if entry_id == "normal":
-				_selection_step = "theme"
-				_refresh_cards()
-				_animate_in()
-			else:
-				_start_mode_with_nature_notice(entry_id)
-		"theme":
-			_selected_theme = entry_id
-			GameManager.current_visual_theme = entry_id
+			_selected_theme = "nature"
+			GameManager.current_visual_theme = "nature"
 			_selected_runner_id = ""
-			if not ThemeRegistryScript.get_player_options(entry_id).is_empty():
+			if not ThemeRegistryScript.get_player_options(_selected_theme).is_empty():
 				_selection_step = "runner"
 				_refresh_cards()
 				_animate_in()
 				return
 			GameManager.current_player_variant = "nature_default"
-			selection_confirmed.emit(GameManager.current_mode, entry_id)
+			selection_confirmed.emit(GameManager.current_mode, _selected_theme)
 			SceneManager.change_scene("res://scenes/game.tscn")
-
-
-func _start_mode_with_nature_notice(mode_id: String) -> void:
-	GameManager.current_mode = mode_id
-	GameManager.current_visual_theme = "nature"
-	GameManager.current_player_variant = "nature_default"
-	_notice.text = "Cyberprank for %s mode is coming soon. Starting in Nature." % mode_id.capitalize()
-	_notice.visible = true
-	_notice.modulate.a = 1.0
-	AudioManager.play_notice_sound()
-	selection_confirmed.emit(GameManager.current_mode, GameManager.current_visual_theme)
-	await get_tree().create_timer(0.8).timeout
-	SceneManager.change_scene("res://scenes/game.tscn")
 
 
 func _on_back() -> void:
 	AudioManager.play_back_sound()
 	match _selection_step:
 		"runner":
-			_selection_step = "theme"
-			_refresh_cards()
-			_animate_in()
-		"theme":
 			_selection_step = "mode"
 			_refresh_cards()
 			_animate_in()
