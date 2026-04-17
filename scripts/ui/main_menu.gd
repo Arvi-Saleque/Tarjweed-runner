@@ -2,6 +2,7 @@ extends Control
 ## MainMenu - Entry flow into the active nature-first play path.
 
 const MainMenuTokens = preload("res://scripts/ui/main_menu_tokens.gd")
+const MainMenuCopy = preload("res://scripts/ui/main_menu_copy.gd")
 
 var _title_label: Control
 var _subtitle_label: Label
@@ -134,13 +135,13 @@ func _create_layout() -> void:
 	spacer_top.custom_minimum_size = Vector2(0, 52)
 	_vbox.add_child(spacer_top)
 
-	_title_label = UITheme.make_banner("Runner Realms", UITheme.FONT_TITLE, UITheme.get_color("text_ink", MainMenuTokens.MENU_SKIN), MainMenuTokens.MENU_SKIN)
+	_title_label = UITheme.make_banner(MainMenuCopy.TITLE, UITheme.FONT_TITLE, UITheme.get_color("text_ink", MainMenuTokens.MENU_SKIN), MainMenuTokens.MENU_SKIN)
 	_title_label.custom_minimum_size = Vector2(500, 108)
 	_title_label.modulate.a = 0.0
 	_vbox.add_child(_title_label)
 
 	_subtitle_label = UITheme.make_label(
-		"Choose a mode, pick a runner, and start the journey",
+		MainMenuCopy.SUBTITLE,
 		UITheme.FONT_BODY,
 		UITheme.get_color("text_dim", MainMenuTokens.MENU_SKIN),
 		MainMenuTokens.MENU_SKIN
@@ -153,21 +154,21 @@ func _create_layout() -> void:
 	spacer.custom_minimum_size = Vector2(0, 28)
 	_vbox.add_child(spacer)
 
-	_play_btn = UITheme.make_button("  Play", UITheme.icon_play, UITheme.FONT_BODY, "primary", MainMenuTokens.MENU_SKIN)
+	_play_btn = UITheme.make_button(MainMenuCopy.PLAY_LABEL, UITheme.icon_play, UITheme.FONT_BODY, "primary", MainMenuTokens.MENU_SKIN)
 	_play_btn.custom_minimum_size = Vector2(320, 72)
 	_play_btn.modulate.a = 0.0
 	_play_btn.pressed.connect(_on_play_pressed)
 	_play_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	_vbox.add_child(_play_btn)
 
-	_settings_btn = UITheme.make_button("  Settings", UITheme.icon_gear, UITheme.FONT_BODY, "secondary", MainMenuTokens.MENU_SKIN)
+	_settings_btn = UITheme.make_button(MainMenuCopy.SETTINGS_LABEL, UITheme.icon_gear, UITheme.FONT_BODY, "secondary", MainMenuTokens.MENU_SKIN)
 	_settings_btn.custom_minimum_size = Vector2(320, 72)
 	_settings_btn.modulate.a = 0.0
 	_settings_btn.pressed.connect(_on_settings_pressed)
 	_settings_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	_vbox.add_child(_settings_btn)
 
-	var quit_btn := UITheme.make_button("  Exit", UITheme.icon_cross, UITheme.FONT_BODY, "danger", MainMenuTokens.MENU_SKIN)
+	var quit_btn := UITheme.make_button(MainMenuCopy.EXIT_LABEL, UITheme.icon_cross, UITheme.FONT_BODY, "danger", MainMenuTokens.MENU_SKIN)
 	quit_btn.custom_minimum_size = Vector2(320, 72)
 	quit_btn.modulate.a = 0.0
 	quit_btn.pressed.connect(_on_quit_pressed)
@@ -189,14 +190,14 @@ func _create_layout() -> void:
 	stats_panel.add_child(stats_vbox)
 
 	var hs_val: int = SaveManager.get_high_score()
-	_high_score_label = UITheme.make_label("Best Score: %d" % hs_val, UITheme.FONT_BODY, UITheme.get_color("text_ink", MainMenuTokens.MENU_SKIN), MainMenuTokens.MENU_SKIN)
+	_high_score_label = UITheme.make_label(MainMenuCopy.BEST_SCORE_LABEL % hs_val, UITheme.FONT_BODY, UITheme.get_color("text_ink", MainMenuTokens.MENU_SKIN), MainMenuTokens.MENU_SKIN)
 	stats_vbox.add_child(_high_score_label)
 
 	var coins_val: int = SaveManager.get_total_coins()
-	_coins_label = UITheme.make_label("Coins: %d" % coins_val, UITheme.FONT_BODY, UITheme.get_color("accent", MainMenuTokens.MENU_SKIN), MainMenuTokens.MENU_SKIN)
+	_coins_label = UITheme.make_label(MainMenuCopy.COINS_LABEL % coins_val, UITheme.FONT_BODY, UITheme.get_color("accent", MainMenuTokens.MENU_SKIN), MainMenuTokens.MENU_SKIN)
 	stats_vbox.add_child(_coins_label)
 
-	var footer := UITheme.make_label("v0.5 - Nature Journey", UITheme.FONT_SMALL - 4, UITheme.get_color("text_dim", MainMenuTokens.MENU_SKIN), MainMenuTokens.MENU_SKIN)
+	var footer := UITheme.make_label(MainMenuCopy.FOOTER_LABEL, UITheme.FONT_SMALL - 4, UITheme.get_color("text_dim", MainMenuTokens.MENU_SKIN), MainMenuTokens.MENU_SKIN)
 	footer.modulate.a = 0.0
 	_vbox.add_child(footer)
 
