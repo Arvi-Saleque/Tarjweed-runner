@@ -1,12 +1,7 @@
 extends Control
 ## MainMenu - Entry flow into the active nature-first play path.
 
-const MENU_SKIN := "nature"
-const SKY_COLOR := Color(0.86, 0.92, 0.80, 1.0)
-const SUN_GLOW_COLOR := Color(0.99, 0.94, 0.78, 0.26)
-const FOLIAGE_COLOR := Color(0.37, 0.55, 0.26, 0.18)
-const HORIZON_COLOR := Color(0.24, 0.30, 0.16, 0.94)
-const PATH_GLOW_COLOR := Color(0.79, 0.68, 0.42, 0.22)
+const MainMenuTokens = preload("res://scripts/ui/main_menu_tokens.gd")
 
 var _title_label: Control
 var _subtitle_label: Label
@@ -37,7 +32,7 @@ func _create_background() -> void:
 	_bg_gradient.anchors_preset = Control.PRESET_FULL_RECT
 	_bg_gradient.anchor_right = 1.0
 	_bg_gradient.anchor_bottom = 1.0
-	_bg_gradient.color = SKY_COLOR
+	_bg_gradient.color = MainMenuTokens.SKY_COLOR
 	add_child(_bg_gradient)
 
 	var top_glow := ColorRect.new()
@@ -49,7 +44,7 @@ func _create_background() -> void:
 	top_glow.offset_top = 30.0
 	top_glow.offset_right = 340.0
 	top_glow.offset_bottom = 290.0
-	top_glow.color = SUN_GLOW_COLOR
+	top_glow.color = MainMenuTokens.SUN_GLOW_COLOR
 	top_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(top_glow)
 
@@ -59,7 +54,7 @@ func _create_background() -> void:
 	side_glow_left.anchor_right = 0.0
 	side_glow_left.anchor_bottom = 0.92
 	side_glow_left.offset_right = 220.0
-	side_glow_left.color = FOLIAGE_COLOR
+	side_glow_left.color = MainMenuTokens.FOLIAGE_COLOR
 	side_glow_left.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(side_glow_left)
 
@@ -69,7 +64,7 @@ func _create_background() -> void:
 	side_glow_right.anchor_right = 1.0
 	side_glow_right.anchor_bottom = 0.88
 	side_glow_right.offset_left = -260.0
-	side_glow_right.color = FOLIAGE_COLOR.darkened(0.12)
+	side_glow_right.color = MainMenuTokens.FOLIAGE_COLOR.darkened(0.12)
 	side_glow_right.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(side_glow_right)
 
@@ -79,7 +74,7 @@ func _create_background() -> void:
 	horizon.anchor_right = 1.0
 	horizon.anchor_bottom = 1.0
 	horizon.offset_top = -190.0
-	horizon.color = HORIZON_COLOR
+	horizon.color = MainMenuTokens.HORIZON_COLOR
 	horizon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(horizon)
 
@@ -103,7 +98,7 @@ func _create_background() -> void:
 		lane_strip.anchor_bottom = 1.0
 		lane_strip.offset_top = -150.0
 		lane_strip.offset_bottom = -120.0
-		lane_strip.color = PATH_GLOW_COLOR if i % 2 == 0 else PATH_GLOW_COLOR * Color(1, 1, 1, 0.72)
+		lane_strip.color = MainMenuTokens.PATH_GLOW_COLOR if i % 2 == 0 else MainMenuTokens.PATH_GLOW_COLOR * Color(1, 1, 1, 0.72)
 		lane_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(lane_strip)
 
@@ -126,7 +121,7 @@ func _create_layout() -> void:
 	center.anchor_bottom = 1.0
 	add_child(center)
 
-	_hero_panel = UITheme.make_panel("dark", MENU_SKIN)
+	_hero_panel = UITheme.make_panel("dark", MainMenuTokens.MENU_SKIN)
 	_hero_panel.custom_minimum_size = Vector2(520, 0)
 	center.add_child(_hero_panel)
 
@@ -139,7 +134,7 @@ func _create_layout() -> void:
 	spacer_top.custom_minimum_size = Vector2(0, 52)
 	_vbox.add_child(spacer_top)
 
-	_title_label = UITheme.make_banner("Runner Realms", UITheme.FONT_TITLE, UITheme.get_color("text_ink", MENU_SKIN), MENU_SKIN)
+	_title_label = UITheme.make_banner("Runner Realms", UITheme.FONT_TITLE, UITheme.get_color("text_ink", MainMenuTokens.MENU_SKIN), MainMenuTokens.MENU_SKIN)
 	_title_label.custom_minimum_size = Vector2(500, 108)
 	_title_label.modulate.a = 0.0
 	_vbox.add_child(_title_label)
@@ -147,8 +142,8 @@ func _create_layout() -> void:
 	_subtitle_label = UITheme.make_label(
 		"Choose a mode, pick a runner, and start the journey",
 		UITheme.FONT_BODY,
-		UITheme.get_color("text_dim", MENU_SKIN),
-		MENU_SKIN
+		UITheme.get_color("text_dim", MainMenuTokens.MENU_SKIN),
+		MainMenuTokens.MENU_SKIN
 	)
 	_subtitle_label.modulate.a = 0.0
 	_subtitle_label.custom_minimum_size = Vector2(420, 0)
@@ -158,21 +153,21 @@ func _create_layout() -> void:
 	spacer.custom_minimum_size = Vector2(0, 28)
 	_vbox.add_child(spacer)
 
-	_play_btn = UITheme.make_button("  Play", UITheme.icon_play, UITheme.FONT_BODY, "primary", MENU_SKIN)
+	_play_btn = UITheme.make_button("  Play", UITheme.icon_play, UITheme.FONT_BODY, "primary", MainMenuTokens.MENU_SKIN)
 	_play_btn.custom_minimum_size = Vector2(320, 72)
 	_play_btn.modulate.a = 0.0
 	_play_btn.pressed.connect(_on_play_pressed)
 	_play_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	_vbox.add_child(_play_btn)
 
-	_settings_btn = UITheme.make_button("  Settings", UITheme.icon_gear, UITheme.FONT_BODY, "secondary", MENU_SKIN)
+	_settings_btn = UITheme.make_button("  Settings", UITheme.icon_gear, UITheme.FONT_BODY, "secondary", MainMenuTokens.MENU_SKIN)
 	_settings_btn.custom_minimum_size = Vector2(320, 72)
 	_settings_btn.modulate.a = 0.0
 	_settings_btn.pressed.connect(_on_settings_pressed)
 	_settings_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	_vbox.add_child(_settings_btn)
 
-	var quit_btn := UITheme.make_button("  Exit", UITheme.icon_cross, UITheme.FONT_BODY, "danger", MENU_SKIN)
+	var quit_btn := UITheme.make_button("  Exit", UITheme.icon_cross, UITheme.FONT_BODY, "danger", MainMenuTokens.MENU_SKIN)
 	quit_btn.custom_minimum_size = Vector2(320, 72)
 	quit_btn.modulate.a = 0.0
 	quit_btn.pressed.connect(_on_quit_pressed)
@@ -184,7 +179,7 @@ func _create_layout() -> void:
 	spacer2.custom_minimum_size = Vector2(0, 18)
 	_vbox.add_child(spacer2)
 
-	var stats_panel := UITheme.make_panel("light", MENU_SKIN)
+	var stats_panel := UITheme.make_panel("light", MainMenuTokens.MENU_SKIN)
 	stats_panel.modulate.a = 0.0
 	stats_panel.custom_minimum_size = Vector2(320, 0)
 	_vbox.add_child(stats_panel)
@@ -194,14 +189,14 @@ func _create_layout() -> void:
 	stats_panel.add_child(stats_vbox)
 
 	var hs_val: int = SaveManager.get_high_score()
-	_high_score_label = UITheme.make_label("Best Score: %d" % hs_val, UITheme.FONT_BODY, UITheme.get_color("text_ink", MENU_SKIN), MENU_SKIN)
+	_high_score_label = UITheme.make_label("Best Score: %d" % hs_val, UITheme.FONT_BODY, UITheme.get_color("text_ink", MainMenuTokens.MENU_SKIN), MainMenuTokens.MENU_SKIN)
 	stats_vbox.add_child(_high_score_label)
 
 	var coins_val: int = SaveManager.get_total_coins()
-	_coins_label = UITheme.make_label("Coins: %d" % coins_val, UITheme.FONT_BODY, UITheme.get_color("accent", MENU_SKIN), MENU_SKIN)
+	_coins_label = UITheme.make_label("Coins: %d" % coins_val, UITheme.FONT_BODY, UITheme.get_color("accent", MainMenuTokens.MENU_SKIN), MainMenuTokens.MENU_SKIN)
 	stats_vbox.add_child(_coins_label)
 
-	var footer := UITheme.make_label("v0.5 - Nature Journey", UITheme.FONT_SMALL - 4, UITheme.get_color("text_dim", MENU_SKIN), MENU_SKIN)
+	var footer := UITheme.make_label("v0.5 - Nature Journey", UITheme.FONT_SMALL - 4, UITheme.get_color("text_dim", MainMenuTokens.MENU_SKIN), MainMenuTokens.MENU_SKIN)
 	footer.modulate.a = 0.0
 	_vbox.add_child(footer)
 
