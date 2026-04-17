@@ -139,13 +139,13 @@ func _create_layout() -> void:
 	spacer_top.custom_minimum_size = Vector2(0, 40)
 	_vbox.add_child(spacer_top)
 
-	_title_label = UITheme.make_banner("RUNNER REALMS", UITheme.FONT_BODY, UITheme.get_color("text_ink", MENU_SKIN), MENU_SKIN)
+	_title_label = UITheme.make_banner("Runner Realms", UITheme.FONT_TITLE, UITheme.get_color("text_ink", MENU_SKIN), MENU_SKIN)
 	_title_label.modulate.a = 0.0
 	_vbox.add_child(_title_label)
 
 	_subtitle_label = UITheme.make_label(
 		"Choose a mode, pick a runner, and start the journey",
-		UITheme.FONT_SMALL,
+		UITheme.FONT_BODY,
 		UITheme.get_color("text_dim", MENU_SKIN),
 		MENU_SKIN
 	)
@@ -156,20 +156,20 @@ func _create_layout() -> void:
 	spacer.custom_minimum_size = Vector2(0, 40)
 	_vbox.add_child(spacer)
 
-	_play_btn = UITheme.make_button("  PLAY", UITheme.icon_play, UITheme.FONT_HEADING, "primary", MENU_SKIN)
+	_play_btn = UITheme.make_button("  Play", UITheme.icon_play, UITheme.FONT_BODY, "primary", MENU_SKIN)
 	_play_btn.custom_minimum_size = Vector2(320, 72)
 	_play_btn.modulate.a = 0.0
 	_play_btn.pressed.connect(_on_play_pressed)
 	_play_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	_vbox.add_child(_play_btn)
 
-	_settings_btn = UITheme.make_button("  SETTINGS", UITheme.icon_gear, UITheme.FONT_BODY, "secondary", MENU_SKIN)
+	_settings_btn = UITheme.make_button("  Settings", UITheme.icon_gear, UITheme.FONT_BODY, "secondary", MENU_SKIN)
 	_settings_btn.modulate.a = 0.0
 	_settings_btn.pressed.connect(_on_settings_pressed)
 	_settings_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	_vbox.add_child(_settings_btn)
 
-	var quit_btn := UITheme.make_button("  QUIT", UITheme.icon_cross, UITheme.FONT_BODY, "danger", MENU_SKIN)
+	var quit_btn := UITheme.make_button("  Exit", UITheme.icon_cross, UITheme.FONT_BODY, "danger", MENU_SKIN)
 	quit_btn.modulate.a = 0.0
 	quit_btn.pressed.connect(_on_quit_pressed)
 	quit_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
@@ -190,11 +190,11 @@ func _create_layout() -> void:
 	stats_panel.add_child(stats_vbox)
 
 	var hs_val: int = SaveManager.get_high_score()
-	_high_score_label = UITheme.make_label("BEST: %d" % hs_val, UITheme.FONT_BODY, UITheme.get_color("text_ink", MENU_SKIN), MENU_SKIN)
+	_high_score_label = UITheme.make_label("Best Score: %d" % hs_val, UITheme.FONT_BODY, UITheme.get_color("text_ink", MENU_SKIN), MENU_SKIN)
 	stats_vbox.add_child(_high_score_label)
 
 	var coins_val: int = SaveManager.get_total_coins()
-	_coins_label = UITheme.make_label("COINS: %d" % coins_val, UITheme.FONT_SMALL, UITheme.get_color("accent", MENU_SKIN), MENU_SKIN)
+	_coins_label = UITheme.make_label("Coins: %d" % coins_val, UITheme.FONT_BODY, UITheme.get_color("accent", MENU_SKIN), MENU_SKIN)
 	stats_vbox.add_child(_coins_label)
 
 	var footer := UITheme.make_label("v0.5 - Nature Journey", UITheme.FONT_SMALL - 4, UITheme.get_color("text_dim", MENU_SKIN), MENU_SKIN)
