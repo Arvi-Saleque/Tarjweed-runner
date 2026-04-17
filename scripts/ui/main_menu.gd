@@ -165,12 +165,14 @@ func _create_layout() -> void:
 	_vbox.add_child(_play_btn)
 
 	_settings_btn = UITheme.make_button("  Settings", UITheme.icon_gear, UITheme.FONT_BODY, "secondary", MENU_SKIN)
+	_settings_btn.custom_minimum_size = Vector2(320, 72)
 	_settings_btn.modulate.a = 0.0
 	_settings_btn.pressed.connect(_on_settings_pressed)
 	_settings_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	_vbox.add_child(_settings_btn)
 
 	var quit_btn := UITheme.make_button("  Exit", UITheme.icon_cross, UITheme.FONT_BODY, "danger", MENU_SKIN)
+	quit_btn.custom_minimum_size = Vector2(320, 72)
 	quit_btn.modulate.a = 0.0
 	quit_btn.pressed.connect(_on_quit_pressed)
 	quit_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
@@ -183,7 +185,7 @@ func _create_layout() -> void:
 
 	var stats_panel := UITheme.make_panel("light", MENU_SKIN)
 	stats_panel.modulate.a = 0.0
-	stats_panel.custom_minimum_size = Vector2(360, 0)
+	stats_panel.custom_minimum_size = Vector2(320, 0)
 	_vbox.add_child(stats_panel)
 
 	var stats_vbox := VBoxContainer.new()
