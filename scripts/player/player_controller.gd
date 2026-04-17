@@ -67,12 +67,12 @@ var _last_space_time: float = -1.0
 var _nearby_giant_rock: Node = null
 
 # --- River / Bridge ---
-<<<<<<< HEAD
-const RIVER_DETECT_RANGE: float = 40.0     # Start detecting river at this distance
-const RIVER_BRIDGE_RANGE: float = 30.0     # Can build bridge within this range
-const RIVER_NO_JUMP_RANGE: float = 20.0    # No jumping within this range of a river
-const BRIDGE_HOLD_TIME: float = 0.8        # Seconds of holding spacebar to build
-const BRIDGE_PREVIEW_DEPTH: float = 3.6    # Must match the stylized bridge visual depth
+const RIVER_DETECT_RANGE: float = PlayerTuning.RIVER_DETECT_RANGE     # Start detecting river at this distance
+const RIVER_BRIDGE_RANGE: float = PlayerTuning.RIVER_BRIDGE_RANGE     # Can build bridge within this range
+const RIVER_NO_JUMP_RANGE: float = PlayerTuning.RIVER_NO_JUMP_RANGE    # No jumping within this range of a river
+const BRIDGE_HOLD_TIME: float = PlayerTuning.BRIDGE_HOLD_TIME        # Seconds of holding spacebar to build
+const NATURE_BRIDGE_HOLD_TIME: float = PlayerTuning.NATURE_BRIDGE_HOLD_TIME
+const BRIDGE_PREVIEW_DEPTH: float = PlayerTuning.BRIDGE_PREVIEW_DEPTH    # Must match the stylized bridge visual depth
 const NATURE_BRIDGE_SCENE_PATH: String = "res://assets/Obstacles/bridges/Nature/Bridge.glb"
 const NATURE_BRIDGE_MODEL_SCALE: Vector3 = Vector3(0.30, 0.058, 0.070)
 const NATURE_BRIDGE_SOURCE_CENTER: Vector3 = Vector3(72.2364, 11.0247, -3.0039)
@@ -81,14 +81,6 @@ const NATURE_BRIDGE_MODEL_OFFSET: Vector3 = Vector3(0.0, -0.62, 0.0)
 const NATURE_BRIDGE_ARC_HEIGHT: float = 0.42
 const NATURE_BRIDGE_ARC_FORWARD_SHIFT: float = 0.04
 const NATURE_BRIDGE_ARC_PITCH_DEGREES: float = 8.0
-=======
-const RIVER_DETECT_RANGE: float = PlayerTuning.RIVER_DETECT_RANGE     # Start detecting river at this distance
-const RIVER_BRIDGE_RANGE: float = PlayerTuning.RIVER_BRIDGE_RANGE     # Can build bridge within this range
-const RIVER_NO_JUMP_RANGE: float = PlayerTuning.RIVER_NO_JUMP_RANGE    # No jumping within this range of a river
-const BRIDGE_HOLD_TIME: float = PlayerTuning.BRIDGE_HOLD_TIME        # Seconds of holding spacebar to build
-const NATURE_BRIDGE_HOLD_TIME: float = PlayerTuning.NATURE_BRIDGE_HOLD_TIME
-const BRIDGE_PREVIEW_DEPTH: float = PlayerTuning.BRIDGE_PREVIEW_DEPTH    # Must match the stylized bridge visual depth
->>>>>>> b53a8bf413ecc7ce9bdfdf0daad28f4982b8aa00
 var _nearby_river: Node = null
 var _space_hold_time: float = 0.0
 var _bridge_built_for_river: Node = null    # Track which river we already built a bridge for
