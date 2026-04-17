@@ -56,6 +56,7 @@ func _ready() -> void:
 	ControlsManager.ensure_controls_ready()
 	current_player_name = SaveManager.get_player_name()
 	current_difficulty_id = SaveManager.get_selected_difficulty()
+	current_player_variant = SaveManager.get_selected_runner_id()
 
 
 func apply_menu_setup(player_name: String, difficulty_id: String, runner_id: String = "") -> void:
@@ -69,6 +70,7 @@ func apply_menu_setup(player_name: String, difficulty_id: String, runner_id: Str
 
 	if not runner_id.is_empty():
 		current_player_variant = runner_id
+		SaveManager.set_selected_runner_id(current_player_variant)
 
 
 func _process(delta: float) -> void:

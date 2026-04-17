@@ -162,6 +162,7 @@ func _select_runner(runner_id: String) -> void:
 	AudioManager.play_ui_sound(AudioManager.ui_click)
 	_selected_runner_id = runner_id
 	GameManager.current_player_variant = runner_id
+	SaveManager.set_selected_runner_id(runner_id)
 	_rebuild_roster()
 	_refresh_featured()
 	runner_changed.emit(runner_id)

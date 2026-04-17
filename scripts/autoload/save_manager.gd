@@ -76,6 +76,15 @@ func set_selected_difficulty(value: String) -> void:
 	_mark_dirty()
 
 
+func get_selected_runner_id() -> String:
+	return str(_data.get("selected_runner_id", "elf"))
+
+
+func set_selected_runner_id(value: String) -> void:
+	_data["selected_runner_id"] = value
+	_mark_dirty()
+
+
 func get_unlocked_runners() -> Array[String]:
 	var stored: Variant = _data.get("unlocked_runners", MenuFlowCatalog.DEFAULT_UNLOCKED_RUNNERS.duplicate())
 	var unlocked: Array[String] = []
@@ -174,6 +183,7 @@ func _load_from_disk() -> void:
 			"wallet_coins": 0,
 			"player_name": MenuFlowCatalog.DEFAULT_PLAYER_NAME,
 			"selected_difficulty": MenuFlowCatalog.DEFAULT_DIFFICULTY,
+			"selected_runner_id": "elf",
 			"leaderboard": [],
 			"unlocked_runners": MenuFlowCatalog.DEFAULT_UNLOCKED_RUNNERS.duplicate(),
 			"settings": {
@@ -221,6 +231,8 @@ func _ensure_defaults() -> void:
 		_data["player_name"] = MenuFlowCatalog.DEFAULT_PLAYER_NAME
 	if not _data.has("selected_difficulty"):
 		_data["selected_difficulty"] = MenuFlowCatalog.DEFAULT_DIFFICULTY
+	if not _data.has("selected_runner_id"):
+		_data["selected_runner_id"] = "elf"
 	if not _data.has("leaderboard"):
 		_data["leaderboard"] = []
 	if not _data.has("unlocked_runners"):
