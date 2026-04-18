@@ -170,17 +170,18 @@ func make_label(text: String, size: int = FONT_BODY, color: Color = COLOR_TEXT, 
 func make_button(text: String, icon: Texture2D = null, size: int = FONT_BODY, variant: String = "primary", skin_override: String = "") -> Button:
 	var btn := Button.new()
 	btn.text = text
-	btn.custom_minimum_size = Vector2(280, 74)
+	btn.custom_minimum_size = Vector2(280, 76)
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	if font_button:
 		btn.add_theme_font_override("font", font_button)
-	btn.add_theme_font_size_override("font_size", size + 4)
+	btn.add_theme_font_size_override("font_size", max(size, 24))
 	if icon:
 		btn.icon = icon
 		btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		btn.expand_icon = true
+		btn.expand_icon = false
 
 	_apply_button_variant(btn, variant, skin_override)
+	_attach_button_motion(btn)
 	return btn
 
 
@@ -210,22 +211,75 @@ func _apply_button_variant(btn: Button, variant: String, skin_override: String =
 				hover_modulate = Color(0.34, 0.98, 1.0, 1.0)
 				pressed_modulate = Color(0.10, 0.62, 0.82, 0.98)
 	else:
+		var normal := StyleBoxFlat.new()
+		var hover := StyleBoxFlat.new()
+		var pressed := StyleBoxFlat.new()
+		for style in [normal, hover, pressed]:
+			style.corner_radius_top_left = 24
+			style.corner_radius_top_right = 24
+			style.corner_radius_bottom_left = 24
+			style.corner_radius_bottom_right = 24
+			style.border_width_left = 4
+			style.border_width_top = 4
+			style.border_width_right = 4
+			style.border_width_bottom = 4
+			style.content_margin_left = 26
+			style.content_margin_right = 26
+			style.content_margin_top = 18
+			style.content_margin_bottom = 18
+			style.shadow_size = 7
+			style.shadow_offset = Vector2(0, 5)
+			style.shadow_color = Color(0.34, 0.21, 0.07, 0.16)
 		match variant:
 			"secondary":
-				source_texture = btn_secondary_texture
-				base_modulate = Color(0.99, 0.96, 0.86, 1.0)
-				hover_modulate = Color(1.0, 0.99, 0.92, 1.0)
-				pressed_modulate = Color(0.92, 0.86, 0.74, 1.0)
+				normal.bg_color = Color(0.87, 0.94, 0.80, 1.0)
+				normal.border_color = Color(0.72, 0.52, 0.30, 1.0)
+				hover.bg_color = Color(0.91, 0.97, 0.86, 1.0)
+				hover.border_color = colors["primary"]
+				pressed.bg_color = Color(0.78, 0.87, 0.70, 1.0)
+				pressed.border_color = Color(0.62, 0.46, 0.26, 1.0)
 			"danger":
-				source_texture = btn_danger_texture
-				base_modulate = Color(0.98, 0.78, 0.78, 1.0)
-				hover_modulate = Color(1.0, 0.84, 0.84, 1.0)
-				pressed_modulate = Color(0.87, 0.65, 0.65, 1.0)
+				normal.bg_color = Color(0.96, 0.84, 0.82, 1.0)
+				normal.border_color = colors["danger"]
+				hover.bg_color = Color(0.99, 0.88, 0.86, 1.0)
+				hover.border_color = colors["danger"].lightened(0.06)
+				pressed.bg_color = Color(0.88, 0.74, 0.72, 1.0)
+				pressed.border_color = colors["danger"].darkened(0.10)
 			_:
-				source_texture = btn_primary_texture
-				base_modulate = Color(0.86, 0.96, 0.78, 1.0)
-				hover_modulate = Color(0.93, 1.0, 0.86, 1.0)
-				pressed_modulate = Color(0.72, 0.87, 0.62, 1.0)
+				normal.bg_color = Color(0.98, 0.96, 0.78, 1.0)
+				normal.border_color = Color(0.72, 0.52, 0.30, 1.0)
+				hover.bg_color = Color(1.0, 0.98, 0.84, 1.0)
+				hover.border_color = colors["primary"]
+				pressed.bg_color = Color(0.93, 0.87, 0.65, 1.0)
+				pressed.border_color = Color(0.62, 0.46, 0.26, 1.0)
+		btn.add_theme_stylebox_override("normal", normal)
+		btn.add_theme_stylebox_override("hover", hover)
+		btn.add_theme_stylebox_override("pressed", pressed)
+		var disabled := normal.duplicate() as StyleBoxFlat
+		disabled.bg_color = Color(0.86, 0.84, 0.78, 1.0)
+		disabled.border_color = Color(0.68, 0.62, 0.52, 1.0)
+		disabled.shadow_size = 0
+		btn.add_theme_stylebox_override("disabled", disabled)
+		var focus := StyleBoxFlat.new()
+		focus.draw_center = false
+		focus.corner_radius_top_left = 28
+		focus.corner_radius_top_right = 28
+		focus.corner_radius_bottom_left = 28
+		focus.corner_radius_bottom_right = 28
+		focus.border_width_left = 4
+		focus.border_width_top = 4
+		focus.border_width_right = 4
+		focus.border_width_bottom = 4
+		focus.border_color = colors["primary"].lightened(0.18)
+		btn.add_theme_stylebox_override("focus", focus)
+		btn.add_theme_color_override("font_color", colors["primary_dark"])
+		btn.add_theme_color_override("font_hover_color", colors["primary_dark"])
+		btn.add_theme_color_override("font_pressed_color", colors["primary_dark"])
+		btn.add_theme_color_override("font_disabled_color", Color(0.46, 0.44, 0.36, 1.0))
+		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		btn.expand_icon = false
+		btn.add_theme_constant_override("icon_max_width", 28)
+		return
 
 	btn.add_theme_stylebox_override("normal", _make_texture_stylebox(source_texture, base_modulate, 28.0, 22.0))
 	btn.add_theme_stylebox_override("hover", _make_texture_stylebox(source_texture, hover_modulate, 28.0, 22.0))
@@ -242,6 +296,31 @@ func make_panel(variant: String = "dark", skin_override: String = "") -> PanelCo
 	var panel := PanelContainer.new()
 	var skin_id := _resolve_skin(skin_override)
 	var colors := _get_skin_colors(skin_id)
+	if skin_id != "cyberprank":
+		var style := StyleBoxFlat.new()
+		style.corner_radius_top_left = 30
+		style.corner_radius_top_right = 30
+		style.corner_radius_bottom_left = 30
+		style.corner_radius_bottom_right = 30
+		style.border_width_left = 6
+		style.border_width_top = 6
+		style.border_width_right = 6
+		style.border_width_bottom = 6
+		style.shadow_size = 16
+		style.shadow_offset = Vector2(0, 7)
+		style.shadow_color = Color(0.28, 0.18, 0.07, 0.12)
+		style.content_margin_left = 18
+		style.content_margin_right = 18
+		style.content_margin_top = 18
+		style.content_margin_bottom = 18
+		if variant == "dark":
+			style.bg_color = Color(0.56, 0.35, 0.17, 0.98)
+			style.border_color = Color(0.72, 0.52, 0.30, 1.0)
+		else:
+			style.bg_color = colors["panel_light"]
+			style.border_color = Color(0.72, 0.52, 0.30, 1.0)
+		panel.add_theme_stylebox_override("panel", style)
+		return panel
 	var tex := panel_dark_texture if variant == "dark" else panel_texture
 	if skin_id == "cyberprank":
 		tex = cyber_panel_dark_texture if variant == "dark" else cyber_panel_texture
@@ -265,6 +344,38 @@ func make_icon_button(icon: Texture2D, tooltip: String = "", variant: String = "
 	btn.custom_minimum_size = Vector2(64, 64)
 	var skin_id := _resolve_skin(skin_override)
 	var colors := _get_skin_colors(skin_id)
+	if skin_id != "cyberprank":
+		var normal := StyleBoxFlat.new()
+		var hover := StyleBoxFlat.new()
+		var pressed := StyleBoxFlat.new()
+		for style in [normal, hover, pressed]:
+			style.corner_radius_top_left = 22
+			style.corner_radius_top_right = 22
+			style.corner_radius_bottom_left = 22
+			style.corner_radius_bottom_right = 22
+			style.border_width_left = 4
+			style.border_width_top = 4
+			style.border_width_right = 4
+			style.border_width_bottom = 4
+			style.shadow_size = 6
+			style.shadow_offset = Vector2(0, 4)
+			style.shadow_color = Color(0.34, 0.21, 0.07, 0.12)
+		normal.bg_color = colors["panel_light"]
+		normal.border_color = Color(0.72, 0.52, 0.30, 1.0)
+		hover.bg_color = Color(1.0, 0.99, 0.90, 1.0)
+		hover.border_color = colors["primary"]
+		pressed.bg_color = Color(0.92, 0.87, 0.76, 1.0)
+		pressed.border_color = Color(0.62, 0.46, 0.26, 1.0)
+		btn.add_theme_stylebox_override("normal", normal)
+		btn.add_theme_stylebox_override("hover", hover)
+		btn.add_theme_stylebox_override("pressed", pressed)
+		var focus := StyleBoxEmpty.new()
+		btn.add_theme_stylebox_override("focus", focus)
+		btn.add_theme_color_override("icon_normal_color", colors["primary_dark"])
+		btn.add_theme_color_override("icon_hover_color", colors["primary_dark"])
+		btn.add_theme_color_override("icon_pressed_color", colors["primary_dark"])
+		_attach_button_motion(btn)
+		return btn
 	var tex := btn_round_dark_texture if variant == "dark" else btn_round_texture
 	if skin_id == "cyberprank":
 		tex = cyber_btn_round_dark_texture if variant == "dark" else cyber_btn_round_texture
@@ -277,7 +388,7 @@ func make_icon_button(icon: Texture2D, tooltip: String = "", variant: String = "
 	btn.add_theme_color_override("icon_normal_color", colors["text_ink"])
 	btn.add_theme_color_override("icon_hover_color", colors["text_ink"])
 	btn.add_theme_color_override("icon_pressed_color", colors["text_ink_soft"])
-
+	_attach_button_motion(btn)
 	return btn
 
 
@@ -302,10 +413,10 @@ func make_line_edit(placeholder: String = "", text: String = "", skin_override: 
 	normal.border_width_top = 3
 	normal.border_width_right = 3
 	normal.border_width_bottom = 3
-	normal.corner_radius_top_left = 18
-	normal.corner_radius_top_right = 18
-	normal.corner_radius_bottom_left = 18
-	normal.corner_radius_bottom_right = 18
+	normal.corner_radius_top_left = 22
+	normal.corner_radius_top_right = 22
+	normal.corner_radius_bottom_left = 22
+	normal.corner_radius_bottom_right = 22
 	normal.content_margin_left = 18
 	normal.content_margin_right = 18
 	normal.content_margin_top = 16
@@ -323,6 +434,87 @@ func make_line_edit(placeholder: String = "", text: String = "", skin_override: 
 
 
 func make_banner(text: String, size: int = FONT_HEADING, color: Color = COLOR_TEXT, skin_override: String = "") -> Control:
+	if _resolve_skin(skin_override) != "cyberprank":
+		var banner_root := Control.new()
+		banner_root.custom_minimum_size = Vector2(420, 112)
+		banner_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+		var wood := PanelContainer.new()
+		wood.anchors_preset = Control.PRESET_FULL_RECT
+		wood.anchor_right = 1.0
+		wood.anchor_bottom = 1.0
+		var wood_style := StyleBoxFlat.new()
+		wood_style.bg_color = Color(0.56, 0.35, 0.17, 0.98)
+		wood_style.border_color = Color(0.72, 0.52, 0.30, 1.0)
+		wood_style.border_width_left = 6
+		wood_style.border_width_top = 6
+		wood_style.border_width_right = 6
+		wood_style.border_width_bottom = 6
+		wood_style.corner_radius_top_left = 30
+		wood_style.corner_radius_top_right = 30
+		wood_style.corner_radius_bottom_left = 30
+		wood_style.corner_radius_bottom_right = 30
+		wood_style.shadow_size = 14
+		wood_style.shadow_offset = Vector2(0, 6)
+		wood_style.shadow_color = Color(0.30, 0.18, 0.08, 0.18)
+		wood.add_theme_stylebox_override("panel", wood_style)
+		banner_root.add_child(wood)
+
+		var inner := PanelContainer.new()
+		inner.anchor_left = 0.0
+		inner.anchor_top = 0.0
+		inner.anchor_right = 1.0
+		inner.anchor_bottom = 1.0
+		inner.offset_left = 18.0
+		inner.offset_top = 18.0
+		inner.offset_right = -18.0
+		inner.offset_bottom = -18.0
+		var inner_style := StyleBoxFlat.new()
+		inner_style.bg_color = Color(0.98, 0.95, 0.84, 1.0)
+		inner_style.border_color = Color(0.72, 0.52, 0.30, 0.82)
+		inner_style.border_width_left = 3
+		inner_style.border_width_top = 3
+		inner_style.border_width_right = 3
+		inner_style.border_width_bottom = 3
+		inner_style.corner_radius_top_left = 24
+		inner_style.corner_radius_top_right = 24
+		inner_style.corner_radius_bottom_left = 24
+		inner_style.corner_radius_bottom_right = 24
+		inner.add_theme_stylebox_override("panel", inner_style)
+		banner_root.add_child(inner)
+
+		if icon_star:
+			var leaf_left := TextureRect.new()
+			leaf_left.texture = icon_star
+			leaf_left.custom_minimum_size = Vector2(24, 24)
+			leaf_left.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			leaf_left.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			leaf_left.modulate = Color("6DBE57")
+			leaf_left.position = Vector2(22, 42)
+			banner_root.add_child(leaf_left)
+
+			var leaf_right := TextureRect.new()
+			leaf_right.texture = icon_star
+			leaf_right.custom_minimum_size = Vector2(24, 24)
+			leaf_right.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			leaf_right.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			leaf_right.modulate = Color("6DBE57")
+			leaf_right.position = Vector2(374, 42)
+			banner_root.add_child(leaf_right)
+
+		var label := make_label(text, size, Color("2F6B3B"), skin_override)
+		label.anchors_preset = Control.PRESET_FULL_RECT
+		label.anchor_right = 1.0
+		label.anchor_bottom = 1.0
+		label.position.y = -2.0
+		banner_root.add_child(label)
+
+		var float_tween := banner_root.create_tween()
+		float_tween.set_loops()
+		float_tween.tween_property(banner_root, "position:y", -3.0, 1.8).from(0.0)
+		float_tween.tween_property(banner_root, "position:y", 0.0, 1.8)
+		return banner_root
+
 	var banner := Control.new()
 	banner.custom_minimum_size = Vector2(320, 84)
 	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -394,6 +586,27 @@ func _make_texture_stylebox(texture: Texture2D, modulate_color: Color, horizonta
 	style.content_margin_top = vertical_margin
 	style.content_margin_bottom = vertical_margin
 	return style
+
+
+func _attach_button_motion(btn: Button) -> void:
+	btn.pivot_offset = btn.custom_minimum_size * 0.5
+	btn.mouse_entered.connect(func():
+		var tw := btn.create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tw.tween_property(btn, "scale", Vector2(1.05, 1.05), 0.12)
+	)
+	btn.mouse_exited.connect(func():
+		var tw := btn.create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tw.tween_property(btn, "scale", Vector2.ONE, 0.12)
+	)
+	btn.button_down.connect(func():
+		var tw := btn.create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tw.tween_property(btn, "scale", Vector2(0.98, 0.98), 0.06)
+	)
+	btn.button_up.connect(func():
+		var target_scale := Vector2(1.05, 1.05) if btn.get_rect().has_point(btn.get_local_mouse_position()) else Vector2.ONE
+		var tw := btn.create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tw.tween_property(btn, "scale", target_scale, 0.08)
+	)
 
 
 func _resolve_skin(skin_override: String = "") -> String:

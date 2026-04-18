@@ -37,34 +37,44 @@ func _create_ui() -> void:
 	center.anchor_bottom = 1.0
 	add_child(center)
 
-	_panel = UITheme.make_panel("light", POPUP_SKIN)
-	_panel.custom_minimum_size = Vector2(560, 0)
+	_panel = UITheme.make_panel("dark", POPUP_SKIN)
+	_panel.custom_minimum_size = Vector2(520, 0)
 	center.add_child(_panel)
 
+	var outer_margin := MarginContainer.new()
+	outer_margin.add_theme_constant_override("margin_left", 14)
+	outer_margin.add_theme_constant_override("margin_right", 14)
+	outer_margin.add_theme_constant_override("margin_top", 14)
+	outer_margin.add_theme_constant_override("margin_bottom", 14)
+	_panel.add_child(outer_margin)
+
+	var inner_panel := UITheme.make_panel("light", POPUP_SKIN)
+	outer_margin.add_child(inner_panel)
+
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 28)
-	margin.add_theme_constant_override("margin_right", 28)
-	margin.add_theme_constant_override("margin_top", 26)
-	margin.add_theme_constant_override("margin_bottom", 28)
-	_panel.add_child(margin)
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_top", 22)
+	margin.add_theme_constant_override("margin_bottom", 24)
+	inner_panel.add_child(margin)
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 18)
+	vbox.add_theme_constant_override("separation", 16)
 	margin.add_child(vbox)
 
-	var title := UITheme.make_label("WHAT SHOULD WE CALL YOU?", UITheme.FONT_HEADING, UITheme.get_color("text_ink", POPUP_SKIN), POPUP_SKIN)
+	var title := UITheme.make_label("WHAT IS YOUR NAME?", UITheme.FONT_HEADING, UITheme.get_color("text_ink", POPUP_SKIN), POPUP_SKIN)
 	title.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(title)
 
-	var subtitle := UITheme.make_label("Pick a short name so the adventure feels personal.", UITheme.FONT_BODY, UITheme.get_color("text_dim", POPUP_SKIN), POPUP_SKIN)
+	var subtitle := UITheme.make_label("Type a short name to start the adventure.", UITheme.FONT_BODY, UITheme.get_color("text_dim", POPUP_SKIN), POPUP_SKIN)
 	subtitle.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(subtitle)
 
-	_line_edit = UITheme.make_line_edit("Type your name", str(SaveManager.get_setting("player_name", "Explorer")), POPUP_SKIN)
+	_line_edit = UITheme.make_line_edit("Enter your name", str(SaveManager.get_setting("player_name", "Explorer")), POPUP_SKIN)
 	_line_edit.text_submitted.connect(func(_submitted: String): _confirm())
 	vbox.add_child(_line_edit)
 
-	var hint := UITheme.make_label("You can change it later if we add a profile screen.", UITheme.FONT_SMALL, UITheme.get_color("text_dim", POPUP_SKIN), POPUP_SKIN)
+	var hint := UITheme.make_label("You can change it later.", UITheme.FONT_SMALL, UITheme.get_color("text_dim", POPUP_SKIN), POPUP_SKIN)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(hint)
 
@@ -86,8 +96,10 @@ func _create_ui() -> void:
 
 func _animate_in() -> void:
 	modulate.a = 0.0
+	scale = Vector2(0.92, 0.92)
 	var tween := create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tween.tween_property(self, "modulate:a", 1.0, 0.2)
+	tween.parallel().tween_property(self, "scale", Vector2.ONE, 0.22)
 	call_deferred("_focus_line_edit")
 
 

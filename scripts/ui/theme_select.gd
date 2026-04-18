@@ -51,7 +51,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	for pivot in _preview_pivots:
 		if is_instance_valid(pivot):
-			pivot.rotation.y += delta * 0.65
+			pivot.rotation.y += delta * 0.52
 
 
 func _create_overlay() -> void:
@@ -59,43 +59,47 @@ func _create_overlay() -> void:
 	_overlay.anchors_preset = Control.PRESET_FULL_RECT
 	_overlay.anchor_right = 1.0
 	_overlay.anchor_bottom = 1.0
-	_overlay.color = Color(0.90, 0.96, 0.86, 0.96)
+	_overlay.color = Color(0.89, 0.95, 0.88, 0.98)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_overlay)
 
-	var top_glow := ColorRect.new()
-	top_glow.anchor_left = 0.5
-	top_glow.anchor_top = 0.0
-	top_glow.anchor_right = 0.5
-	top_glow.anchor_bottom = 0.0
-	top_glow.offset_left = -360.0
-	top_glow.offset_top = 40.0
-	top_glow.offset_right = 360.0
-	top_glow.offset_bottom = 280.0
-	top_glow.color = Color(0.96, 0.88, 0.48, 0.18)
-	top_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(top_glow)
+	var sky := ColorRect.new()
+	sky.anchor_left = 0.0
+	sky.anchor_top = 0.0
+	sky.anchor_right = 1.0
+	sky.anchor_bottom = 0.56
+	sky.color = Color(0.98, 0.97, 0.89, 0.24)
+	sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(sky)
 
-	var meadow_glow := ColorRect.new()
-	meadow_glow.anchor_left = 1.0
-	meadow_glow.anchor_top = 0.22
-	meadow_glow.anchor_right = 1.0
-	meadow_glow.anchor_bottom = 0.88
-	meadow_glow.offset_left = -260.0
-	meadow_glow.color = Color(0.42, 0.76, 0.30, 0.12)
-	meadow_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(meadow_glow)
+	for tree in [
+		{"x": 0.08, "w": 110.0, "h": 280.0, "color": Color(0.50, 0.72, 0.38, 0.18)},
+		{"x": 0.20, "w": 90.0, "h": 240.0, "color": Color(0.46, 0.66, 0.34, 0.16)},
+		{"x": 0.76, "w": 110.0, "h": 300.0, "color": Color(0.44, 0.64, 0.32, 0.18)},
+		{"x": 0.90, "w": 132.0, "h": 330.0, "color": Color(0.40, 0.58, 0.28, 0.20)},
+	]:
+		var canopy := ColorRect.new()
+		canopy.anchor_left = tree["x"]
+		canopy.anchor_top = 1.0
+		canopy.anchor_right = tree["x"]
+		canopy.anchor_bottom = 1.0
+		canopy.offset_left = -tree["w"] * 0.5
+		canopy.offset_top = -tree["h"]
+		canopy.offset_right = tree["w"] * 0.5
+		canopy.offset_bottom = -tree["h"] + 120.0
+		canopy.color = tree["color"]
+		canopy.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(canopy)
 
-	for i in 5:
-		var line := ColorRect.new()
-		line.anchor_left = 0.06
-		line.anchor_top = 0.14 + i * 0.14
-		line.anchor_right = 0.94
-		line.anchor_bottom = 0.14 + i * 0.14
-		line.offset_bottom = 2.0
-		line.color = Color(0.71, 0.52, 0.30, 0.10 if i % 2 == 0 else 0.05)
-		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(line)
+	var grass := ColorRect.new()
+	grass.anchors_preset = Control.PRESET_BOTTOM_WIDE
+	grass.anchor_top = 1.0
+	grass.anchor_right = 1.0
+	grass.anchor_bottom = 1.0
+	grass.offset_top = -124.0
+	grass.color = Color(0.67, 0.85, 0.50, 0.78)
+	grass.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(grass)
 
 
 func _create_layout() -> void:
@@ -108,20 +112,20 @@ func _create_layout() -> void:
 	_container = VBoxContainer.new()
 	_container.alignment = BoxContainer.ALIGNMENT_CENTER
 	_container.add_theme_constant_override("separation", 18)
-	_container.custom_minimum_size = Vector2(1200, 0)
+	_container.custom_minimum_size = Vector2(1180, 0)
 	center.add_child(_container)
 
-	_header = UITheme.make_banner("CHOOSE MODE", UITheme.FONT_BODY, UITheme.get_color("text_ink", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
-	_header_label = _header.get_child(1) as Label
+	_header = UITheme.make_banner("CHOOSE MODE", UITheme.FONT_HEADING, UITheme.get_color("text_ink", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
+	_header_label = _header.get_child(_header.get_child_count() - 1) as Label
 	_header.modulate.a = 0.0
 	_container.add_child(_header)
 
-	_sub = UITheme.make_label("Choose a mode, then pick one clear runner.", UITheme.FONT_SMALL, UITheme.get_color("text_dim", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
+	_sub = UITheme.make_label("Choose a mode, then pick a friendly runner.", UITheme.FONT_SMALL, UITheme.get_color("text_dim", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	_sub.modulate.a = 0.0
 	_container.add_child(_sub)
 
 	_cards_scroll = ScrollContainer.new()
-	_cards_scroll.custom_minimum_size = Vector2(1140, 650)
+	_cards_scroll.custom_minimum_size = Vector2(1120, 650)
 	_cards_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_cards_scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	_cards_scroll.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -147,7 +151,7 @@ func _create_layout() -> void:
 	_container.add_child(_notice)
 
 	_back_btn = UITheme.make_button("  BACK", UITheme.icon_cross, UITheme.FONT_BODY, "secondary", ThemeSelectConfig.ACTIVE_UI_SKIN)
-	_back_btn.custom_minimum_size = Vector2(220, 56)
+	_back_btn.custom_minimum_size = Vector2(220, 60)
 	_back_btn.modulate.a = 0.0
 	_back_btn.pressed.connect(_on_back)
 	_back_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
@@ -161,15 +165,25 @@ func _create_runner_stage() -> void:
 	_runner_stage.add_child(_runner_showcase)
 
 	var showcase_margin := MarginContainer.new()
-	showcase_margin.add_theme_constant_override("margin_left", 22)
-	showcase_margin.add_theme_constant_override("margin_right", 22)
-	showcase_margin.add_theme_constant_override("margin_top", 20)
-	showcase_margin.add_theme_constant_override("margin_bottom", 20)
+	showcase_margin.add_theme_constant_override("margin_left", 14)
+	showcase_margin.add_theme_constant_override("margin_right", 14)
+	showcase_margin.add_theme_constant_override("margin_top", 14)
+	showcase_margin.add_theme_constant_override("margin_bottom", 14)
 	_runner_showcase.add_child(showcase_margin)
 
+	var showcase_inner := UITheme.make_panel("light", ThemeSelectConfig.ACTIVE_UI_SKIN)
+	showcase_margin.add_child(showcase_inner)
+
+	var showcase_padding := MarginContainer.new()
+	showcase_padding.add_theme_constant_override("margin_left", 20)
+	showcase_padding.add_theme_constant_override("margin_right", 20)
+	showcase_padding.add_theme_constant_override("margin_top", 18)
+	showcase_padding.add_theme_constant_override("margin_bottom", 18)
+	showcase_inner.add_child(showcase_padding)
+
 	var showcase_vbox := VBoxContainer.new()
-	showcase_vbox.add_theme_constant_override("separation", 14)
-	showcase_margin.add_child(showcase_vbox)
+	showcase_vbox.add_theme_constant_override("separation", 12)
+	showcase_padding.add_child(showcase_vbox)
 
 	var feature_label := UITheme.make_label("FEATURED RUNNER", UITheme.FONT_SMALL, UITheme.get_color("primary_dark", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	feature_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -179,7 +193,7 @@ func _create_runner_stage() -> void:
 	_runner_preview_host.custom_minimum_size = Vector2(400, 330)
 	showcase_vbox.add_child(_runner_preview_host)
 
-	_runner_title = UITheme.make_label("", UITheme.FONT_HEADING, UITheme.get_color("text", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
+	_runner_title = UITheme.make_label("", UITheme.FONT_HEADING, UITheme.get_color("text_ink", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	_runner_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	showcase_vbox.add_child(_runner_title)
 
@@ -187,31 +201,41 @@ func _create_runner_stage() -> void:
 	_runner_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	showcase_vbox.add_child(_runner_subtitle)
 
-	_runner_meta = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("text_dim", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
+	_runner_meta = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("text_ink_soft", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	_runner_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_runner_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	showcase_vbox.add_child(_runner_meta)
 
 	var meta_spacer := Control.new()
-	meta_spacer.custom_minimum_size = Vector2(0, 6)
+	meta_spacer.custom_minimum_size = Vector2(0, 8)
 	showcase_vbox.add_child(meta_spacer)
 
 	_runner_confirm_btn = UITheme.make_button("  SELECT RUNNER", UITheme.icon_play, UITheme.FONT_BODY, "primary", ThemeSelectConfig.ACTIVE_UI_SKIN)
-	_runner_confirm_btn.custom_minimum_size = Vector2(300, 60)
+	_runner_confirm_btn.custom_minimum_size = Vector2(300, 72)
 	_runner_confirm_btn.pressed.connect(_confirm_selected_runner)
 	_runner_confirm_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	showcase_vbox.add_child(_runner_confirm_btn)
 
+	var roster_outer := UITheme.make_panel("dark", ThemeSelectConfig.ACTIVE_UI_SKIN)
+	roster_outer.custom_minimum_size = Vector2(660, 650)
+	roster_outer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_runner_stage.add_child(roster_outer)
+
+	var roster_outer_margin := MarginContainer.new()
+	roster_outer_margin.add_theme_constant_override("margin_left", 14)
+	roster_outer_margin.add_theme_constant_override("margin_right", 14)
+	roster_outer_margin.add_theme_constant_override("margin_top", 14)
+	roster_outer_margin.add_theme_constant_override("margin_bottom", 14)
+	roster_outer.add_child(roster_outer_margin)
+
 	var roster_panel := UITheme.make_panel("light", ThemeSelectConfig.ACTIVE_UI_SKIN)
-	roster_panel.custom_minimum_size = Vector2(660, 650)
-	roster_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_runner_stage.add_child(roster_panel)
+	roster_outer_margin.add_child(roster_panel)
 
 	var roster_margin := MarginContainer.new()
-	roster_margin.add_theme_constant_override("margin_left", 22)
-	roster_margin.add_theme_constant_override("margin_right", 22)
-	roster_margin.add_theme_constant_override("margin_top", 20)
-	roster_margin.add_theme_constant_override("margin_bottom", 20)
+	roster_margin.add_theme_constant_override("margin_left", 20)
+	roster_margin.add_theme_constant_override("margin_right", 20)
+	roster_margin.add_theme_constant_override("margin_top", 18)
+	roster_margin.add_theme_constant_override("margin_bottom", 18)
 	roster_panel.add_child(roster_margin)
 
 	var roster_vbox := VBoxContainer.new()
@@ -222,7 +246,7 @@ func _create_runner_stage() -> void:
 	roster_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	roster_vbox.add_child(roster_header)
 
-	var roster_sub := UITheme.make_label("Pick the one that looks easiest to read while running.", UITheme.FONT_SMALL - 2, UITheme.get_color("text_ink_soft", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
+	var roster_sub := UITheme.make_label("Pick the one that looks easiest to spot while running.", UITheme.FONT_SMALL - 2, UITheme.get_color("text_ink_soft", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	roster_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	roster_vbox.add_child(roster_sub)
 
@@ -251,16 +275,6 @@ func _clear_cards() -> void:
 	_cards.clear()
 
 
-func _get_entries_for_step() -> Array[Dictionary]:
-	match _selection_step:
-		"mode":
-			return ThemeSelectConfig.MODES
-		"runner":
-			return ThemeRegistryScript.get_player_options(_selected_theme)
-		_:
-			return []
-
-
 func _refresh_cards() -> void:
 	_clear_cards()
 	_cards_scroll.scroll_vertical = 0
@@ -272,7 +286,7 @@ func _refresh_cards() -> void:
 	match _selection_step:
 		"mode":
 			_header_label.text = "CHOOSE MODE"
-			_sub.text = "Choose a mode, then pick one clear runner."
+			_sub.text = "Choose a mode, then pick a friendly runner."
 			_cards_grid.columns = 3
 			for data in ThemeSelectConfig.MODES:
 				var card := _create_card(data, "  PLAY", false)
@@ -295,41 +309,65 @@ func _refresh_cards() -> void:
 
 
 func _create_card(data: Dictionary, button_text: String, is_disabled: bool) -> PanelContainer:
-	var card := UITheme.make_panel("dark", ThemeSelectConfig.ACTIVE_UI_SKIN)
-	card.custom_minimum_size = Vector2(320, 360)
+	var card := UITheme.make_panel("light", ThemeSelectConfig.ACTIVE_UI_SKIN)
+	card.custom_minimum_size = Vector2(320, 376)
 	card.modulate.a = 0.0
 
 	var accent_color: Color = data.get("color", UITheme.get_color("primary", ThemeSelectConfig.ACTIVE_UI_SKIN))
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 16)
+	vbox.add_theme_constant_override("separation", 14)
 	card.add_child(vbox)
 
-	var icon_panel := UITheme.make_panel("light", ThemeSelectConfig.ACTIVE_UI_SKIN)
-	icon_panel.custom_minimum_size = Vector2(124, 124)
+	var icon_panel := PanelContainer.new()
+	var icon_style := StyleBoxFlat.new()
+	icon_style.bg_color = Color(0.98, 0.95, 0.86, 1.0)
+	icon_style.border_color = accent_color
+	icon_style.border_width_left = 3
+	icon_style.border_width_top = 3
+	icon_style.border_width_right = 3
+	icon_style.border_width_bottom = 3
+	icon_style.corner_radius_top_left = 30
+	icon_style.corner_radius_top_right = 30
+	icon_style.corner_radius_bottom_left = 30
+	icon_style.corner_radius_bottom_right = 30
+	icon_panel.add_theme_stylebox_override("panel", icon_style)
+	icon_panel.custom_minimum_size = Vector2(116, 116)
 	icon_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	icon_panel.modulate = accent_color.lightened(0.18)
 	vbox.add_child(icon_panel)
 
-	var icon_label := UITheme.make_label(data.get("icon_text", "?"), 32, UITheme.get_color("text", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
-	icon_label.anchors_preset = Control.PRESET_FULL_RECT
-	icon_label.anchor_right = 1.0
-	icon_label.anchor_bottom = 1.0
-	icon_panel.add_child(icon_label)
+	var icon_vbox := VBoxContainer.new()
+	icon_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	icon_vbox.anchors_preset = Control.PRESET_FULL_RECT
+	icon_vbox.anchor_right = 1.0
+	icon_vbox.anchor_bottom = 1.0
+	icon_panel.add_child(icon_vbox)
 
-	var title := UITheme.make_label(data["title"], UITheme.FONT_HEADING, UITheme.get_color("text", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
+	var texture_rect := TextureRect.new()
+	texture_rect.custom_minimum_size = Vector2(42, 42)
+	texture_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	texture_rect.texture = _get_mode_icon(data.get("id", ""))
+	texture_rect.modulate = accent_color
+	texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon_vbox.add_child(texture_rect)
+
+	var icon_label := UITheme.make_label(data.get("icon_text", "?"), UITheme.FONT_SMALL, accent_color, ThemeSelectConfig.ACTIVE_UI_SKIN)
+	icon_vbox.add_child(icon_label)
+
+	var title := UITheme.make_label(data["title"], UITheme.FONT_HEADING, UITheme.get_color("text_ink", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	vbox.add_child(title)
 
 	var subtitle := UITheme.make_label(data["subtitle"], UITheme.FONT_SMALL, UITheme.get_color("text_ink_soft", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	vbox.add_child(subtitle)
 
 	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 12)
+	spacer.custom_minimum_size = Vector2(0, 10)
 	vbox.add_child(spacer)
 
 	var variant := "secondary" if is_disabled else "primary"
 	var play_btn := UITheme.make_button(button_text, null, UITheme.FONT_BODY, variant, ThemeSelectConfig.ACTIVE_UI_SKIN)
-	play_btn.custom_minimum_size = Vector2(220, 52)
+	play_btn.custom_minimum_size = Vector2(220, 56)
 	play_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	play_btn.disabled = is_disabled
 	if not is_disabled:
@@ -360,7 +398,7 @@ func _build_runner_roster() -> void:
 
 func _create_runner_tile(data: Dictionary) -> PanelContainer:
 	var accent_color: Color = data.get("color", UITheme.get_color("primary", ThemeSelectConfig.ACTIVE_UI_SKIN))
-	var tile := UITheme.make_panel("dark", ThemeSelectConfig.ACTIVE_UI_SKIN)
+	var tile := UITheme.make_panel("light", ThemeSelectConfig.ACTIVE_UI_SKIN)
 	tile.custom_minimum_size = Vector2(280, 260)
 
 	var margin := MarginContainer.new()
@@ -376,7 +414,7 @@ func _create_runner_tile(data: Dictionary) -> PanelContainer:
 
 	vbox.add_child(_create_runner_preview(data, Vector2(248, 150), true))
 
-	var title := UITheme.make_label(data.get("title", ""), UITheme.FONT_SMALL, UITheme.get_color("text", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
+	var title := UITheme.make_label(data.get("title", ""), UITheme.FONT_SMALL, UITheme.get_color("text_ink", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	vbox.add_child(title)
 
 	var subtitle := UITheme.make_label(data.get("subtitle", ""), UITheme.FONT_SMALL - 2, accent_color, ThemeSelectConfig.ACTIVE_UI_SKIN)
@@ -398,16 +436,16 @@ func _create_runner_preview(data: Dictionary, size: Vector2, use_3d_fallback: bo
 	var frame := PanelContainer.new()
 	frame.custom_minimum_size = size
 	var frame_style := StyleBoxFlat.new()
-	frame_style.bg_color = Color(0.97, 0.94, 0.86, 0.98)
-	frame_style.border_width_left = 2
-	frame_style.border_width_top = 2
-	frame_style.border_width_right = 2
-	frame_style.border_width_bottom = 2
-	frame_style.border_color = accent_color.lerp(UITheme.get_color("accent", ThemeSelectConfig.ACTIVE_UI_SKIN), 0.35).lightened(0.10)
-	frame_style.corner_radius_top_left = 18
-	frame_style.corner_radius_top_right = 18
-	frame_style.corner_radius_bottom_left = 18
-	frame_style.corner_radius_bottom_right = 18
+	frame_style.bg_color = Color(0.98, 0.95, 0.88, 0.98)
+	frame_style.border_width_left = 3
+	frame_style.border_width_top = 3
+	frame_style.border_width_right = 3
+	frame_style.border_width_bottom = 3
+	frame_style.border_color = accent_color
+	frame_style.corner_radius_top_left = 24
+	frame_style.corner_radius_top_right = 24
+	frame_style.corner_radius_bottom_left = 24
+	frame_style.corner_radius_bottom_right = 24
 	frame.add_theme_stylebox_override("panel", frame_style)
 
 	var preview_image_path: String = data.get("preview_image_path", "")
@@ -446,8 +484,8 @@ func _create_runner_preview(data: Dictionary, size: Vector2, use_3d_fallback: bo
 	environment.background_mode = Environment.BG_CLEAR_COLOR
 	environment.background_color = Color(0.0, 0.0, 0.0, 0.0)
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color(0.94, 0.92, 0.82, 1.0)
-	environment.ambient_light_energy = 1.35
+	environment.ambient_light_color = Color(0.98, 0.96, 0.88, 1.0)
+	environment.ambient_light_energy = 1.25
 	env.environment = environment
 	root.add_child(env)
 
@@ -457,15 +495,15 @@ func _create_runner_preview(data: Dictionary, size: Vector2, use_3d_fallback: bo
 	root.add_child(camera)
 
 	var key_light := DirectionalLight3D.new()
-	key_light.light_color = Color(0.98, 0.92, 0.78)
+	key_light.light_color = Color(0.98, 0.93, 0.79)
 	key_light.light_energy = 2.0
 	key_light.rotation_degrees = Vector3(-42.0, 18.0, 0.0)
 	root.add_child(key_light)
 
 	var rim_light := OmniLight3D.new()
 	rim_light.position = Vector3(-1.6, 1.6, 1.8)
-	rim_light.light_color = accent_color.lerp(Color(1.0, 0.9, 0.72), 0.35)
-	rim_light.light_energy = 1.2
+	rim_light.light_color = accent_color.lerp(Color(1.0, 0.92, 0.72), 0.25)
+	rim_light.light_energy = 1.1
 	rim_light.omni_range = 7.0
 	root.add_child(rim_light)
 
@@ -475,7 +513,7 @@ func _create_runner_preview(data: Dictionary, size: Vector2, use_3d_fallback: bo
 	floor_mesh.bottom_radius = 1.45
 	floor_mesh.height = 0.08
 	var floor_mat := StandardMaterial3D.new()
-	floor_mat.albedo_color = Color(0.96, 0.90, 0.74, 0.98)
+	floor_mat.albedo_color = Color(0.97, 0.93, 0.80, 0.98)
 	floor_mat.roughness = 0.92
 	floor_mesh.material = floor_mat
 	floor.mesh = floor_mesh
@@ -483,7 +521,7 @@ func _create_runner_preview(data: Dictionary, size: Vector2, use_3d_fallback: bo
 	root.add_child(floor)
 
 	var preview_pivot := Node3D.new()
-	preview_pivot.rotation_degrees.y = -24.0
+	preview_pivot.rotation_degrees.y = -22.0
 	root.add_child(preview_pivot)
 	_preview_pivots.append(preview_pivot)
 
@@ -519,29 +557,30 @@ func _refresh_featured_runner() -> void:
 		var tile := _runner_tiles[runner_id] as PanelContainer
 		if tile == null:
 			continue
-		var accent_color: Color = tile.get_meta("accent_color", UITheme.get_color("primary", ThemeSelectConfig.ACTIVE_UI_SKIN))
 		var focus_btn := tile.get_meta("focus_btn", null) as Button
 		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.97, 0.94, 0.86, 0.98)
-		style.corner_radius_top_left = 18
-		style.corner_radius_top_right = 18
-		style.corner_radius_bottom_left = 18
-		style.corner_radius_bottom_right = 18
-		style.border_width_left = 2
-		style.border_width_top = 2
-		style.border_width_right = 2
-		style.border_width_bottom = 2
+		style.bg_color = Color(0.98, 0.95, 0.88, 0.98)
+		style.corner_radius_top_left = 24
+		style.corner_radius_top_right = 24
+		style.corner_radius_bottom_left = 24
+		style.corner_radius_bottom_right = 24
+		style.border_width_left = 3
+		style.border_width_top = 3
+		style.border_width_right = 3
+		style.border_width_bottom = 3
 		if runner_id == _selected_runner_id:
 			style.border_color = UITheme.get_color("primary", ThemeSelectConfig.ACTIVE_UI_SKIN)
 			style.shadow_color = UITheme.get_color("primary", ThemeSelectConfig.ACTIVE_UI_SKIN).darkened(0.18)
 			style.shadow_size = 14
+			tile.scale = Vector2(1.02, 1.02)
 			if focus_btn:
 				focus_btn.text = "  READY"
 				focus_btn.disabled = true
 		else:
 			style.border_color = Color(0.72, 0.52, 0.30, 0.82)
-			style.shadow_color = Color(0.36, 0.28, 0.14, 0.10)
+			style.shadow_color = Color(0.36, 0.28, 0.14, 0.08)
 			style.shadow_size = 0
+			tile.scale = Vector2.ONE
 			if focus_btn:
 				focus_btn.text = "  VIEW"
 				focus_btn.disabled = false
@@ -640,3 +679,13 @@ func _on_back() -> void:
 		_:
 			back_pressed.emit()
 			queue_free()
+
+
+func _get_mode_icon(mode_id: String) -> Texture2D:
+	match mode_id:
+		"quiz":
+			return UITheme.icon_star if UITheme.icon_star else UITheme.icon_coin
+		"pronunciation":
+			return UITheme.icon_audio_on if UITheme.icon_audio_on else UITheme.icon_gear
+		_:
+			return UITheme.icon_play

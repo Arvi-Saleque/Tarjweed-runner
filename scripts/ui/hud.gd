@@ -61,19 +61,10 @@ func _create_top_bar() -> void:
 		top_wash.anchors_preset = Control.PRESET_TOP_WIDE
 		top_wash.anchor_right = 1.0
 		top_wash.offset_top = 0.0
-		top_wash.offset_bottom = 108.0
-		top_wash.color = Color(0.21, 0.16, 0.09, 0.26)
+		top_wash.offset_bottom = 112.0
+		top_wash.color = Color(0.98, 0.96, 0.88, 0.24)
 		top_wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_root.add_child(top_wash)
-
-		var top_trim := ColorRect.new()
-		top_trim.anchors_preset = Control.PRESET_TOP_WIDE
-		top_trim.anchor_right = 1.0
-		top_trim.offset_top = 98.0
-		top_trim.offset_bottom = 104.0
-		top_trim.color = Color(0.78, 0.66, 0.36, 0.58)
-		top_trim.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_root.add_child(top_trim)
 
 	var top_margin := MarginContainer.new()
 	top_margin.anchors_preset = Control.PRESET_TOP_WIDE
@@ -92,9 +83,19 @@ func _create_top_bar() -> void:
 	top_margin.add_child(hbox)
 
 	# --- Left: Coins ---
+	var coin_outer := UITheme.make_panel("dark", _skin)
+	coin_outer.custom_minimum_size = Vector2(200, 84)
+	hbox.add_child(coin_outer)
+
+	var coin_outer_margin := MarginContainer.new()
+	coin_outer_margin.add_theme_constant_override("margin_left", 10)
+	coin_outer_margin.add_theme_constant_override("margin_right", 10)
+	coin_outer_margin.add_theme_constant_override("margin_top", 10)
+	coin_outer_margin.add_theme_constant_override("margin_bottom", 10)
+	coin_outer.add_child(coin_outer_margin)
+
 	var coin_panel := UITheme.make_panel("light", _skin)
-	coin_panel.custom_minimum_size = Vector2(188, 74)
-	hbox.add_child(coin_panel)
+	coin_outer_margin.add_child(coin_panel)
 
 	var coin_hbox := HBoxContainer.new()
 	coin_hbox.add_theme_constant_override("separation", 8)
@@ -123,15 +124,25 @@ func _create_top_bar() -> void:
 	hbox.add_child(center_spacer)
 
 	var score_panel := UITheme.make_panel("dark", _skin)
-	score_panel.custom_minimum_size = Vector2(232, 92)
+	score_panel.custom_minimum_size = Vector2(260, 104)
 	hbox.add_child(score_panel)
+
+	var score_margin := MarginContainer.new()
+	score_margin.add_theme_constant_override("margin_left", 10)
+	score_margin.add_theme_constant_override("margin_right", 10)
+	score_margin.add_theme_constant_override("margin_top", 10)
+	score_margin.add_theme_constant_override("margin_bottom", 10)
+	score_panel.add_child(score_margin)
+
+	var score_inner := UITheme.make_panel("light", _skin)
+	score_margin.add_child(score_inner)
 
 	var score_vbox := VBoxContainer.new()
 	score_vbox.add_theme_constant_override("separation", 0)
 	score_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	score_panel.add_child(score_vbox)
+	score_inner.add_child(score_vbox)
 
-	_score_label = UITheme.make_label("0", UITheme.FONT_HEADING, UITheme.get_color("text", _skin), _skin)
+	_score_label = UITheme.make_label("0", UITheme.FONT_TITLE - 4, UITheme.get_color("text_ink", _skin), _skin)
 	score_vbox.add_child(_score_label)
 
 	_distance_label = UITheme.make_label("0m", UITheme.FONT_SMALL, UITheme.get_color("text_dim", _skin), _skin)
@@ -144,6 +155,7 @@ func _create_top_bar() -> void:
 	hbox.add_child(right_spacer)
 
 	_pause_btn = UITheme.make_icon_button(UITheme.icon_pause, "Pause", "light", _skin)
+	_pause_btn.custom_minimum_size = Vector2(68, 68)
 	_pause_btn.pressed.connect(_on_pause_pressed)
 	hbox.add_child(_pause_btn)
 
