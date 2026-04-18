@@ -68,26 +68,31 @@ func _build_layout() -> void:
 
 	var play_btn := UITheme.make_button("  Play", UITheme.icon_play, UITheme.FONT_BODY, "primary", NatureMenuStyle.SKIN)
 	play_btn.custom_minimum_size = Vector2(320, 68)
+	UITheme.align_text_button_left(play_btn)
 	play_btn.pressed.connect(_open_play_setup)
 	actions_body.add_child(play_btn)
 
 	var choose_runner_btn := UITheme.make_button("  Choose Runner", UITheme.icon_trophy, UITheme.FONT_BODY, "secondary", NatureMenuStyle.SKIN)
 	choose_runner_btn.custom_minimum_size = Vector2(320, 68)
+	UITheme.align_text_button_left(choose_runner_btn)
 	choose_runner_btn.pressed.connect(_open_choose_runner)
 	actions_body.add_child(choose_runner_btn)
 
 	var leaderboard_btn := UITheme.make_button("  Leaderboard", UITheme.icon_coin, UITheme.FONT_BODY, "secondary", NatureMenuStyle.SKIN)
 	leaderboard_btn.custom_minimum_size = Vector2(320, 68)
+	UITheme.align_text_button_left(leaderboard_btn)
 	leaderboard_btn.pressed.connect(_open_leaderboard)
 	actions_body.add_child(leaderboard_btn)
 
 	var settings_btn := UITheme.make_button("  Settings", UITheme.icon_gear, UITheme.FONT_BODY, "secondary", NatureMenuStyle.SKIN)
 	settings_btn.custom_minimum_size = Vector2(320, 68)
+	UITheme.align_text_button_left(settings_btn)
 	settings_btn.pressed.connect(_open_settings)
 	actions_body.add_child(settings_btn)
 
 	var exit_btn := UITheme.make_button("  Exit", UITheme.icon_cross, UITheme.FONT_BODY, "danger", NatureMenuStyle.SKIN)
 	exit_btn.custom_minimum_size = Vector2(320, 68)
+	UITheme.align_text_button_left(exit_btn)
 	exit_btn.pressed.connect(func():
 		AudioManager.play_ui_sound(AudioManager.ui_click)
 		get_tree().quit()
@@ -99,15 +104,16 @@ func _build_layout() -> void:
 	_overlay_host.anchors_preset = Control.PRESET_FULL_RECT
 	_overlay_host.anchor_right = 1.0
 	_overlay_host.anchor_bottom = 1.0
+	_overlay_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_overlay_host)
 
 
 func _refresh_summary() -> void:
-	var runner_id := GameManager.current_player_variant
+	var runner_id: String = str(GameManager.current_player_variant)
 	if runner_id.is_empty() or runner_id == "nature_default":
 		runner_id = "elf"
-	var runner := ThemeRegistryScript.get_player_profile("nature", runner_id)
-	var preview_path := runner.get("preview_image_path", "")
+	var runner: Dictionary = ThemeRegistryScript.get_player_profile("nature", runner_id)
+	var preview_path: String = str(runner.get("preview_image_path", ""))
 	_summary_preview.texture = load(preview_path) as Texture2D if ResourceLoader.exists(preview_path) else null
 	_summary_runner.text = "%s ready" % runner.get("title", "Runner")
 	_summary_details.text = "Player: %s\nDifficulty: %s\nSubtitle: %s" % [

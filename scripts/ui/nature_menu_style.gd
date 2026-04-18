@@ -10,10 +10,10 @@ const BACKDROP_SUN := Color(0.98, 0.94, 0.78, 0.24)
 const BACKDROP_FOLIAGE := Color(0.28, 0.43, 0.20, 0.18)
 const BACKDROP_MIST := Color(0.96, 0.93, 0.84, 0.05)
 const BACKDROP_HORIZON := Color(0.18, 0.24, 0.12, 0.92)
-const PANEL_BORDER := Color(0.58, 0.77, 0.45, 0.26)
+const PANEL_BORDER := Color("8A5A35")
 const PANEL_SHADOW := Color(0.08, 0.05, 0.02, 0.26)
-const CREAM_SURFACE := Color(0.95, 0.90, 0.80, 0.98)
-const COIN_GLOW := Color(0.93, 0.78, 0.28, 0.98)
+const CREAM_SURFACE := Color("F7F2E7")
+const COIN_GLOW := Color("533A00")
 const LOCKED_WASH := Color(0.22, 0.19, 0.14, 0.78)
 
 

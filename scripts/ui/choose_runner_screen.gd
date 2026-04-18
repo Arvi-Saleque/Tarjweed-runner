@@ -10,11 +10,13 @@ const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
 var _featured_preview: TextureRect
 var _featured_title: Label
 var _featured_subtitle: Label
-var _featured_meta: Label
 var _wallet_label: Label
+var _featured_status: Label
 var _grid: GridContainer
 var _selected_runner_id: String = ""
+var _focused_runner_id: String = ""
 var _card_map: Dictionary = {}
+var _action_button: Button
 
 
 func _ready() -> void:
@@ -22,6 +24,7 @@ func _ready() -> void:
 	_selected_runner_id = GameManager.current_player_variant
 	if _selected_runner_id.is_empty() or _selected_runner_id == "nature_default":
 		_selected_runner_id = "elf"
+	_focused_runner_id = _selected_runner_id
 	_build_layout()
 	_rebuild_roster()
 	_refresh_featured()
@@ -31,49 +34,36 @@ func _build_layout() -> void:
 	var shell := NatureMenuStyle.make_shell(
 		self,
 		"Choose Runner",
-		"Browse every nature runner. Unlocked runners can be selected now, while locked runners show their coin price.",
-		1280.0,
-		780.0
+		"Unlock with coins",
+		1240.0,
+		760.0
 	)
+	var shell_vbox := shell["shell"] as VBoxContainer
 	var content := shell["content"] as HBoxContainer
 
-	var featured := NatureMenuStyle.make_card("Current Runner", "This selection is used in the Play setup popup and the upcoming run.", Vector2(400, 640))
+	var featured := NatureMenuStyle.make_card("", "", Vector2(420, 560), true)
 	featured.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	content.add_child(featured)
 
 	var featured_body := featured.get_meta("body") as VBoxContainer
+	featured_body.add_theme_constant_override("separation", 14)
 
-	_featured_preview = NatureMenuStyle.make_preview("", Vector2(340, 280))
+	_featured_preview = NatureMenuStyle.make_preview("", Vector2(340, 300))
 	featured_body.add_child(_featured_preview)
 
 	_featured_title = UITheme.make_label("", UITheme.FONT_HEADING, UITheme.get_color("text", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
 	_featured_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	featured_body.add_child(_featured_title)
 
-	_featured_subtitle = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("accent", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
+	_featured_subtitle = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("text_dim", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
 	_featured_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	featured_body.add_child(_featured_subtitle)
 
-	_featured_meta = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("text_dim", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
-	_featured_meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_featured_meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	featured_body.add_child(_featured_meta)
+	_featured_status = UITheme.make_label("", UITheme.FONT_BODY, UITheme.get_color("primary_dark", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
+	_featured_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	featured_body.add_child(_featured_status)
 
-	var wallet_card := NatureMenuStyle.make_card("Coin Wallet", "Unlocked runners stay available after purchase.", Vector2(0, 140), true)
-	featured_body.add_child(wallet_card)
-	var wallet_body := wallet_card.get_meta("body") as VBoxContainer
-	_wallet_label = NatureMenuStyle.make_coin_label("")
-	wallet_body.add_child(_wallet_label)
-
-	var back_btn := UITheme.make_button("  Back", UITheme.icon_home, UITheme.FONT_BODY, "secondary", NatureMenuStyle.SKIN)
-	back_btn.custom_minimum_size = Vector2(240, 64)
-	back_btn.pressed.connect(func():
-		AudioManager.play_ui_sound(AudioManager.ui_click)
-		back_pressed.emit()
-	)
-	featured_body.add_child(back_btn)
-
-	var roster := NatureMenuStyle.make_card("Runner Roster", "Select an unlocked runner or buy a locked one with saved coins.", Vector2(800, 640))
+	var roster := NatureMenuStyle.make_card("", "", Vector2(760, 560), true)
 	roster.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.add_child(roster)
 
@@ -85,9 +75,38 @@ func _build_layout() -> void:
 
 	_grid = GridContainer.new()
 	_grid.columns = 2
-	_grid.add_theme_constant_override("h_separation", 18)
-	_grid.add_theme_constant_override("v_separation", 18)
+	_grid.add_theme_constant_override("h_separation", 20)
+	_grid.add_theme_constant_override("v_separation", 20)
 	scroll.add_child(_grid)
+
+	var action_bar := NatureMenuStyle.make_card("", "", Vector2(0, 110), true)
+	shell_vbox.add_child(action_bar)
+	var action_body := action_bar.get_meta("body") as VBoxContainer
+	var action_row := HBoxContainer.new()
+	action_row.add_theme_constant_override("separation", 18)
+	action_body.add_child(action_row)
+
+	var back_btn := UITheme.make_button("Back", null, UITheme.FONT_BODY, "secondary", NatureMenuStyle.SKIN)
+	back_btn.custom_minimum_size = Vector2(220, 64)
+	UITheme.align_text_button_left(back_btn, false)
+	back_btn.pressed.connect(func():
+		AudioManager.play_ui_sound(AudioManager.ui_click)
+		back_pressed.emit()
+	)
+	action_row.add_child(back_btn)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	action_row.add_child(spacer)
+
+	_wallet_label = NatureMenuStyle.make_coin_label("")
+	action_row.add_child(_wallet_label)
+
+	_action_button = UITheme.make_button("  Select", UITheme.icon_check, UITheme.FONT_BODY, "primary", NatureMenuStyle.SKIN)
+	_action_button.custom_minimum_size = Vector2(190, 64)
+	UITheme.align_text_button_left(_action_button)
+	_action_button.pressed.connect(_on_action_pressed)
+	action_row.add_child(_action_button)
 
 
 func _rebuild_roster() -> void:
@@ -96,8 +115,8 @@ func _rebuild_roster() -> void:
 	_card_map.clear()
 
 	for runner in ThemeRegistryScript.get_player_options("nature"):
-		var runner_id := runner.get("id", "")
-		var card := _build_runner_card(runner)
+		var runner_id: String = str(runner.get("id", ""))
+		var card: PanelContainer = _build_runner_card(runner)
 		_grid.add_child(card)
 		_card_map[runner_id] = card
 
@@ -105,62 +124,90 @@ func _rebuild_roster() -> void:
 
 
 func _build_runner_card(runner: Dictionary) -> PanelContainer:
-	var runner_id := runner.get("id", "")
-	var is_unlocked := SaveManager.is_runner_unlocked(runner_id)
-	var price := MenuFlowCatalog.get_runner_price(runner_id)
-	var is_selected := runner_id == _selected_runner_id
+	var runner_id: String = str(runner.get("id", ""))
+	var is_unlocked: bool = SaveManager.is_runner_unlocked(runner_id)
+	var price: int = int(MenuFlowCatalog.get_runner_price(runner_id))
+	var is_selected: bool = runner_id == _selected_runner_id
+	var is_focused: bool = runner_id == _focused_runner_id
 
-	var card := NatureMenuStyle.make_card(runner.get("title", ""), runner.get("subtitle", ""), Vector2(0, 300), true)
+	var title: String = str(runner.get("title", ""))
+	var preview_path: String = str(runner.get("preview_image_path", ""))
+	var card: PanelContainer = NatureMenuStyle.make_card("", "", Vector2(0, 240), true)
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var body := card.get_meta("body") as VBoxContainer
+	body.add_theme_constant_override("separation", 8)
 
-	var preview := NatureMenuStyle.make_preview(runner.get("preview_image_path", ""), Vector2(280, 150))
+	var preview := NatureMenuStyle.make_preview(preview_path, Vector2(280, 150))
 	body.add_child(preview)
 
-	var tag := UITheme.make_label(
-		"Selected" if is_selected else "Unlocked" if is_unlocked else "Locked",
-		UITheme.FONT_SMALL - 2,
-		UITheme.get_color("primary_dark", NatureMenuStyle.SKIN) if is_unlocked else UITheme.get_color("danger", NatureMenuStyle.SKIN),
-		NatureMenuStyle.SKIN
+	var name_label := UITheme.make_label(title, UITheme.FONT_BODY, UITheme.get_color("text_ink", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	body.add_child(name_label)
+
+	var state_text := "Selected" if is_selected else "Owned" if is_unlocked else "%d coins" % price
+	var state_color := (
+		UITheme.get_color("primary_dark", NatureMenuStyle.SKIN)
+		if is_selected or is_unlocked
+		else UITheme.get_color("danger", NatureMenuStyle.SKIN)
 	)
-	tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	body.add_child(tag)
-
-	var meta := UITheme.make_label(
-		"Runner style: %s" % runner.get("icon_text", ""),
-		UITheme.FONT_SMALL - 2,
-		UITheme.get_color("text_ink_soft", NatureMenuStyle.SKIN),
-		NatureMenuStyle.SKIN
-	)
-	meta.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	body.add_child(meta)
-
-	if not is_unlocked:
-		var price_label := NatureMenuStyle.make_coin_label("Unlock for %d coins" % price)
-		body.add_child(price_label)
-
-	var action_btn := UITheme.make_button(
-		"Selected" if is_selected else "Choose" if is_unlocked else "Buy %d" % price,
-		UITheme.icon_check if is_selected else UITheme.icon_play if is_unlocked else UITheme.icon_coin,
+	var state_label := UITheme.make_label(
+		state_text,
 		UITheme.FONT_SMALL,
-		"primary" if is_selected or is_unlocked else "secondary",
+		state_color,
 		NatureMenuStyle.SKIN
 	)
-	action_btn.custom_minimum_size = Vector2(220, 54)
-	action_btn.disabled = is_selected
-	body.add_child(action_btn)
+	state_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	body.add_child(state_label)
 
-	if is_unlocked:
-		action_btn.pressed.connect(func(): _select_runner(runner_id))
-	else:
-		action_btn.pressed.connect(func(): _buy_runner(runner_id, price))
+	if is_selected or is_focused:
+		var outline := Panel.new()
+		outline.anchors_preset = Control.PRESET_FULL_RECT
+		outline.anchor_right = 1.0
+		outline.anchor_bottom = 1.0
+		outline.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var outline_style := StyleBoxFlat.new()
+		outline_style.bg_color = Color(0, 0, 0, 0)
+		outline_style.border_color = UITheme.get_color("primary", NatureMenuStyle.SKIN) if is_focused else UITheme.get_color("panel_stroke", NatureMenuStyle.SKIN)
+		outline_style.border_width_left = 3 if is_focused else 2
+		outline_style.border_width_right = 3 if is_focused else 2
+		outline_style.border_width_top = 3 if is_focused else 2
+		outline_style.border_width_bottom = 3 if is_focused else 2
+		outline_style.corner_radius_top_left = 18
+		outline_style.corner_radius_top_right = 18
+		outline_style.corner_radius_bottom_left = 18
+		outline_style.corner_radius_bottom_right = 18
+		outline.add_theme_stylebox_override("panel", outline_style)
+		card.add_child(outline)
+
+	var click_button := Button.new()
+	click_button.anchors_preset = Control.PRESET_FULL_RECT
+	click_button.anchor_right = 1.0
+	click_button.anchor_bottom = 1.0
+	click_button.mouse_filter = Control.MOUSE_FILTER_STOP
+	click_button.focus_mode = Control.FOCUS_NONE
+	var empty_style := StyleBoxEmpty.new()
+	click_button.add_theme_stylebox_override("normal", empty_style)
+	click_button.add_theme_stylebox_override("hover", empty_style)
+	click_button.add_theme_stylebox_override("pressed", empty_style)
+	click_button.add_theme_stylebox_override("focus", empty_style)
+	click_button.add_theme_stylebox_override("disabled", empty_style)
+	click_button.pressed.connect(func(): _focus_runner(runner_id))
+	card.add_child(click_button)
 
 	return card
+
+
+func _focus_runner(runner_id: String) -> void:
+	AudioManager.play_ui_sound(AudioManager.ui_click)
+	_focused_runner_id = runner_id
+	_rebuild_roster()
+	_refresh_featured()
 
 
 func _select_runner(runner_id: String) -> void:
 	AudioManager.play_ui_sound(AudioManager.ui_click)
 	_selected_runner_id = runner_id
+	_focused_runner_id = runner_id
 	GameManager.current_player_variant = runner_id
 	SaveManager.set_selected_runner_id(runner_id)
 	_rebuild_roster()
@@ -179,9 +226,27 @@ func _buy_runner(runner_id: String, price: int) -> void:
 
 
 func _refresh_featured() -> void:
-	var selected := ThemeRegistryScript.get_player_profile("nature", _selected_runner_id)
-	_featured_preview.texture = load(selected.get("preview_image_path", "")) as Texture2D if ResourceLoader.exists(selected.get("preview_image_path", "")) else null
-	_featured_title.text = selected.get("title", "")
-	_featured_subtitle.text = selected.get("subtitle", "")
-	_featured_meta.text = "Prepared for the play setup flow. This runner preview will be shown next to the name and difficulty options before the run begins."
+	var focused: Dictionary = ThemeRegistryScript.get_player_profile("nature", _focused_runner_id)
+	var preview_path: String = str(focused.get("preview_image_path", ""))
+	var is_selected: bool = _focused_runner_id == _selected_runner_id
+	var is_unlocked: bool = SaveManager.is_runner_unlocked(_focused_runner_id)
+	var price: int = int(MenuFlowCatalog.get_runner_price(_focused_runner_id))
+	_featured_preview.texture = load(preview_path) as Texture2D if ResourceLoader.exists(preview_path) else null
+	_featured_title.text = str(focused.get("title", ""))
+	_featured_subtitle.text = str(focused.get("subtitle", ""))
+	_featured_status.text = "Selected" if is_selected else "Owned" if is_unlocked else "Locked"
 	_wallet_label.text = "Available coins: %d" % SaveManager.get_wallet_coins()
+	UITheme._apply_button_variant(_action_button, "primary" if is_unlocked else "secondary", NatureMenuStyle.SKIN)
+	_action_button.icon = UITheme.icon_check if is_selected else UITheme.icon_play if is_unlocked else UITheme.icon_coin
+	_action_button.text = "  Selected" if is_selected else "  Select" if is_unlocked else "  Buy %d" % price
+	_action_button.disabled = is_selected
+	UITheme.align_text_button_left(_action_button)
+
+
+func _on_action_pressed() -> void:
+	var is_unlocked: bool = SaveManager.is_runner_unlocked(_focused_runner_id)
+	var price: int = int(MenuFlowCatalog.get_runner_price(_focused_runner_id))
+	if is_unlocked:
+		_select_runner(_focused_runner_id)
+	else:
+		_buy_runner(_focused_runner_id, price)

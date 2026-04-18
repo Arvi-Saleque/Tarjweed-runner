@@ -64,18 +64,21 @@ func _create_overlay() -> void:
 
 	# Resume button
 	_resume_btn = UITheme.make_button("  RESUME", UITheme.icon_play, UITheme.FONT_BODY, "primary", _skin)
+	UITheme.align_text_button_left(_resume_btn)
 	_resume_btn.pressed.connect(_on_resume_pressed)
 	_resume_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	vbox.add_child(_resume_btn)
 
 	# Settings button
 	_settings_btn = UITheme.make_button("  SETTINGS", UITheme.icon_gear, UITheme.FONT_BODY, "secondary", _skin)
+	UITheme.align_text_button_left(_settings_btn)
 	_settings_btn.pressed.connect(_on_settings_pressed)
 	_settings_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	vbox.add_child(_settings_btn)
 
 	# Main menu button
 	_menu_btn = UITheme.make_button("  MAIN MENU", UITheme.icon_home, UITheme.FONT_BODY, "danger", _skin)
+	UITheme.align_text_button_left(_menu_btn)
 	_menu_btn.pressed.connect(_on_menu_pressed)
 	_menu_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	vbox.add_child(_menu_btn)

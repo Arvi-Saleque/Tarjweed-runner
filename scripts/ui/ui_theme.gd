@@ -185,6 +185,69 @@ func make_button(text: String, icon: Texture2D = null, size: int = FONT_BODY, va
 	return btn
 
 
+func align_text_button_left(btn: Button, use_icon: bool = true) -> void:
+	btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	btn.add_theme_constant_override("h_separation", 8)
+	btn.add_theme_constant_override("icon_max_width", 18)
+	if use_icon:
+		btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		btn.expand_icon = false
+	else:
+		btn.icon = null
+	_apply_button_content_layout(btn, use_icon)
+
+
+func _apply_button_content_layout(btn: Button, use_icon: bool = true) -> void:
+	var button_text := btn.text.strip_edges()
+	var button_icon := btn.icon if use_icon else null
+	btn.text = ""
+	btn.icon = null
+
+	if btn.has_node("ContentMargin"):
+		btn.get_node("ContentMargin").free()
+
+	var margin := MarginContainer.new()
+	margin.name = "ContentMargin"
+	margin.anchors_preset = Control.PRESET_FULL_RECT
+	margin.anchor_right = 1.0
+	margin.anchor_bottom = 1.0
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_theme_constant_override("margin_left", 16)
+	margin.add_theme_constant_override("margin_right", 16)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	btn.add_child(margin)
+
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.alignment = BoxContainer.ALIGNMENT_BEGIN
+	row.add_theme_constant_override("separation", 8)
+	margin.add_child(row)
+
+	if button_icon != null:
+		var icon_rect := TextureRect.new()
+		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon_rect.texture = button_icon
+		icon_rect.custom_minimum_size = Vector2(16, 16)
+		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_rect.modulate = btn.get_theme_color("font_color")
+		row.add_child(icon_rect)
+
+	var label := Label.new()
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.text = button_text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.add_theme_font_size_override("font_size", btn.get_theme_font_size("font_size"))
+	var btn_font := btn.get_theme_font("font")
+	if btn_font != null:
+		label.add_theme_font_override("font", btn_font)
+	label.add_theme_color_override("font_color", btn.get_theme_color("font_color"))
+	row.add_child(label)
+
+
 func _apply_button_variant(btn: Button, variant: String, skin_override: String = "") -> void:
 	var skin_id := _resolve_skin(skin_override)
 	var colors := _get_skin_colors(skin_id)
@@ -232,26 +295,26 @@ func _apply_button_variant(btn: Button, variant: String, skin_override: String =
 			style.shadow_color = Color(0.34, 0.21, 0.07, 0.16)
 		match variant:
 			"secondary":
-				normal.bg_color = Color(0.87, 0.94, 0.80, 1.0)
-				normal.border_color = Color(0.72, 0.52, 0.30, 1.0)
-				hover.bg_color = Color(0.91, 0.97, 0.86, 1.0)
+				normal.bg_color = Color("FFF4D8")
+				normal.border_color = Color("8A5A35")
+				hover.bg_color = Color("FFF8E6")
 				hover.border_color = colors["primary"]
-				pressed.bg_color = Color(0.78, 0.87, 0.70, 1.0)
-				pressed.border_color = Color(0.62, 0.46, 0.26, 1.0)
+				pressed.bg_color = Color("F2E5C2")
+				pressed.border_color = Color("8A5A35")
 			"danger":
-				normal.bg_color = Color(0.96, 0.84, 0.82, 1.0)
+				normal.bg_color = Color("C95A5A")
 				normal.border_color = colors["danger"]
-				hover.bg_color = Color(0.99, 0.88, 0.86, 1.0)
+				hover.bg_color = Color("D66B6B")
 				hover.border_color = colors["danger"].lightened(0.06)
-				pressed.bg_color = Color(0.88, 0.74, 0.72, 1.0)
+				pressed.bg_color = Color("B74F4F")
 				pressed.border_color = colors["danger"].darkened(0.10)
 			_:
-				normal.bg_color = Color(0.98, 0.96, 0.78, 1.0)
-				normal.border_color = Color(0.72, 0.52, 0.30, 1.0)
-				hover.bg_color = Color(1.0, 0.98, 0.84, 1.0)
-				hover.border_color = colors["primary"]
-				pressed.bg_color = Color(0.93, 0.87, 0.65, 1.0)
-				pressed.border_color = Color(0.62, 0.46, 0.26, 1.0)
+				normal.bg_color = Color("6DBE57")
+				normal.border_color = Color("2F6B3B")
+				hover.bg_color = Color("7ACC63")
+				hover.border_color = Color("2F6B3B")
+				pressed.bg_color = Color("5DA64A")
+				pressed.border_color = Color("2F6B3B")
 		btn.add_theme_stylebox_override("normal", normal)
 		btn.add_theme_stylebox_override("hover", hover)
 		btn.add_theme_stylebox_override("pressed", pressed)
@@ -272,12 +335,16 @@ func _apply_button_variant(btn: Button, variant: String, skin_override: String =
 		focus.border_width_bottom = 4
 		focus.border_color = colors["primary"].lightened(0.18)
 		btn.add_theme_stylebox_override("focus", focus)
-		btn.add_theme_color_override("font_color", colors["primary_dark"])
-		btn.add_theme_color_override("font_hover_color", colors["primary_dark"])
-		btn.add_theme_color_override("font_pressed_color", colors["primary_dark"])
+		var button_text_color := Color.WHITE if variant == "primary" or variant == "danger" else Color("234126")
+		btn.add_theme_color_override("font_color", button_text_color)
+		btn.add_theme_color_override("font_hover_color", button_text_color)
+		btn.add_theme_color_override("font_pressed_color", button_text_color)
 		btn.add_theme_color_override("font_disabled_color", Color(0.46, 0.44, 0.36, 1.0))
 		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		btn.expand_icon = false
+		btn.add_theme_color_override("icon_normal_color", button_text_color)
+		btn.add_theme_color_override("icon_hover_color", button_text_color)
+		btn.add_theme_color_override("icon_pressed_color", button_text_color)
 		btn.add_theme_constant_override("icon_max_width", 28)
 		return
 
@@ -314,11 +381,11 @@ func make_panel(variant: String = "dark", skin_override: String = "") -> PanelCo
 		style.content_margin_top = 18
 		style.content_margin_bottom = 18
 		if variant == "dark":
-			style.bg_color = Color(0.56, 0.35, 0.17, 0.98)
-			style.border_color = Color(0.72, 0.52, 0.30, 1.0)
+			style.bg_color = colors["panel_bg"]
+			style.border_color = Color("8A5A35")
 		else:
 			style.bg_color = colors["panel_light"]
-			style.border_color = Color(0.72, 0.52, 0.30, 1.0)
+			style.border_color = Color("8A5A35")
 		panel.add_theme_stylebox_override("panel", style)
 		return panel
 	var tex := panel_dark_texture if variant == "dark" else panel_texture
@@ -360,20 +427,20 @@ func make_icon_button(icon: Texture2D, tooltip: String = "", variant: String = "
 			style.shadow_size = 6
 			style.shadow_offset = Vector2(0, 4)
 			style.shadow_color = Color(0.34, 0.21, 0.07, 0.12)
-		normal.bg_color = colors["panel_light"]
-		normal.border_color = Color(0.72, 0.52, 0.30, 1.0)
-		hover.bg_color = Color(1.0, 0.99, 0.90, 1.0)
+		normal.bg_color = Color("FFF4D8")
+		normal.border_color = Color("8A5A35")
+		hover.bg_color = Color("FFF8E6")
 		hover.border_color = colors["primary"]
-		pressed.bg_color = Color(0.92, 0.87, 0.76, 1.0)
-		pressed.border_color = Color(0.62, 0.46, 0.26, 1.0)
+		pressed.bg_color = Color("F2E5C2")
+		pressed.border_color = Color("8A5A35")
 		btn.add_theme_stylebox_override("normal", normal)
 		btn.add_theme_stylebox_override("hover", hover)
 		btn.add_theme_stylebox_override("pressed", pressed)
 		var focus := StyleBoxEmpty.new()
 		btn.add_theme_stylebox_override("focus", focus)
-		btn.add_theme_color_override("icon_normal_color", colors["primary_dark"])
-		btn.add_theme_color_override("icon_hover_color", colors["primary_dark"])
-		btn.add_theme_color_override("icon_pressed_color", colors["primary_dark"])
+		btn.add_theme_color_override("icon_normal_color", Color("234126"))
+		btn.add_theme_color_override("icon_hover_color", Color("234126"))
+		btn.add_theme_color_override("icon_pressed_color", Color("234126"))
 		_attach_button_motion(btn)
 		return btn
 	var tex := btn_round_dark_texture if variant == "dark" else btn_round_texture

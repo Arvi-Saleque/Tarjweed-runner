@@ -85,11 +85,13 @@ func _create_ui() -> void:
 
 	_back_btn = UITheme.make_button("  BACK", UITheme.icon_cross, UITheme.FONT_SMALL, "secondary", POPUP_SKIN)
 	_back_btn.custom_minimum_size = Vector2(220, 66)
+	UITheme.align_text_button_left(_back_btn)
 	_back_btn.pressed.connect(_cancel)
 	buttons.add_child(_back_btn)
 
 	_continue_btn = UITheme.make_button("  CONTINUE", UITheme.icon_play, UITheme.FONT_BODY, "primary", POPUP_SKIN)
 	_continue_btn.custom_minimum_size = Vector2(260, 74)
+	UITheme.align_text_button_left(_continue_btn)
 	_continue_btn.pressed.connect(_confirm)
 	buttons.add_child(_continue_btn)
 

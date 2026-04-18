@@ -43,8 +43,9 @@ func _build_layout() -> void:
 	var wallet_label := NatureMenuStyle.make_coin_label("Saved coins: %d" % SaveManager.get_wallet_coins())
 	wallet_body.add_child(wallet_label)
 
-	var back_btn := UITheme.make_button("  Back", UITheme.icon_home, UITheme.FONT_BODY, "secondary", NatureMenuStyle.SKIN)
-	back_btn.custom_minimum_size = Vector2(220, 64)
+	var back_btn := UITheme.make_button("Back", null, UITheme.FONT_BODY, "secondary", NatureMenuStyle.SKIN)
+	back_btn.custom_minimum_size = Vector2(150, 64)
+	UITheme.align_text_button_left(back_btn, false)
 	back_btn.pressed.connect(func():
 		AudioManager.play_ui_sound(AudioManager.ui_click)
 		back_pressed.emit()

@@ -88,8 +88,8 @@ func _build_popup() -> void:
 	setup_body.add_child(difficulty_row)
 
 	for difficulty in MenuFlowCatalog.DIFFICULTIES:
-		var difficulty_id := difficulty.get("id", "")
-		var btn := NatureMenuStyle.make_value_chip(difficulty.get("title", ""), difficulty_id == _selected_difficulty)
+		var difficulty_id: String = str(difficulty.get("id", ""))
+		var btn: Button = NatureMenuStyle.make_value_chip(str(difficulty.get("title", "")), difficulty_id == _selected_difficulty)
 		btn.custom_minimum_size = Vector2(120, 56)
 		btn.pressed.connect(func(): _set_difficulty(difficulty_id))
 		difficulty_row.add_child(btn)
@@ -115,7 +115,8 @@ func _build_popup() -> void:
 	preview_body.add_child(_runner_subtitle)
 
 	var choose_runner_btn := UITheme.make_button("  Choose Runner", UITheme.icon_trophy, UITheme.FONT_SMALL, "secondary", NatureMenuStyle.SKIN)
-	choose_runner_btn.custom_minimum_size = Vector2(220, 54)
+	choose_runner_btn.custom_minimum_size = Vector2(240, 54)
+	UITheme.align_text_button_left(choose_runner_btn)
 	choose_runner_btn.pressed.connect(func():
 		AudioManager.play_ui_sound(AudioManager.ui_click)
 		choose_runner_requested.emit()
@@ -138,11 +139,13 @@ func _build_popup() -> void:
 
 	var start_btn := UITheme.make_button("  Start", UITheme.icon_play, UITheme.FONT_BODY, "primary", NatureMenuStyle.SKIN)
 	start_btn.custom_minimum_size = Vector2(240, 64)
+	UITheme.align_text_button_left(start_btn)
 	start_btn.pressed.connect(_on_start_pressed)
 	actions_body.add_child(start_btn)
 
 	var cancel_btn := UITheme.make_button("  Cancel", UITheme.icon_cross, UITheme.FONT_BODY, "secondary", NatureMenuStyle.SKIN)
 	cancel_btn.custom_minimum_size = Vector2(240, 64)
+	UITheme.align_text_button_left(cancel_btn)
 	cancel_btn.pressed.connect(func():
 		AudioManager.play_ui_sound(AudioManager.ui_click)
 		closed.emit()
@@ -159,20 +162,20 @@ func _set_difficulty(difficulty_id: String) -> void:
 
 func _refresh_difficulty_buttons() -> void:
 	for difficulty in MenuFlowCatalog.DIFFICULTIES:
-		var difficulty_id := difficulty.get("id", "")
+		var difficulty_id: String = str(difficulty.get("id", ""))
 		var btn := _difficulty_buttons.get(difficulty_id) as Button
 		if btn == null:
 			continue
-		var is_selected := difficulty_id == _selected_difficulty
+		var is_selected: bool = difficulty_id == _selected_difficulty
 		UITheme._apply_button_variant(btn, "primary" if is_selected else "secondary", NatureMenuStyle.SKIN)
 
 
 func _refresh_runner_preview() -> void:
-	var runner_id := GameManager.current_player_variant
+	var runner_id: String = str(GameManager.current_player_variant)
 	if runner_id.is_empty() or runner_id == "nature_default":
 		runner_id = "elf"
-	var runner := ThemeRegistryScript.get_player_profile("nature", runner_id)
-	var preview_path := runner.get("preview_image_path", "")
+	var runner: Dictionary = ThemeRegistryScript.get_player_profile("nature", runner_id)
+	var preview_path: String = str(runner.get("preview_image_path", ""))
 	_preview.texture = load(preview_path) as Texture2D if ResourceLoader.exists(preview_path) else null
 	_runner_title.text = runner.get("title", "")
 	_runner_subtitle.text = runner.get("subtitle", "")
