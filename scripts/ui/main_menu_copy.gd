@@ -1,7 +1,7 @@
 extends RefCounted
 
 const TITLE := "Runner Realms"
-const SUBTITLE := "Choose a mode, pick a runner, and start the journey"
+const SUBTITLE := "Pick your runner and start a cheerful forest adventure"
 const PLAY_LABEL := "  Play"
 const SETTINGS_LABEL := "  Settings"
 const EXIT_LABEL := "  Exit"

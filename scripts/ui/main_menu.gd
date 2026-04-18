@@ -14,6 +14,7 @@ var _vbox: VBoxContainer
 var _hero_panel: PanelContainer
 var _bg_gradient: ColorRect
 var _settings_popup: Control = null
+var _name_popup: Control = null
 
 
 func _ready() -> void:
@@ -87,7 +88,7 @@ func _create_background() -> void:
 		skyline_band.anchor_bottom = 1.0
 		skyline_band.offset_top = -float(188 + i * 20)
 		skyline_band.offset_bottom = -float(166 + i * 20)
-		skyline_band.color = Color(0.15 + i * 0.02, 0.22 + i * 0.02, 0.10 + i * 0.01, 0.52 - i * 0.06)
+		skyline_band.color = Color(0.40 + i * 0.03, 0.54 + i * 0.02, 0.27 + i * 0.02, 0.36 - i * 0.04)
 		skyline_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(skyline_band)
 
@@ -230,13 +231,15 @@ func _on_play_pressed() -> void:
 	AudioManager.play_ui_sound(AudioManager.ui_click)
 	_play_btn.disabled = true
 	_settings_btn.disabled = true
-
-	var ThemeSelectScript: GDScript = load("res://scripts/ui/theme_select.gd") as GDScript
-	if ThemeSelectScript:
-		var theme_screen := Control.new()
-		theme_screen.set_script(ThemeSelectScript)
-		theme_screen.back_pressed.connect(_on_theme_back)
-		add_child(theme_screen)
+	if _name_popup and is_instance_valid(_name_popup):
+		return
+	var NamePopupScript: GDScript = load("res://scripts/ui/name_entry_popup.gd") as GDScript
+	if NamePopupScript:
+		_name_popup = Control.new()
+		_name_popup.set_script(NamePopupScript)
+		_name_popup.confirmed.connect(func(_player_name: String): _open_theme_select())
+		_name_popup.cancelled.connect(_on_theme_back)
+		add_child(_name_popup)
 
 
 func _on_quit_pressed() -> void:
@@ -247,6 +250,15 @@ func _on_quit_pressed() -> void:
 func _on_theme_back() -> void:
 	_play_btn.disabled = false
 	_settings_btn.disabled = false
+
+
+func _open_theme_select() -> void:
+	var ThemeSelectScript: GDScript = load("res://scripts/ui/theme_select.gd") as GDScript
+	if ThemeSelectScript:
+		var theme_screen := Control.new()
+		theme_screen.set_script(ThemeSelectScript)
+		theme_screen.back_pressed.connect(_on_theme_back)
+		add_child(theme_screen)
 
 
 func _on_settings_pressed() -> void:

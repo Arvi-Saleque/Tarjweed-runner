@@ -59,7 +59,7 @@ func _create_overlay() -> void:
 	_overlay.anchors_preset = Control.PRESET_FULL_RECT
 	_overlay.anchor_right = 1.0
 	_overlay.anchor_bottom = 1.0
-	_overlay.color = Color(0.08, 0.06, 0.03, 0.94)
+	_overlay.color = Color(0.90, 0.96, 0.86, 0.96)
 	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_overlay)
 
@@ -72,7 +72,7 @@ func _create_overlay() -> void:
 	top_glow.offset_top = 40.0
 	top_glow.offset_right = 360.0
 	top_glow.offset_bottom = 280.0
-	top_glow.color = Color(0.88, 0.74, 0.36, 0.12)
+	top_glow.color = Color(0.96, 0.88, 0.48, 0.18)
 	top_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(top_glow)
 
@@ -82,7 +82,7 @@ func _create_overlay() -> void:
 	meadow_glow.anchor_right = 1.0
 	meadow_glow.anchor_bottom = 0.88
 	meadow_glow.offset_left = -260.0
-	meadow_glow.color = Color(0.30, 0.55, 0.22, 0.08)
+	meadow_glow.color = Color(0.42, 0.76, 0.30, 0.12)
 	meadow_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(meadow_glow)
 
@@ -93,7 +93,7 @@ func _create_overlay() -> void:
 		line.anchor_right = 0.94
 		line.anchor_bottom = 0.14 + i * 0.14
 		line.offset_bottom = 2.0
-		line.color = Color(0.88, 0.82, 0.54, 0.05 if i % 2 == 0 else 0.03)
+		line.color = Color(0.71, 0.52, 0.30, 0.10 if i % 2 == 0 else 0.05)
 		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(line)
 
@@ -116,7 +116,7 @@ func _create_layout() -> void:
 	_header.modulate.a = 0.0
 	_container.add_child(_header)
 
-	_sub = UITheme.make_label("Select a mode, then choose your runner", UITheme.FONT_SMALL, UITheme.get_color("text_dim", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
+	_sub = UITheme.make_label("Choose a mode, then pick one clear runner.", UITheme.FONT_SMALL, UITheme.get_color("text_dim", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	_sub.modulate.a = 0.0
 	_container.add_child(_sub)
 
@@ -171,7 +171,7 @@ func _create_runner_stage() -> void:
 	showcase_vbox.add_theme_constant_override("separation", 14)
 	showcase_margin.add_child(showcase_vbox)
 
-	var feature_label := UITheme.make_label("FEATURED RUNNER", UITheme.FONT_SMALL, UITheme.get_color("primary", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
+	var feature_label := UITheme.make_label("FEATURED RUNNER", UITheme.FONT_SMALL, UITheme.get_color("primary_dark", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	feature_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	showcase_vbox.add_child(feature_label)
 
@@ -222,7 +222,7 @@ func _create_runner_stage() -> void:
 	roster_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	roster_vbox.add_child(roster_header)
 
-	var roster_sub := UITheme.make_label("Choose the runner whose silhouette feels clearest for this mode.", UITheme.FONT_SMALL - 2, UITheme.get_color("text_ink_soft", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
+	var roster_sub := UITheme.make_label("Pick the one that looks easiest to read while running.", UITheme.FONT_SMALL - 2, UITheme.get_color("text_ink_soft", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	roster_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	roster_vbox.add_child(roster_sub)
 
@@ -272,7 +272,7 @@ func _refresh_cards() -> void:
 	match _selection_step:
 		"mode":
 			_header_label.text = "CHOOSE MODE"
-			_sub.text = "Select a mode, then choose your runner"
+			_sub.text = "Choose a mode, then pick one clear runner."
 			_cards_grid.columns = 3
 			for data in ThemeSelectConfig.MODES:
 				var card := _create_card(data, "  PLAY", false)
@@ -280,7 +280,7 @@ func _refresh_cards() -> void:
 				_cards.append(card)
 		"runner":
 			_header_label.text = "CHOOSE RUNNER"
-			_sub.text = "Pick a runner for %s mode in the Nature world" % _selected_mode.capitalize()
+			_sub.text = "Pick a runner for %s mode." % _selected_mode.capitalize()
 			_cards_scroll.visible = false
 			_runner_stage.visible = true
 			_runner_options = ThemeRegistryScript.get_player_options(_selected_theme)
@@ -308,7 +308,7 @@ func _create_card(data: Dictionary, button_text: String, is_disabled: bool) -> P
 	var icon_panel := UITheme.make_panel("light", ThemeSelectConfig.ACTIVE_UI_SKIN)
 	icon_panel.custom_minimum_size = Vector2(124, 124)
 	icon_panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	icon_panel.modulate = accent_color.lightened(0.34)
+	icon_panel.modulate = accent_color.lightened(0.18)
 	vbox.add_child(icon_panel)
 
 	var icon_label := UITheme.make_label(data.get("icon_text", "?"), 32, UITheme.get_color("text", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
@@ -320,7 +320,7 @@ func _create_card(data: Dictionary, button_text: String, is_disabled: bool) -> P
 	var title := UITheme.make_label(data["title"], UITheme.FONT_HEADING, UITheme.get_color("text", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	vbox.add_child(title)
 
-	var subtitle := UITheme.make_label(data["subtitle"], UITheme.FONT_SMALL, UITheme.get_color("text", ThemeSelectConfig.ACTIVE_UI_SKIN).darkened(0.18), ThemeSelectConfig.ACTIVE_UI_SKIN)
+	var subtitle := UITheme.make_label(data["subtitle"], UITheme.FONT_SMALL, UITheme.get_color("text_ink_soft", ThemeSelectConfig.ACTIVE_UI_SKIN), ThemeSelectConfig.ACTIVE_UI_SKIN)
 	vbox.add_child(subtitle)
 
 	var spacer := Control.new()
@@ -398,7 +398,7 @@ func _create_runner_preview(data: Dictionary, size: Vector2, use_3d_fallback: bo
 	var frame := PanelContainer.new()
 	frame.custom_minimum_size = size
 	var frame_style := StyleBoxFlat.new()
-	frame_style.bg_color = Color(0.22, 0.16, 0.10, 0.96)
+	frame_style.bg_color = Color(0.97, 0.94, 0.86, 0.98)
 	frame_style.border_width_left = 2
 	frame_style.border_width_top = 2
 	frame_style.border_width_right = 2
@@ -446,7 +446,7 @@ func _create_runner_preview(data: Dictionary, size: Vector2, use_3d_fallback: bo
 	environment.background_mode = Environment.BG_CLEAR_COLOR
 	environment.background_color = Color(0.0, 0.0, 0.0, 0.0)
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color(0.90, 0.86, 0.74, 1.0)
+	environment.ambient_light_color = Color(0.94, 0.92, 0.82, 1.0)
 	environment.ambient_light_energy = 1.35
 	env.environment = environment
 	root.add_child(env)
@@ -475,7 +475,7 @@ func _create_runner_preview(data: Dictionary, size: Vector2, use_3d_fallback: bo
 	floor_mesh.bottom_radius = 1.45
 	floor_mesh.height = 0.08
 	var floor_mat := StandardMaterial3D.new()
-	floor_mat.albedo_color = Color(0.48, 0.36, 0.21, 0.96)
+	floor_mat.albedo_color = Color(0.96, 0.90, 0.74, 0.98)
 	floor_mat.roughness = 0.92
 	floor_mesh.material = floor_mat
 	floor.mesh = floor_mesh
@@ -512,7 +512,7 @@ func _refresh_featured_runner() -> void:
 
 	_runner_title.text = data.get("title", "")
 	_runner_subtitle.text = data.get("subtitle", "").to_upper()
-	_runner_meta.text = "%s MODE RUNNER\nChosen for clear motion, readable spacing, and a strong fit with the Nature presentation." % _selected_mode.capitalize()
+	_runner_meta.text = "%s mode runner\nClear shape. Easy to read. Good for quick play." % _selected_mode.capitalize()
 	_runner_confirm_btn.text = "  SELECT %s" % data.get("title", "")
 
 	for runner_id in _runner_tiles.keys():
@@ -522,7 +522,7 @@ func _refresh_featured_runner() -> void:
 		var accent_color: Color = tile.get_meta("accent_color", UITheme.get_color("primary", ThemeSelectConfig.ACTIVE_UI_SKIN))
 		var focus_btn := tile.get_meta("focus_btn", null) as Button
 		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.20, 0.15, 0.10, 0.95)
+		style.bg_color = Color(0.97, 0.94, 0.86, 0.98)
 		style.corner_radius_top_left = 18
 		style.corner_radius_top_right = 18
 		style.corner_radius_bottom_left = 18
@@ -532,15 +532,15 @@ func _refresh_featured_runner() -> void:
 		style.border_width_right = 2
 		style.border_width_bottom = 2
 		if runner_id == _selected_runner_id:
-			style.border_color = accent_color.lightened(0.25)
-			style.shadow_color = accent_color.darkened(0.28)
-			style.shadow_size = 10
+			style.border_color = UITheme.get_color("primary", ThemeSelectConfig.ACTIVE_UI_SKIN)
+			style.shadow_color = UITheme.get_color("primary", ThemeSelectConfig.ACTIVE_UI_SKIN).darkened(0.18)
+			style.shadow_size = 14
 			if focus_btn:
 				focus_btn.text = "  READY"
 				focus_btn.disabled = true
 		else:
-			style.border_color = Color(0.46, 0.34, 0.21, 0.82)
-			style.shadow_color = Color(0.12, 0.08, 0.03, 0.18)
+			style.border_color = Color(0.72, 0.52, 0.30, 0.82)
+			style.shadow_color = Color(0.36, 0.28, 0.14, 0.10)
 			style.shadow_size = 0
 			if focus_btn:
 				focus_btn.text = "  VIEW"
