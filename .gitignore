@@ -39,5 +39,21 @@ cyberprantk/
 nature-assets/
 road-asset/
 rock-assets/
+ui-assets/
 new_plan.md
 tmp_nature_*.png
+
+# Keep only the runtime font subset used by the game UI
+fonts/*
+!fonts/Atkinson_Hyperlegible/
+fonts/Atkinson_Hyperlegible/*
+!fonts/Atkinson_Hyperlegible/AtkinsonHyperlegible-Regular.ttf
+!fonts/Atkinson_Hyperlegible/AtkinsonHyperlegible-Bold.ttf
+!fonts/Atkinson_Hyperlegible/OFL.txt
+!fonts/Fredoka/
+fonts/Fredoka/*
+!fonts/Fredoka/static/
+!fonts/Fredoka/OFL.txt
+fonts/Fredoka/static/*
+!fonts/Fredoka/static/Fredoka-Bold.ttf
+!fonts/Fredoka/static/Fredoka-SemiBold.ttf
