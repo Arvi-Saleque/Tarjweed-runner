@@ -11,6 +11,7 @@ const UIThemeTokens = preload("res://scripts/ui/ui_theme_tokens.gd")
 var font_primary: Font
 var font_narrow: Font
 var font_display: Font
+var font_button: Font
 
 # --- Colors ---
 const COLOR_PRIMARY := UIThemeTokens.COLOR_PRIMARY         # Warm brown
@@ -79,9 +80,14 @@ func _ready() -> void:
 
 
 func _load_fonts() -> void:
-	font_primary = ThemeDB.fallback_font if ThemeDB.fallback_font != null else _try_load_font(UIThemeAssets.FONT_PRIMARY)
+	font_primary = _try_load_font(UIThemeAssets.FONT_PRIMARY)
 	font_narrow = _try_load_font(UIThemeAssets.FONT_NARROW)
 	font_display = _try_load_font(UIThemeAssets.FONT_DISPLAY)
+	font_button = _try_load_font(UIThemeAssets.FONT_BUTTON)
+	if font_primary == null and ThemeDB.fallback_font != null:
+		font_primary = ThemeDB.fallback_font
+	if font_button == null:
+		font_button = font_display if font_display != null else font_primary
 
 
 func _load_textures() -> void:
@@ -152,7 +158,9 @@ func make_label(text: String, size: int = FONT_BODY, color: Color = COLOR_TEXT, 
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	if font_primary:
+	if size >= FONT_HEADING and font_display:
+		label.add_theme_font_override("font", font_display)
+	elif font_primary:
 		label.add_theme_font_override("font", font_primary)
 	label.add_theme_font_size_override("font_size", size)
 	label.add_theme_color_override("font_color", color)
@@ -162,11 +170,11 @@ func make_label(text: String, size: int = FONT_BODY, color: Color = COLOR_TEXT, 
 func make_button(text: String, icon: Texture2D = null, size: int = FONT_BODY, variant: String = "primary", skin_override: String = "") -> Button:
 	var btn := Button.new()
 	btn.text = text
-	btn.custom_minimum_size = Vector2(280, 72)
+	btn.custom_minimum_size = Vector2(280, 74)
 	btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	if font_primary:
-		btn.add_theme_font_override("font", font_primary)
-	btn.add_theme_font_size_override("font_size", size)
+	if font_button:
+		btn.add_theme_font_override("font", font_button)
+	btn.add_theme_font_size_override("font_size", size + 4)
 	if icon:
 		btn.icon = icon
 		btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -205,20 +213,23 @@ func _apply_button_variant(btn: Button, variant: String, skin_override: String =
 		match variant:
 			"secondary":
 				source_texture = btn_secondary_texture
-				base_modulate = Color(0.94, 0.94, 0.94, 1)
-				hover_modulate = Color(1.02, 1.02, 1.02, 1)
-				pressed_modulate = Color(0.88, 0.88, 0.88, 1)
+				base_modulate = Color(0.99, 0.96, 0.86, 1.0)
+				hover_modulate = Color(1.0, 0.99, 0.92, 1.0)
+				pressed_modulate = Color(0.92, 0.86, 0.74, 1.0)
 			"danger":
 				source_texture = btn_danger_texture
-				base_modulate = Color(1, 0.96, 0.96, 1)
-				hover_modulate = Color(1.06, 1.0, 1.0, 1)
-				pressed_modulate = Color(0.92, 0.88, 0.88, 1)
+				base_modulate = Color(0.98, 0.78, 0.78, 1.0)
+				hover_modulate = Color(1.0, 0.84, 0.84, 1.0)
+				pressed_modulate = Color(0.87, 0.65, 0.65, 1.0)
 			_:
 				source_texture = btn_primary_texture
+				base_modulate = Color(0.86, 0.96, 0.78, 1.0)
+				hover_modulate = Color(0.93, 1.0, 0.86, 1.0)
+				pressed_modulate = Color(0.72, 0.87, 0.62, 1.0)
 
-	btn.add_theme_stylebox_override("normal", _make_texture_stylebox(source_texture, base_modulate, 24.0, 20.0))
-	btn.add_theme_stylebox_override("hover", _make_texture_stylebox(source_texture, hover_modulate, 24.0, 20.0))
-	btn.add_theme_stylebox_override("pressed", _make_texture_stylebox(source_texture, pressed_modulate, 24.0, 20.0))
+	btn.add_theme_stylebox_override("normal", _make_texture_stylebox(source_texture, base_modulate, 28.0, 22.0))
+	btn.add_theme_stylebox_override("hover", _make_texture_stylebox(source_texture, hover_modulate, 28.0, 22.0))
+	btn.add_theme_stylebox_override("pressed", _make_texture_stylebox(source_texture, pressed_modulate, 28.0, 22.0))
 
 	var focus := StyleBoxEmpty.new()
 	btn.add_theme_stylebox_override("focus", focus)
@@ -236,6 +247,12 @@ func make_panel(variant: String = "dark", skin_override: String = "") -> PanelCo
 		tex = cyber_panel_dark_texture if variant == "dark" else cyber_panel_texture
 	var tint: Color = colors["panel_bg"] if variant == "dark" else colors["panel_light"]
 	var style := _make_texture_stylebox(tex, tint, 28.0, 26.0)
+	if skin_id != "cyberprank" and style is StyleBoxTexture:
+		var boxed := style as StyleBoxTexture
+		boxed.expand_margin_left = 2.0
+		boxed.expand_margin_right = 2.0
+		boxed.expand_margin_top = 2.0
+		boxed.expand_margin_bottom = 2.0
 	panel.add_theme_stylebox_override("panel", style)
 	return panel
 
@@ -262,6 +279,47 @@ func make_icon_button(icon: Texture2D, tooltip: String = "", variant: String = "
 	btn.add_theme_color_override("icon_pressed_color", colors["text_ink_soft"])
 
 	return btn
+
+
+func make_line_edit(placeholder: String = "", text: String = "", skin_override: String = "") -> LineEdit:
+	var line := LineEdit.new()
+	line.placeholder_text = placeholder
+	line.text = text
+	line.custom_minimum_size = Vector2(320, 66)
+	line.max_length = 20
+	var skin_id := _resolve_skin(skin_override)
+	var colors := _get_skin_colors(skin_id)
+	if font_primary:
+		line.add_theme_font_override("font", font_primary)
+	line.add_theme_font_size_override("font_size", FONT_BODY)
+	line.add_theme_color_override("font_color", colors["text_ink"])
+	line.add_theme_color_override("font_placeholder_color", colors["text_dim"])
+	line.add_theme_color_override("caret_color", colors["primary_dark"])
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = colors["panel_light"]
+	normal.border_color = Color(0.718, 0.522, 0.306, 1.0)
+	normal.border_width_left = 3
+	normal.border_width_top = 3
+	normal.border_width_right = 3
+	normal.border_width_bottom = 3
+	normal.corner_radius_top_left = 18
+	normal.corner_radius_top_right = 18
+	normal.corner_radius_bottom_left = 18
+	normal.corner_radius_bottom_right = 18
+	normal.content_margin_left = 18
+	normal.content_margin_right = 18
+	normal.content_margin_top = 16
+	normal.content_margin_bottom = 16
+	line.add_theme_stylebox_override("normal", normal)
+	var focus := normal.duplicate() as StyleBoxFlat
+	focus.border_color = colors["primary"]
+	focus.shadow_color = colors["primary"].darkened(0.15)
+	focus.shadow_size = 8
+	line.add_theme_stylebox_override("focus", focus)
+	var read_only := normal.duplicate() as StyleBoxFlat
+	read_only.bg_color = colors["panel_bg"].darkened(0.04)
+	line.add_theme_stylebox_override("read_only", read_only)
+	return line
 
 
 func make_banner(text: String, size: int = FONT_HEADING, color: Color = COLOR_TEXT, skin_override: String = "") -> Control:
@@ -373,5 +431,5 @@ func _get_skin_colors(skin_id: String) -> Dictionary:
 		"panel_bg": COLOR_PANEL_BG,
 		"panel_light": COLOR_PANEL_LIGHT,
 		"overlay": COLOR_OVERLAY,
-		"panel_line": Color(1, 1, 1, 0.1),
+		"panel_line": Color(0.718, 0.522, 0.306, 0.45),
 	}

@@ -1,8 +1,9 @@
 extends RefCounted
 
-const FONT_PRIMARY := "res://assets/UI/Fonts/Kenney Future.ttf"
-const FONT_NARROW := "res://assets/UI/Fonts/Kenney Future Narrow.ttf"
-const FONT_DISPLAY := "res://assets/UI/Fonts/Kenney Future.ttf"
+const FONT_PRIMARY := "res://fonts/Atkinson_Hyperlegible/AtkinsonHyperlegible-Regular.ttf"
+const FONT_NARROW := "res://fonts/Atkinson_Hyperlegible/AtkinsonHyperlegible-Bold.ttf"
+const FONT_DISPLAY := "res://fonts/Fredoka/static/Fredoka-Bold.ttf"
+const FONT_BUTTON := "res://fonts/Fredoka/static/Fredoka-SemiBold.ttf"
 
 const BTN_PRIMARY := "res://assets/UI/kenney_adventure/button_brown.png"
 const BTN_SECONDARY := "res://assets/UI/kenney_adventure/button_grey.png"
