@@ -62,6 +62,7 @@ static func spawn_obstacles(chunk: Node3D, chunk_length: float, generator: Node3
 static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generator: Node3D) -> void:
 	var difficulty: float = GameManager.difficulty_multiplier
 	var frequency: float = GameManager.obstacle_frequency
+	var special_spacing_scale: float = GameManager.get_special_obstacle_spacing_scale()
 
 	# Estimate the distance this chunk represents
 	# Chunks start at +20 and go negative. Chunk at Z=-100 means ~100m from start.
@@ -70,7 +71,7 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 	# Try spawning a giant rock in this chunk (rare, blocks all lanes)
 	var giant_rock_spawned: bool = false
 	var rock_z: float = -(chunk_length * 0.5)  # Middle of chunk
-	if _should_spawn_giant_rock(chunk_dist):
+	if _should_spawn_giant_rock(chunk_dist, special_spacing_scale):
 		_create_giant_rock(chunk, Vector3(0.0, 0.0, rock_z), generator)
 		giant_rock_spawned = true
 		# Track distance for spacing
@@ -85,7 +86,7 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 	# Try spawning a river crossing (deadly water, player must build bridge)
 	var river_z_pos: float = -INF
 	if not giant_rock_spawned:
-		river_z_pos = _try_spawn_river(chunk, chunk_length, chunk_dist)
+		river_z_pos = _try_spawn_river(chunk, chunk_length, chunk_dist, special_spacing_scale)
 
 	var slots: Array[float] = []
 	var z: float = -MIN_SLOT_OFFSET
@@ -786,12 +787,13 @@ static func _create_overhead_obstacle(parent: Node3D, pos: Vector3, generator: N
 # GIANT ROCK — blocks all 3 lanes, destroyed by double-tap blast
 # =============================================================================
 
-static func _should_spawn_giant_rock(chunk_dist: float) -> bool:
+static func _should_spawn_giant_rock(chunk_dist: float, spacing_scale: float = 1.0) -> bool:
 	# Only in normal mode
 	if not GameManager.is_normal_mode():
 		return false
 
 	var last_dist: float = GameManager.get_meta("_last_giant_rock_dist", -999.0) as float
+	var min_distance: float = GIANT_ROCK_MIN_DISTANCE * spacing_scale
 
 	# GUARANTEED first giant rock early so the blast obstacle is easy to verify.
 	if last_dist < 0 and chunk_dist >= 20.0:
@@ -799,11 +801,13 @@ static func _should_spawn_giant_rock(chunk_dist: float) -> bool:
 		return true
 
 	# After that, random with spacing enforced
-	if chunk_dist - last_dist < GIANT_ROCK_MIN_DISTANCE:
+	if chunk_dist - last_dist < min_distance:
 		return false
+	var chance_scale: float = GameManager.get_special_obstacle_chance_scale()
+	var chance: float = clampf(GIANT_ROCK_CHANCE * chance_scale, 0.10, 0.65)
 	var roll: float = randf()
-	print("[GiantRock] chunk_dist=%.0f last=%.0f roll=%.2f need<%.2f" % [chunk_dist, last_dist, roll, GIANT_ROCK_CHANCE])
-	return roll < GIANT_ROCK_CHANCE
+	print("[GiantRock] chunk_dist=%.0f last=%.0f roll=%.2f need<%.2f" % [chunk_dist, last_dist, roll, chance])
+	return roll < chance
 
 
 static func _create_giant_rock(parent: Node3D, pos: Vector3, generator: Node3D) -> void:
@@ -833,7 +837,7 @@ static func _create_giant_rock(parent: Node3D, pos: Vector3, generator: Node3D) 
 # RIVER CROSSING — deadly water, player must hold spacebar to build bridge
 # =============================================================================
 
-static func _try_spawn_river(chunk: Node3D, chunk_length: float, chunk_dist: float) -> float:
+static func _try_spawn_river(chunk: Node3D, chunk_length: float, chunk_dist: float, spacing_scale: float = 1.0) -> float:
 	## Returns the local Z position of the river if spawned, or -INF if not.
 	if not GameManager.is_normal_mode():
 		return -INF
@@ -841,11 +845,12 @@ static func _try_spawn_river(chunk: Node3D, chunk_length: float, chunk_dist: flo
 		return -INF
 
 	var last_river_dist: float = GameManager.get_meta("_last_river_dist", -999.0) as float
-	if chunk_dist - last_river_dist < RIVER_MIN_DISTANCE:
+	if chunk_dist - last_river_dist < RIVER_MIN_DISTANCE * spacing_scale:
 		return -INF
 
 	# Guaranteed first river at ~60m
 	var force_spawn: bool = last_river_dist < 0.0 and chunk_dist >= 60.0
-	if not force_spawn and randf() > RIVER_CHANCE:
+	var river_chance: float = clampf(RIVER_CHANCE * GameManager.get_special_obstacle_chance_scale(), 0.08, 0.45)
+	if not force_spawn and randf() > river_chance:
 		return -INF
 	return _spawn_river_crossing(chunk, chunk_length, chunk_dist)

@@ -122,7 +122,8 @@ func _generate_question() -> void:
 	var obs_type: int = _detect_nearby_obstacle_type(true)
 	var q_type: QuestionType = OBS_TYPE_TO_QUESTION.get(obs_type, QuestionType.ADDITION) as QuestionType
 
-	var max_num: int = 10 + int(GameManager.difficulty_multiplier * 5)
+	var number_scale: float = GameManager.get_quiz_number_scale()
+	var max_num: int = 10 + int(GameManager.difficulty_multiplier * 5.0 * number_scale)
 	max_num = mini(max_num, 50)
 
 	var a: int = 0
