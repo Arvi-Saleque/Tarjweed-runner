@@ -32,6 +32,7 @@ const COIN_VALUES: Dictionary = {
 
 const DIFFICULTY_PROFILES: Dictionary = {
 	"easy": {
+		"base_speed_scale": 0.92,
 		"speed_ramp_scale": 0.78,
 		"max_speed_scale": 0.88,
 		"difficulty_min": 0.90,
@@ -44,6 +45,7 @@ const DIFFICULTY_PROFILES: Dictionary = {
 		"quiz_number_scale": 0.80,
 	},
 	"medium": {
+		"base_speed_scale": 1.00,
 		"speed_ramp_scale": 1.00,
 		"max_speed_scale": 1.00,
 		"difficulty_min": 1.00,
@@ -56,10 +58,11 @@ const DIFFICULTY_PROFILES: Dictionary = {
 		"quiz_number_scale": 1.00,
 	},
 	"hard": {
-		"speed_ramp_scale": 1.18,
-		"max_speed_scale": 1.12,
+		"base_speed_scale": 1.25,
+		"speed_ramp_scale": 1.55,
+		"max_speed_scale": 1.30,
 		"difficulty_min": 1.12,
-		"difficulty_max": 3.00,
+		"difficulty_max": 3.20,
 		"obstacle_base": 0.36,
 		"obstacle_max": 0.86,
 		"obstacle_scale": 1.18,
@@ -118,6 +121,7 @@ func _process(delta: float) -> void:
 
 	play_time += delta
 	var profile: Dictionary = get_difficulty_profile()
+	var effective_base_speed: float = get_effective_base_speed()
 	var effective_max_speed: float = get_effective_max_speed()
 
 	# Distance scoring
@@ -129,7 +133,7 @@ func _process(delta: float) -> void:
 
 	# Speed ramp
 	var ramp_scale: float = float(profile.get("speed_ramp_scale", 1.0))
-	var new_speed: float = clampf(BASE_SPEED + play_time * SPEED_INCREMENT * ramp_scale, BASE_SPEED, effective_max_speed)
+	var new_speed: float = clampf(effective_base_speed + play_time * SPEED_INCREMENT * ramp_scale, effective_base_speed, effective_max_speed)
 	if new_speed != current_speed:
 		current_speed = new_speed
 		speed_changed.emit(current_speed)
@@ -137,7 +141,7 @@ func _process(delta: float) -> void:
 	# Difficulty scaling
 	var diff_min: float = float(profile.get("difficulty_min", 1.0))
 	var diff_max: float = float(profile.get("difficulty_max", 2.5))
-	difficulty_multiplier = remap(current_speed, BASE_SPEED, effective_max_speed, diff_min, diff_max)
+	difficulty_multiplier = remap(current_speed, effective_base_speed, effective_max_speed, diff_min, diff_max)
 	var obstacle_base: float = float(profile.get("obstacle_base", 0.3))
 	var obstacle_scale: float = float(profile.get("obstacle_scale", 1.0))
 	var obstacle_cap: float = minf(float(profile.get("obstacle_max", max_obstacle_frequency)), max_obstacle_frequency + 0.12)
@@ -227,8 +231,9 @@ func go_to_menu() -> void:
 
 func get_speed_ratio() -> float:
 	## Returns 0.0 at base speed, 1.0 at max speed.
+	var effective_base_speed: float = get_effective_base_speed()
 	var effective_max_speed: float = get_effective_max_speed()
-	return clampf((current_speed - BASE_SPEED) / maxf(effective_max_speed - BASE_SPEED, 0.001), 0.0, 1.0)
+	return clampf((current_speed - effective_base_speed) / maxf(effective_max_speed - effective_base_speed, 0.001), 0.0, 1.0)
 
 
 func get_difficulty_profile() -> Dictionary:
@@ -238,6 +243,11 @@ func get_difficulty_profile() -> Dictionary:
 func get_effective_max_speed() -> float:
 	var profile: Dictionary = get_difficulty_profile()
 	return MAX_SPEED * float(profile.get("max_speed_scale", 1.0))
+
+
+func get_effective_base_speed() -> float:
+	var profile: Dictionary = get_difficulty_profile()
+	return BASE_SPEED * float(profile.get("base_speed_scale", 1.0))
 
 
 func get_special_obstacle_chance_scale() -> float:
@@ -281,12 +291,13 @@ func is_cyberprank_theme() -> bool:
 
 # --- Private ---
 func _reset_run() -> void:
+	var profile: Dictionary = get_difficulty_profile()
 	score = 0
 	score_bonus = 0
 	coins = 0
 	distance = 0.0
-	current_speed = BASE_SPEED
-	difficulty_multiplier = 1.0
-	obstacle_frequency = 0.3
+	current_speed = get_effective_base_speed()
+	difficulty_multiplier = float(profile.get("difficulty_min", 1.0))
+	obstacle_frequency = float(profile.get("obstacle_base", 0.3))
 	play_time = 0.0
 	previous_high_score = 0
