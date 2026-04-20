@@ -11,6 +11,7 @@ var _status_label: Label
 var _feedback_label: Label
 var _recognized_label: Label
 var _panel: PanelContainer
+var _listen_panel: PanelContainer
 var _instructions: Label
 
 
@@ -34,41 +35,41 @@ func _ready() -> void:
 
 
 func _create_ui() -> void:
-	var center := CenterContainer.new()
-	center.anchors_preset = Control.PRESET_TOP_WIDE
-	center.anchor_right = 1.0
-	center.offset_top = 80
-	center.offset_bottom = 400
-	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(center)
+	var prompt_center := CenterContainer.new()
+	prompt_center.anchors_preset = Control.PRESET_TOP_WIDE
+	prompt_center.anchor_right = 1.0
+	prompt_center.offset_top = 126
+	prompt_center.offset_bottom = 260
+	prompt_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(prompt_center)
 
 	_panel = PanelContainer.new()
-	_panel.custom_minimum_size = Vector2(700, 0)
+	_panel.custom_minimum_size = Vector2(440, 118)
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = UITheme.get_color("panel_light", PRONUNCIATION_SKIN)
-	style.corner_radius_top_left = 24
-	style.corner_radius_top_right = 24
-	style.corner_radius_bottom_left = 24
-	style.corner_radius_bottom_right = 24
-	style.content_margin_left = 40.0
-	style.content_margin_right = 40.0
-	style.content_margin_top = 24.0
-	style.content_margin_bottom = 24.0
+	style.bg_color = Color(0.97, 0.95, 0.88, 0.90)
+	style.corner_radius_top_left = 22
+	style.corner_radius_top_right = 22
+	style.corner_radius_bottom_left = 22
+	style.corner_radius_bottom_right = 22
+	style.content_margin_left = 24.0
+	style.content_margin_right = 24.0
+	style.content_margin_top = 18.0
+	style.content_margin_bottom = 18.0
 	style.border_color = Color("8A5A35")
-	style.border_width_left = 3
-	style.border_width_right = 3
-	style.border_width_top = 3
-	style.border_width_bottom = 3
-	style.shadow_color = Color(0.28, 0.18, 0.08, 0.15)
-	style.shadow_size = 8
+	style.border_width_left = 2
+	style.border_width_right = 2
+	style.border_width_top = 2
+	style.border_width_bottom = 2
+	style.shadow_color = Color(0.20, 0.12, 0.04, 0.10)
+	style.shadow_size = 5
 	_panel.add_theme_stylebox_override("panel", style)
-	center.add_child(_panel)
+	prompt_center.add_child(_panel)
 
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 12)
+	vbox.add_theme_constant_override("separation", 6)
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_child(vbox)
 
@@ -87,15 +88,39 @@ func _create_ui() -> void:
 	_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(_hint_label)
 
-	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 8)
-	vbox.add_child(spacer)
+	var listen_center := CenterContainer.new()
+	listen_center.anchors_preset = Control.PRESET_BOTTOM_WIDE
+	listen_center.anchor_top = 1.0
+	listen_center.anchor_right = 1.0
+	listen_center.anchor_bottom = 1.0
+	listen_center.offset_top = -240
+	listen_center.offset_bottom = -54
+	listen_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(listen_center)
+
+	_listen_panel = PanelContainer.new()
+	_listen_panel.custom_minimum_size = Vector2(460, 150)
+	_listen_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var listen_style := style.duplicate() as StyleBoxFlat
+	listen_style.bg_color = Color(0.97, 0.95, 0.88, 0.76)
+	listen_style.content_margin_left = 18.0
+	listen_style.content_margin_right = 18.0
+	listen_style.content_margin_top = 16.0
+	listen_style.content_margin_bottom = 16.0
+	_listen_panel.add_theme_stylebox_override("panel", listen_style)
+	listen_center.add_child(_listen_panel)
+
+	var listen_vbox := VBoxContainer.new()
+	listen_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	listen_vbox.add_theme_constant_override("separation", 8)
+	listen_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_listen_panel.add_child(listen_vbox)
 
 	var mic_row := HBoxContainer.new()
 	mic_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	mic_row.add_theme_constant_override("separation", 12)
 	mic_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(mic_row)
+	listen_vbox.add_child(mic_row)
 
 	_mic_icon_label = Label.new()
 	_mic_icon_label.text = "MIC"
@@ -139,23 +164,23 @@ func _create_ui() -> void:
 	_status_label = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("primary_dark", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(_status_label)
+	listen_vbox.add_child(_status_label)
 
 	_recognized_label = UITheme.make_label("", UITheme.FONT_BODY, UITheme.get_color("text_dim", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
 	_recognized_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_recognized_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(_recognized_label)
+	listen_vbox.add_child(_recognized_label)
 
 	_feedback_label = UITheme.make_label("", UITheme.FONT_BODY, UITheme.get_color("primary_dark", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
 	_feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_feedback_label.modulate.a = 0.0
 	_feedback_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(_feedback_label)
+	listen_vbox.add_child(_feedback_label)
 
 	_instructions = UITheme.make_label("Speak the word into your microphone!", UITheme.FONT_SMALL, UITheme.get_color("text_dim", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
 	_instructions.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_instructions.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(_instructions)
+	listen_vbox.add_child(_instructions)
 
 
 func _on_question_changed(question: Dictionary) -> void:
@@ -170,8 +195,10 @@ func _on_question_changed(question: Dictionary) -> void:
 	_hint_label.text = "(%s)" % question.get("hint", "")
 
 	_panel.scale = Vector2(0.95, 0.95)
+	_listen_panel.scale = Vector2(0.97, 0.97)
 	var tw := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	tw.tween_property(_panel, "scale", Vector2.ONE, 0.2)
+	tw.parallel().tween_property(_listen_panel, "scale", Vector2.ONE, 0.2)
 
 
 func _on_answer_result(correct: bool) -> void:
