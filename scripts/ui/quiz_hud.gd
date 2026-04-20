@@ -41,22 +41,22 @@ func _create_ui() -> void:
 	_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.20, 0.15, 0.10, 0.94)
-	style.corner_radius_top_left = 20
-	style.corner_radius_top_right = 20
-	style.corner_radius_bottom_left = 20
-	style.corner_radius_bottom_right = 20
+	style.bg_color = UITheme.get_color("panel_light", QUIZ_SKIN)
+	style.corner_radius_top_left = 24
+	style.corner_radius_top_right = 24
+	style.corner_radius_bottom_left = 24
+	style.corner_radius_bottom_right = 24
 	style.content_margin_left = 40.0
 	style.content_margin_right = 40.0
 	style.content_margin_top = 24.0
 	style.content_margin_bottom = 24.0
-	style.border_color = UITheme.get_color("accent", QUIZ_SKIN).darkened(0.12)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.shadow_color = Color(0.08, 0.05, 0.02, 0.42)
-	style.shadow_size = 10
+	style.border_color = Color("8A5A35")
+	style.border_width_left = 3
+	style.border_width_right = 3
+	style.border_width_top = 3
+	style.border_width_bottom = 3
+	style.shadow_color = Color(0.28, 0.18, 0.08, 0.15)
+	style.shadow_size = 8
 	_panel.add_theme_stylebox_override("panel", style)
 	center.add_child(_panel)
 
@@ -66,7 +66,7 @@ func _create_ui() -> void:
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_panel.add_child(vbox)
 
-	_question_label = UITheme.make_label("", UITheme.FONT_HEADING, UITheme.get_color("text", QUIZ_SKIN), QUIZ_SKIN)
+	_question_label = UITheme.make_label("", UITheme.FONT_HEADING, UITheme.get_color("text_ink", QUIZ_SKIN), QUIZ_SKIN)
 	_question_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_question_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(_question_label)
@@ -82,7 +82,7 @@ func _create_ui() -> void:
 		_choices_container.add_child(choice_btn)
 		_choice_buttons.append(choice_btn)
 
-	_feedback_label = UITheme.make_label("", UITheme.FONT_BODY, UITheme.get_color("accent", QUIZ_SKIN), QUIZ_SKIN)
+	_feedback_label = UITheme.make_label("", UITheme.FONT_BODY, UITheme.get_color("primary_dark", QUIZ_SKIN), QUIZ_SKIN)
 	_feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_feedback_label.modulate.a = 0.0
 	_feedback_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -108,36 +108,37 @@ func _create_choice_button(index: int) -> Button:
 
 	var normal := StyleBoxFlat.new()
 	normal.bg_color = Color(0.31, 0.22, 0.13, 0.96)
-	normal.corner_radius_top_left = 14
-	normal.corner_radius_top_right = 14
-	normal.corner_radius_bottom_left = 14
-	normal.corner_radius_bottom_right = 14
+	normal.corner_radius_top_left = 18
+	normal.corner_radius_top_right = 18
+	normal.corner_radius_bottom_left = 18
+	normal.corner_radius_bottom_right = 18
 	normal.content_margin_left = 20.0
 	normal.content_margin_right = 20.0
 	normal.content_margin_top = 16.0
 	normal.content_margin_bottom = 16.0
-	normal.border_color = Color(0.64, 0.52, 0.33, 0.66)
-	normal.border_width_left = 2
-	normal.border_width_right = 2
-	normal.border_width_top = 2
-	normal.border_width_bottom = 2
-	normal.shadow_color = Color(0.0, 0.0, 0.0, 0.3)
+	normal.bg_color = UITheme.get_color("panel_light", QUIZ_SKIN)
+	normal.border_color = Color("8A5A35")
+	normal.border_width_left = 3
+	normal.border_width_right = 3
+	normal.border_width_top = 3
+	normal.border_width_bottom = 3
+	normal.shadow_color = Color(0.30, 0.18, 0.08, 0.12)
 	normal.shadow_size = 4
 	btn.add_theme_stylebox_override("normal", normal)
 
 	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = Color(0.40, 0.28, 0.16, 0.98)
-	hover.border_color = UITheme.get_color("accent", QUIZ_SKIN)
+	hover.bg_color = Color("FFF8E6")
+	hover.border_color = UITheme.get_color("primary", QUIZ_SKIN)
 	hover.shadow_size = 6
 	btn.add_theme_stylebox_override("hover", hover)
 
 	var pressed := normal.duplicate() as StyleBoxFlat
-	pressed.bg_color = UITheme.get_color("accent", QUIZ_SKIN)
-	pressed.border_color = UITheme.get_color("accent", QUIZ_SKIN).lightened(0.16)
+	pressed.bg_color = UITheme.get_color("primary", QUIZ_SKIN)
+	pressed.border_color = UITheme.get_color("primary_dark", QUIZ_SKIN)
 	pressed.shadow_size = 2
 	btn.add_theme_stylebox_override("pressed", pressed)
 
-	btn.add_theme_color_override("font_color", UITheme.get_color("text", QUIZ_SKIN))
+	btn.add_theme_color_override("font_color", UITheme.get_color("text_ink", QUIZ_SKIN))
 	btn.add_theme_color_override("font_hover_color", Color.WHITE)
 	btn.add_theme_color_override("font_pressed_color", Color.WHITE)
 

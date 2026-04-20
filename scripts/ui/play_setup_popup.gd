@@ -2,26 +2,33 @@ extends Control
 
 signal closed
 signal choose_runner_requested
-signal start_requested(player_name: String, difficulty_id: String)
+signal start_requested(player_name: String, difficulty_id: String, mode_id: String)
 
 const NatureMenuStyle = preload("res://scripts/ui/nature_menu_style.gd")
 const MenuFlowCatalog = preload("res://scripts/ui/menu_flow_catalog.gd")
 const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
 
 var _name_input: LineEdit
+var _mode_buttons: Dictionary = {}
 var _difficulty_buttons: Dictionary = {}
 var _preview: TextureRect
 var _runner_title: Label
 var _runner_subtitle: Label
+var _summary_mode: Label
+var _summary_difficulty: Label
+var _selected_mode: String = "normal"
 var _selected_difficulty: String = MenuFlowCatalog.DEFAULT_DIFFICULTY
 
 
 func _ready() -> void:
 	NatureMenuStyle.decorate_root(self)
+	_selected_mode = GameManager.current_mode if not GameManager.current_mode.is_empty() else "normal"
 	_selected_difficulty = GameManager.current_difficulty_id if not GameManager.current_difficulty_id.is_empty() else MenuFlowCatalog.DEFAULT_DIFFICULTY
 	_build_popup()
 	_refresh_runner_preview()
+	_refresh_mode_buttons()
 	_refresh_difficulty_buttons()
+	_refresh_summary()
 
 
 func _build_popup() -> void:
@@ -79,6 +86,23 @@ func _build_popup() -> void:
 	_name_input.add_theme_stylebox_override("normal", input_style)
 	_name_input.add_theme_stylebox_override("focus", input_style)
 
+	var mode_label := UITheme.make_label("Mode", UITheme.FONT_SMALL, UITheme.get_color("text_ink_soft", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
+	mode_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	setup_body.add_child(mode_label)
+
+	var mode_row := HBoxContainer.new()
+	mode_row.add_theme_constant_override("separation", 12)
+	setup_body.add_child(mode_row)
+
+	for mode in MenuFlowCatalog.MODES:
+		var mode_id: String = str(mode.get("id", "normal"))
+		var mode_btn: Button = NatureMenuStyle.make_value_chip(str(mode.get("title", "")), mode_id == _selected_mode)
+		mode_btn.custom_minimum_size = Vector2(160, 56)
+		mode_btn.tooltip_text = str(mode.get("subtitle", ""))
+		mode_btn.pressed.connect(func(): _set_mode(mode_id))
+		mode_row.add_child(mode_btn)
+		_mode_buttons[mode_id] = mode_btn
+
 	var difficulty_label := UITheme.make_label("Difficulty", UITheme.FONT_SMALL, UITheme.get_color("text_ink_soft", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
 	difficulty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	setup_body.add_child(difficulty_label)
@@ -127,7 +151,7 @@ func _build_popup() -> void:
 	content.add_child(actions)
 	var actions_body := actions.get_meta("body") as VBoxContainer
 
-	var difficulty_summary := UITheme.make_label("Selected difficulty changes leaderboard metadata first, and gameplay tuning can expand next.", UITheme.FONT_SMALL, UITheme.get_color("text_dim", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
+	var difficulty_summary := UITheme.make_label("Mode and difficulty now change how the run plays, so you can pick a calmer or tougher challenge here.", UITheme.FONT_SMALL, UITheme.get_color("text_dim", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
 	difficulty_summary.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	difficulty_summary.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	actions_body.add_child(difficulty_summary)
@@ -136,6 +160,12 @@ func _build_popup() -> void:
 	actions_body.add_child(summary_card)
 	var summary_body := summary_card.get_meta("body") as VBoxContainer
 	summary_body.add_child(NatureMenuStyle.make_coin_label("Wallet coins: %d" % SaveManager.get_wallet_coins()))
+	_summary_mode = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("text_ink", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
+	_summary_mode.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	summary_body.add_child(_summary_mode)
+	_summary_difficulty = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("text_ink_soft", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
+	_summary_difficulty.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	summary_body.add_child(_summary_difficulty)
 
 	var start_btn := UITheme.make_button("  Start", UITheme.icon_play, UITheme.FONT_BODY, "primary", NatureMenuStyle.SKIN)
 	start_btn.custom_minimum_size = Vector2(240, 64)
@@ -158,6 +188,24 @@ func _set_difficulty(difficulty_id: String) -> void:
 	AudioManager.play_ui_sound(AudioManager.ui_click)
 	_selected_difficulty = difficulty_id
 	_refresh_difficulty_buttons()
+	_refresh_summary()
+
+
+func _set_mode(mode_id: String) -> void:
+	AudioManager.play_ui_sound(AudioManager.ui_click)
+	_selected_mode = mode_id
+	_refresh_mode_buttons()
+	_refresh_summary()
+
+
+func _refresh_mode_buttons() -> void:
+	for mode in MenuFlowCatalog.MODES:
+		var mode_id: String = str(mode.get("id", ""))
+		var btn := _mode_buttons.get(mode_id) as Button
+		if btn == null:
+			continue
+		var is_selected: bool = mode_id == _selected_mode
+		UITheme._apply_button_variant(btn, "primary" if is_selected else "secondary", NatureMenuStyle.SKIN)
 
 
 func _refresh_difficulty_buttons() -> void:
@@ -168,6 +216,13 @@ func _refresh_difficulty_buttons() -> void:
 			continue
 		var is_selected: bool = difficulty_id == _selected_difficulty
 		UITheme._apply_button_variant(btn, "primary" if is_selected else "secondary", NatureMenuStyle.SKIN)
+
+
+func _refresh_summary() -> void:
+	if _summary_mode:
+		_summary_mode.text = "Mode: %s" % _selected_mode.capitalize()
+	if _summary_difficulty:
+		_summary_difficulty.text = "Difficulty: %s" % _selected_difficulty.capitalize()
 
 
 func _refresh_runner_preview() -> void:
@@ -190,4 +245,4 @@ func _on_start_pressed() -> void:
 	var player_name := _name_input.text.strip_edges()
 	if player_name.is_empty():
 		player_name = MenuFlowCatalog.DEFAULT_PLAYER_NAME
-	start_requested.emit(player_name, _selected_difficulty)
+	start_requested.emit(player_name, _selected_difficulty, _selected_mode)

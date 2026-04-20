@@ -22,6 +22,24 @@ const DIFFICULTIES: Array[Dictionary] = [
 	},
 ]
 
+const MODES: Array[Dictionary] = [
+	{
+		"id": "normal",
+		"title": "NORMAL",
+		"subtitle": "Classic endless run",
+	},
+	{
+		"id": "quiz",
+		"title": "QUIZ",
+		"subtitle": "Answer and learn",
+	},
+	{
+		"id": "pronunciation",
+		"title": "PRONUNCIATION",
+		"subtitle": "Listen and practice",
+	},
+]
+
 const DEFAULT_UNLOCKED_RUNNERS: Array[String] = [
 	"elf",
 	"goblin_male",

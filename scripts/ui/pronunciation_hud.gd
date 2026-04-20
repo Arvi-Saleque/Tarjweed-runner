@@ -47,22 +47,22 @@ func _create_ui() -> void:
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.20, 0.15, 0.10, 0.94)
-	style.corner_radius_top_left = 20
-	style.corner_radius_top_right = 20
-	style.corner_radius_bottom_left = 20
-	style.corner_radius_bottom_right = 20
+	style.bg_color = UITheme.get_color("panel_light", PRONUNCIATION_SKIN)
+	style.corner_radius_top_left = 24
+	style.corner_radius_top_right = 24
+	style.corner_radius_bottom_left = 24
+	style.corner_radius_bottom_right = 24
 	style.content_margin_left = 40.0
 	style.content_margin_right = 40.0
 	style.content_margin_top = 24.0
 	style.content_margin_bottom = 24.0
-	style.border_color = UITheme.get_color("accent", PRONUNCIATION_SKIN).darkened(0.08)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.shadow_color = Color(0.08, 0.05, 0.02, 0.42)
-	style.shadow_size = 10
+	style.border_color = Color("8A5A35")
+	style.border_width_left = 3
+	style.border_width_right = 3
+	style.border_width_top = 3
+	style.border_width_bottom = 3
+	style.shadow_color = Color(0.28, 0.18, 0.08, 0.15)
+	style.shadow_size = 8
 	_panel.add_theme_stylebox_override("panel", style)
 	center.add_child(_panel)
 
@@ -77,12 +77,12 @@ func _create_ui() -> void:
 	prompt_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(prompt_label)
 
-	_word_label = UITheme.make_label("", UITheme.FONT_TITLE, UITheme.get_color("text", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
+	_word_label = UITheme.make_label("", UITheme.FONT_TITLE, UITheme.get_color("text_ink", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
 	_word_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_word_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(_word_label)
 
-	_hint_label = UITheme.make_label("", UITheme.FONT_SMALL, Color(0.88, 0.78, 0.58, 0.90), PRONUNCIATION_SKIN)
+	_hint_label = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("text_dim", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
 	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(_hint_label)
@@ -99,7 +99,10 @@ func _create_ui() -> void:
 
 	_mic_icon_label = Label.new()
 	_mic_icon_label.text = "MIC"
+	if UITheme.font_button:
+		_mic_icon_label.add_theme_font_override("font", UITheme.font_button)
 	_mic_icon_label.add_theme_font_size_override("font_size", 32)
+	_mic_icon_label.add_theme_color_override("font_color", UITheme.get_color("primary_dark", PRONUNCIATION_SKIN))
 	_mic_icon_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	mic_row.add_child(_mic_icon_label)
 
@@ -112,15 +115,20 @@ func _create_ui() -> void:
 	_volume_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var bar_bg := StyleBoxFlat.new()
-	bar_bg.bg_color = Color(0.18, 0.13, 0.09, 0.80)
+	bar_bg.bg_color = Color("FFF4D8")
 	bar_bg.corner_radius_top_left = 6
 	bar_bg.corner_radius_top_right = 6
 	bar_bg.corner_radius_bottom_left = 6
 	bar_bg.corner_radius_bottom_right = 6
+	bar_bg.border_width_left = 2
+	bar_bg.border_width_right = 2
+	bar_bg.border_width_top = 2
+	bar_bg.border_width_bottom = 2
+	bar_bg.border_color = Color("8A5A35")
 	_volume_bar.add_theme_stylebox_override("background", bar_bg)
 
 	var bar_fill := StyleBoxFlat.new()
-	bar_fill.bg_color = Color(0.4, 0.8, 0.3, 0.9)
+	bar_fill.bg_color = UITheme.get_color("primary", PRONUNCIATION_SKIN)
 	bar_fill.corner_radius_top_left = 6
 	bar_fill.corner_radius_top_right = 6
 	bar_fill.corner_radius_bottom_left = 6
@@ -128,7 +136,7 @@ func _create_ui() -> void:
 	_volume_bar.add_theme_stylebox_override("fill", bar_fill)
 	mic_row.add_child(_volume_bar)
 
-	_status_label = UITheme.make_label("", UITheme.FONT_SMALL, Color(0.64, 0.86, 0.52, 0.92), PRONUNCIATION_SKIN)
+	_status_label = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("primary_dark", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(_status_label)
@@ -138,7 +146,7 @@ func _create_ui() -> void:
 	_recognized_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(_recognized_label)
 
-	_feedback_label = UITheme.make_label("", UITheme.FONT_BODY, UITheme.get_color("accent", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
+	_feedback_label = UITheme.make_label("", UITheme.FONT_BODY, UITheme.get_color("primary_dark", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
 	_feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_feedback_label.modulate.a = 0.0
 	_feedback_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -181,10 +189,10 @@ func _on_answer_result(correct: bool) -> void:
 func _on_mic_status_changed(listening: bool) -> void:
 	if listening:
 		_status_label.text = "Listening..."
-		_mic_icon_label.modulate = Color(1.0, 0.3, 0.3)
+		_mic_icon_label.modulate = UITheme.get_color("primary", PRONUNCIATION_SKIN)
 	else:
 		_status_label.text = ""
-		_mic_icon_label.modulate = Color(0.5, 0.5, 0.5)
+		_mic_icon_label.modulate = UITheme.get_color("text_dim", PRONUNCIATION_SKIN)
 		_volume_bar.value = 0.0
 
 
@@ -200,8 +208,8 @@ func _on_volume_updated(level: float) -> void:
 	var bar_fill := _volume_bar.get_theme_stylebox("fill") as StyleBoxFlat
 	if bar_fill:
 		if level < 0.5:
-			bar_fill.bg_color = Color(0.4, 0.8, 0.3, 0.9)
+			bar_fill.bg_color = UITheme.get_color("primary", PRONUNCIATION_SKIN)
 		elif level < 0.75:
-			bar_fill.bg_color = Color(0.9, 0.8, 0.2, 0.9)
+			bar_fill.bg_color = UITheme.get_color("accent", PRONUNCIATION_SKIN)
 		else:
-			bar_fill.bg_color = Color(0.9, 0.3, 0.2, 0.9)
+			bar_fill.bg_color = UITheme.get_color("danger", PRONUNCIATION_SKIN)

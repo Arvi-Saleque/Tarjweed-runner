@@ -118,7 +118,7 @@ func _refresh_summary() -> void:
 	_summary_runner.text = "%s ready" % runner.get("title", "Runner")
 	_summary_details.text = "Player: %s\nDifficulty: %s\nSubtitle: %s" % [
 		GameManager.current_player_name if not GameManager.current_player_name.is_empty() else SaveManager.get_player_name(),
-		GameManager.current_difficulty_id.capitalize(),
+		"%s | %s" % [GameManager.current_mode.capitalize(), GameManager.current_difficulty_id.capitalize()],
 		runner.get("subtitle", ""),
 	]
 	_summary_wallet.text = "Wallet coins: %d" % SaveManager.get_wallet_coins()
@@ -172,8 +172,8 @@ func _open_settings() -> void:
 	_overlay_host.add_child(_settings_popup)
 
 
-func _start_game_from_setup(player_name: String, difficulty_id: String) -> void:
-	GameManager.current_mode = "normal"
+func _start_game_from_setup(player_name: String, difficulty_id: String, mode_id: String) -> void:
+	GameManager.current_mode = mode_id
 	GameManager.current_visual_theme = "nature"
 	GameManager.apply_menu_setup(player_name, difficulty_id, GameManager.current_player_variant)
 	_refresh_summary()
