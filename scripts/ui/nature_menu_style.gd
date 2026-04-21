@@ -5,7 +5,7 @@ const UISkinIds = preload("res://scripts/ui/ui_skin_ids.gd")
 const THEME: Theme = preload("res://ui/theme/nature_theme.tres")
 const SKIN: String = UISkinIds.NATURE
 
-const BACKDROP_SKY := Color(0.84, 0.91, 0.79, 1.0)
+const BACKDROP_SKY := Color(0.49, 0.78, 0.89, 1.0)  # Sky blue #7EC8E3
 const BACKDROP_SUN := Color(0.98, 0.94, 0.78, 0.24)
 const BACKDROP_FOLIAGE := Color(0.28, 0.43, 0.20, 0.18)
 const BACKDROP_MIST := Color(0.96, 0.93, 0.84, 0.05)

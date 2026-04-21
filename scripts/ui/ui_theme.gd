@@ -160,6 +160,9 @@ func make_label(text: String, size: int = FONT_BODY, color: Color = COLOR_TEXT, 
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	if size >= FONT_HEADING and font_display:
 		label.add_theme_font_override("font", font_display)
+	elif font_button:
+		# Fredoka-SemiBold for body text — rounded, child-friendly
+		label.add_theme_font_override("font", font_button)
 	elif font_primary:
 		label.add_theme_font_override("font", font_primary)
 	label.add_theme_font_size_override("font_size", size)

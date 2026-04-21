@@ -45,8 +45,10 @@ const DIFFICULTY_PROFILES: Dictionary = {
 		"quiz_number_scale": 0.80,
 	},
 	"medium": {
-		"base_speed_scale": 1.00,
-		"speed_ramp_scale": 1.00,
+		# Starts at the same slow speed as Easy, but ramps faster and
+		# reaches a higher max — so it escalates sooner.
+		"base_speed_scale": 0.92,
+		"speed_ramp_scale": 1.20,
 		"max_speed_scale": 1.00,
 		"difficulty_min": 1.00,
 		"difficulty_max": 2.50,

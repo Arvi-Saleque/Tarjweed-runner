@@ -137,14 +137,86 @@ func _build_runner_card(runner: Dictionary) -> PanelContainer:
 	var body := card.get_meta("body") as VBoxContainer
 	body.add_theme_constant_override("separation", 8)
 
+	# Preview + optional lock overlay inside a stack container
+	var preview_stack := Control.new()
+	preview_stack.custom_minimum_size = Vector2(280, 150)
+	preview_stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.add_child(preview_stack)
+
 	var preview := NatureMenuStyle.make_preview(preview_path, Vector2(280, 150))
-	body.add_child(preview)
+	preview.set_anchors_preset(Control.PRESET_FULL_RECT)
+	preview.anchor_right = 1.0
+	preview.anchor_bottom = 1.0
+	preview_stack.add_child(preview)
+
+	if not is_unlocked:
+		# Dark wash over the preview
+		var lock_wash := ColorRect.new()
+		lock_wash.set_anchors_preset(Control.PRESET_FULL_RECT)
+		lock_wash.anchor_right = 1.0
+		lock_wash.anchor_bottom = 1.0
+		lock_wash.color = Color(0.10, 0.07, 0.04, 0.72)
+		lock_wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		preview_stack.add_child(lock_wash)
+
+		# Coin-price badge centered on the overlay
+		var badge_center := CenterContainer.new()
+		badge_center.set_anchors_preset(Control.PRESET_FULL_RECT)
+		badge_center.anchor_right = 1.0
+		badge_center.anchor_bottom = 1.0
+		badge_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		preview_stack.add_child(badge_center)
+
+		var badge_pill := PanelContainer.new()
+		badge_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var pill_style := StyleBoxFlat.new()
+		pill_style.bg_color = Color("1E5128")
+		pill_style.corner_radius_top_left = 18
+		pill_style.corner_radius_top_right = 18
+		pill_style.corner_radius_bottom_left = 18
+		pill_style.corner_radius_bottom_right = 18
+		pill_style.shadow_color = Color(0, 0, 0, 0.35)
+		pill_style.shadow_size = 6
+		pill_style.shadow_offset = Vector2(0, 3)
+		badge_pill.add_theme_stylebox_override("panel", pill_style)
+		badge_center.add_child(badge_pill)
+
+		var pill_margin := MarginContainer.new()
+		pill_margin.add_theme_constant_override("margin_left", 14)
+		pill_margin.add_theme_constant_override("margin_right", 14)
+		pill_margin.add_theme_constant_override("margin_top", 6)
+		pill_margin.add_theme_constant_override("margin_bottom", 6)
+		pill_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		badge_pill.add_child(pill_margin)
+
+		var badge_row := HBoxContainer.new()
+		badge_row.alignment = BoxContainer.ALIGNMENT_CENTER
+		badge_row.add_theme_constant_override("separation", 6)
+		badge_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		pill_margin.add_child(badge_row)
+
+		var lock_lbl := Label.new()
+		lock_lbl.text = "🔒"
+		lock_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if UITheme.font_display:
+			lock_lbl.add_theme_font_override("font", UITheme.font_display)
+		lock_lbl.add_theme_font_size_override("font_size", 22)
+		badge_row.add_child(lock_lbl)
+
+		var price_lbl := Label.new()
+		price_lbl.text = "%d 🪙" % price
+		price_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if UITheme.font_display:
+			price_lbl.add_theme_font_override("font", UITheme.font_display)
+		price_lbl.add_theme_font_size_override("font_size", 22)
+		price_lbl.add_theme_color_override("font_color", Color("F7C542"))
+		badge_row.add_child(price_lbl)
 
 	var name_label := UITheme.make_label(title, UITheme.FONT_BODY, UITheme.get_color("text_ink", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	body.add_child(name_label)
 
-	var state_text := "Selected" if is_selected else "Owned" if is_unlocked else "%d coins" % price
+	var state_text := "Selected" if is_selected else "Owned" if is_unlocked else "Locked"
 	var state_color := (
 		UITheme.get_color("primary_dark", NatureMenuStyle.SKIN)
 		if is_selected or is_unlocked

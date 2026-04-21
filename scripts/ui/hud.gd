@@ -34,10 +34,18 @@ func _create_hud() -> void:
 	add_child(_root)
 
 	_create_top_bar()
-	_create_speed_indicator()
+
+	if not GameManager.is_quiz_mode() and not GameManager.is_pronunciation_mode():
+		_create_speed_indicator()
 
 
 func _create_top_bar() -> void:
+	# IMPORTANT:
+	# In quiz/pronunciation mode, do not draw the old top wash strip.
+	if _skin != "cyberprank" and (GameManager.is_quiz_mode() or GameManager.is_pronunciation_mode()):
+		_create_learning_mode_top_bar()
+		return
+
 	if _skin == "cyberprank":
 		var top_glass := ColorRect.new()
 		top_glass.anchors_preset = Control.PRESET_TOP_WIDE
@@ -107,7 +115,7 @@ func _create_top_bar() -> void:
 		_coin_icon.texture = UITheme.icon_coin
 	elif UITheme.icon_trophy:
 		_coin_icon.texture = UITheme.icon_trophy
-	_coin_icon.custom_minimum_size = Vector2(36, 36)
+	_coin_icon.custom_minimum_size = Vector2(44, 44)
 	_coin_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_coin_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	coin_hbox.add_child(_coin_icon)
@@ -160,6 +168,164 @@ func _create_top_bar() -> void:
 	hbox.add_child(_pause_btn)
 
 
+func _create_learning_mode_top_bar() -> void:
+	# --- Left: Coins ---
+	var coin_outer := UITheme.make_panel("dark", _skin)
+	coin_outer.custom_minimum_size = Vector2(200, 84)
+	coin_outer.anchor_left = 0.0
+	coin_outer.anchor_top = 0.0
+	coin_outer.anchor_right = 0.0
+	coin_outer.anchor_bottom = 0.0
+	coin_outer.offset_left = 20.0
+	coin_outer.offset_top = 12.0
+	coin_outer.offset_right = 220.0
+	coin_outer.offset_bottom = 96.0
+	_root.add_child(coin_outer)
+
+	var coin_outer_margin := MarginContainer.new()
+	coin_outer_margin.add_theme_constant_override("margin_left", 10)
+	coin_outer_margin.add_theme_constant_override("margin_right", 10)
+	coin_outer_margin.add_theme_constant_override("margin_top", 10)
+	coin_outer_margin.add_theme_constant_override("margin_bottom", 10)
+	coin_outer.add_child(coin_outer_margin)
+
+	var coin_panel := UITheme.make_panel("light", _skin)
+	coin_outer_margin.add_child(coin_panel)
+
+	var coin_hbox := HBoxContainer.new()
+	coin_hbox.add_theme_constant_override("separation", 8)
+	coin_hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	coin_panel.add_child(coin_hbox)
+
+	_coin_icon = TextureRect.new()
+	if UITheme.icon_coin:
+		_coin_icon.texture = UITheme.icon_coin
+	elif UITheme.icon_trophy:
+		_coin_icon.texture = UITheme.icon_trophy
+	_coin_icon.custom_minimum_size = Vector2(44, 44)
+	_coin_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_coin_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	coin_hbox.add_child(_coin_icon)
+
+	_coins_label = UITheme.make_label("0", UITheme.FONT_HUD, UITheme.get_color("accent", _skin), _skin)
+	_coins_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_coins_label.custom_minimum_size = Vector2(80, 0)
+	coin_hbox.add_child(_coins_label)
+
+		# --- Right: Stats panel ---
+	var stats_outer := UITheme.make_panel("dark", _skin)
+	stats_outer.custom_minimum_size = Vector2(270, 120)
+	stats_outer.anchor_left = 1.0
+	stats_outer.anchor_top = 0.0
+	stats_outer.anchor_right = 1.0
+	stats_outer.anchor_bottom = 0.0
+	stats_outer.offset_left = -350.0
+	stats_outer.offset_top = 8.0
+	stats_outer.offset_right = -100.0
+	stats_outer.offset_bottom = 128.0
+	_root.add_child(stats_outer)
+
+	var stats_margin := MarginContainer.new()
+	stats_margin.add_theme_constant_override("margin_left", 10)
+	stats_margin.add_theme_constant_override("margin_right", 10)
+	stats_margin.add_theme_constant_override("margin_top", 10)
+	stats_margin.add_theme_constant_override("margin_bottom", 10)
+	stats_outer.add_child(stats_margin)
+
+	var stats_inner := UITheme.make_panel("light", _skin)
+	stats_margin.add_child(stats_inner)
+
+	var stats_vbox := VBoxContainer.new()
+	stats_vbox.add_theme_constant_override("separation", 8)
+	stats_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stats_inner.add_child(stats_vbox)
+
+	# Score row
+	var score_row := HBoxContainer.new()
+	score_row.add_theme_constant_override("separation", 8)
+	score_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stats_vbox.add_child(score_row)
+
+	var score_title := UITheme.make_label("Score", UITheme.FONT_SMALL, UITheme.get_color("text_ink", _skin), _skin)
+	score_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	score_row.add_child(score_title)
+
+	var score_pill := PanelContainer.new()
+	score_pill.custom_minimum_size = Vector2(78, 34)
+	score_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var score_pill_style := StyleBoxFlat.new()
+	score_pill_style.bg_color = Color("2D7A3D")
+	score_pill_style.corner_radius_top_left = 14
+	score_pill_style.corner_radius_top_right = 14
+	score_pill_style.corner_radius_bottom_left = 14
+	score_pill_style.corner_radius_bottom_right = 14
+	score_pill.add_theme_stylebox_override("panel", score_pill_style)
+	score_row.add_child(score_pill)
+
+	var score_pill_center := CenterContainer.new()
+	score_pill_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	score_pill_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	score_pill_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	score_pill.add_child(score_pill_center)
+
+	_score_label = UITheme.make_label("0", UITheme.FONT_BODY, Color.WHITE, _skin)
+	_score_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	score_pill_center.add_child(_score_label)
+
+	# Divider
+	var divider := ColorRect.new()
+	divider.custom_minimum_size = Vector2(0, 2)
+	divider.color = Color(0.55, 0.40, 0.24, 0.28)
+	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stats_vbox.add_child(divider)
+
+	# Distance row
+	var distance_row := HBoxContainer.new()
+	distance_row.add_theme_constant_override("separation", 8)
+	distance_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stats_vbox.add_child(distance_row)
+
+	var distance_title := UITheme.make_label("Distance", UITheme.FONT_SMALL, UITheme.get_color("text_ink", _skin), _skin)
+	distance_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	distance_row.add_child(distance_title)
+
+	var distance_pill := PanelContainer.new()
+	distance_pill.custom_minimum_size = Vector2(90, 34)
+	distance_pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var distance_pill_style := StyleBoxFlat.new()
+	distance_pill_style.bg_color = Color("2D7A3D")
+	distance_pill_style.corner_radius_top_left = 14
+	distance_pill_style.corner_radius_top_right = 14
+	distance_pill_style.corner_radius_bottom_left = 14
+	distance_pill_style.corner_radius_bottom_right = 14
+	distance_pill.add_theme_stylebox_override("panel", distance_pill_style)
+	distance_row.add_child(distance_pill)
+
+	var distance_pill_center := CenterContainer.new()
+	distance_pill_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	distance_pill_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	distance_pill_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	distance_pill.add_child(distance_pill_center)
+
+	_distance_label = UITheme.make_label("0m", UITheme.FONT_BODY - 2, Color.WHITE, _skin)
+	_distance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	distance_pill_center.add_child(_distance_label)
+
+	# --- Far right: Pause ---
+	_pause_btn = UITheme.make_icon_button(UITheme.icon_pause, "Pause", "light", _skin)
+	_pause_btn.custom_minimum_size = Vector2(68, 68)
+	_pause_btn.anchor_left = 1.0
+	_pause_btn.anchor_top = 0.0
+	_pause_btn.anchor_right = 1.0
+	_pause_btn.anchor_bottom = 0.0
+	_pause_btn.offset_left = -88.0
+	_pause_btn.offset_top = 16.0
+	_pause_btn.offset_right = -20.0
+	_pause_btn.offset_bottom = 84.0
+	_pause_btn.pressed.connect(_on_pause_pressed)
+	_root.add_child(_pause_btn)
+
+
 func _create_speed_indicator() -> void:
 	_speed_label = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("accent", _skin), _skin)
 	_speed_label.anchors_preset = Control.PRESET_BOTTOM_WIDE
@@ -201,11 +367,21 @@ func _connect_signals() -> void:
 
 
 func _on_game_started() -> void:
+	for child in _root.get_children():
+		child.queue_free()
+
+	_create_top_bar()
+
+	if not GameManager.is_quiz_mode() and not GameManager.is_pronunciation_mode():
+		_create_speed_indicator()
+
 	visible = true
 	_coins_label.text = "0"
 	_score_label.text = "0"
 	_distance_label.text = "0m"
-	_speed_bar.value = 0.0
+
+	if _speed_bar:
+		_speed_bar.value = 0.0
 	if _speed_label:
 		_speed_label.text = "NEON DRIVE 0%" if _skin == "cyberprank" else "TRAIL PACE 0%"
 
@@ -251,17 +427,18 @@ func _on_distance_updated(new_distance: float) -> void:
 
 
 func _on_speed_changed(new_speed: float) -> void:
-	_speed_bar.value = GameManager.get_speed_ratio()
-
-	# Color shift from green to red as speed increases
 	var ratio: float = GameManager.get_speed_ratio()
+
+	if _speed_bar:
+		_speed_bar.value = ratio
+		_speed_bar.add_theme_stylebox_override(
+			"fill",
+			UITheme.make_progress_stylebox("fill" if ratio < 0.6 else "alert_fill", _skin)
+		)
+
 	if _speed_label:
 		_speed_label.text = ("NEON DRIVE %d%%" if _skin == "cyberprank" else "TRAIL PACE %d%%") % int(ratio * 100.0)
 		_speed_label.modulate = UITheme.get_color("accent" if ratio < 0.65 else "danger", _skin)
-	_speed_bar.add_theme_stylebox_override(
-		"fill",
-			UITheme.make_progress_stylebox("fill" if ratio < 0.6 else "alert_fill", _skin)
-	)
 
 
 func _on_pause_pressed() -> void:
@@ -279,6 +456,7 @@ func _format_number(n: int) -> String:
 	var s: String = str(n)
 	if n < 1000:
 		return s
+
 	# Add comma separators
 	var result: String = ""
 	var count: int = 0

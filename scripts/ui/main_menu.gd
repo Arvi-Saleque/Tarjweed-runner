@@ -7,6 +7,7 @@ const MainMenuCopy = preload("res://scripts/ui/main_menu_copy.gd")
 var _title_label: Control
 var _subtitle_label: Label
 var _play_btn: Button
+var _leaderboard_btn: Button
 var _settings_btn: Button
 var _high_score_label: Label
 var _coins_label: Label
@@ -194,6 +195,13 @@ func _create_layout() -> void:
 	_play_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	_vbox.add_child(_play_btn)
 
+	_leaderboard_btn = UITheme.make_button("  Leaderboard", UITheme.icon_trophy, UITheme.FONT_BODY, "secondary", MainMenuTokens.MENU_SKIN)
+	_leaderboard_btn.custom_minimum_size = Vector2(320, 72)
+	_leaderboard_btn.modulate.a = 0.0
+	_leaderboard_btn.pressed.connect(_on_leaderboard_pressed)
+	_leaderboard_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
+	_vbox.add_child(_leaderboard_btn)
+
 	_settings_btn = UITheme.make_button(MainMenuCopy.SETTINGS_LABEL, UITheme.icon_gear, UITheme.FONT_BODY, "secondary", MainMenuTokens.MENU_SKIN)
 	_settings_btn.custom_minimum_size = Vector2(320, 72)
 	_settings_btn.modulate.a = 0.0
@@ -243,13 +251,14 @@ func _animate_entrance() -> void:
 		_title_label,
 		_subtitle_label,
 		_play_btn,
+		_leaderboard_btn,
 		_settings_btn,
 		_vbox.get_meta("quit_btn"),
 		_vbox.get_meta("stats_panel"),
 		_vbox.get_meta("footer"),
 	]
-	var delays: Array[float] = [0.0, 0.2, 0.4, 0.55, 0.65, 0.75, 0.9]
-	var targets: Array[float] = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5]
+	var delays: Array[float] = [0.0, 0.2, 0.4, 0.50, 0.58, 0.66, 0.76, 0.9]
+	var targets: Array[float] = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.5]
 
 	for i in items.size():
 		var item: Control = items[i]
@@ -291,6 +300,25 @@ func _open_theme_select() -> void:
 		theme_screen.set_script(ThemeSelectScript)
 		theme_screen.back_pressed.connect(_on_theme_back)
 		add_child(theme_screen)
+
+
+func _on_leaderboard_pressed() -> void:
+	AudioManager.play_ui_sound(AudioManager.ui_click)
+	_play_btn.disabled = true
+	_leaderboard_btn.disabled = true
+	_settings_btn.disabled = true
+	var LeaderboardScript: GDScript = load("res://scripts/ui/leaderboard_screen.gd") as GDScript
+	if LeaderboardScript:
+		var lb_screen := Control.new()
+		lb_screen.set_script(LeaderboardScript)
+		lb_screen.back_pressed.connect(_on_leaderboard_back)
+		add_child(lb_screen)
+
+
+func _on_leaderboard_back() -> void:
+	_play_btn.disabled = false
+	_leaderboard_btn.disabled = false
+	_settings_btn.disabled = false
 
 
 func _on_settings_pressed() -> void:

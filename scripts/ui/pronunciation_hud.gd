@@ -32,19 +32,29 @@ func _ready() -> void:
 	PronunciationManager.mic_status_changed.connect(_on_mic_status_changed)
 	PronunciationManager.volume_updated.connect(_on_volume_updated)
 	PronunciationManager.recognized_text_changed.connect(_on_recognized_text_changed)
+	GameManager.game_paused.connect(_on_game_paused)
+	GameManager.game_resumed.connect(_on_game_resumed)
 
 
 func _create_ui() -> void:
-	var prompt_center := CenterContainer.new()
-	prompt_center.anchors_preset = Control.PRESET_TOP_WIDE
-	prompt_center.anchor_right = 1.0
-	prompt_center.offset_top = 126
-	prompt_center.offset_bottom = 260
-	prompt_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(prompt_center)
+	var prompt_strip := HBoxContainer.new()
+	prompt_strip.anchors_preset = Control.PRESET_TOP_WIDE
+	prompt_strip.anchor_right = 1.0
+	prompt_strip.offset_left = 240
+	prompt_strip.offset_right = -380
+	prompt_strip.offset_top = 136
+	prompt_strip.offset_bottom = 258
+	prompt_strip.add_theme_constant_override("separation", 0)
+	prompt_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(prompt_strip)
+
+	var left_spacer := Control.new()
+	left_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	prompt_strip.add_child(left_spacer)
 
 	_panel = PanelContainer.new()
-	_panel.custom_minimum_size = Vector2(440, 118)
+	_panel.custom_minimum_size = Vector2(420, 112)
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var style := StyleBoxFlat.new()
@@ -65,7 +75,13 @@ func _create_ui() -> void:
 	style.shadow_color = Color(0.20, 0.12, 0.04, 0.10)
 	style.shadow_size = 5
 	_panel.add_theme_stylebox_override("panel", style)
-	prompt_center.add_child(_panel)
+	prompt_strip.add_child(_panel)
+
+	var right_spacer := Control.new()
+	right_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_spacer.size_flags_stretch_ratio = 2.1
+	right_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	prompt_strip.add_child(right_spacer)
 
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -93,7 +109,7 @@ func _create_ui() -> void:
 	listen_center.anchor_top = 1.0
 	listen_center.anchor_right = 1.0
 	listen_center.anchor_bottom = 1.0
-	listen_center.offset_top = -240
+	listen_center.offset_top = -222
 	listen_center.offset_bottom = -54
 	listen_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(listen_center)
@@ -240,3 +256,12 @@ func _on_volume_updated(level: float) -> void:
 			bar_fill.bg_color = UITheme.get_color("accent", PRONUNCIATION_SKIN)
 		else:
 			bar_fill.bg_color = UITheme.get_color("danger", PRONUNCIATION_SKIN)
+
+
+func _on_game_paused() -> void:
+	visible = false
+
+
+func _on_game_resumed() -> void:
+	if GameManager.is_pronunciation_mode():
+		visible = true

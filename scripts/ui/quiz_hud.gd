@@ -1,15 +1,24 @@
 extends Control
 
-const UISkinIds = preload("res://scripts/ui/ui_skin_ids.gd")
-const QUIZ_SKIN := UISkinIds.NATURE
+# Stable quiz HUD layout for gameplay screen
+# - Top centered question panel
+# - Bottom centered instruction pill
+# - Bottom row of 4 answer cards
+
+const _COL_DARK_GREEN  := Color("1E5128")
+const _COL_MID_GREEN   := Color("2D7A3D")
+const _COL_CREAM       := Color("FFFAE8")
+const _COL_CREAM_HOVER := Color("F4F0DE")
+const _COL_WHITE       := Color.WHITE
+const _COL_SUCCESS     := Color("A8E063")
+const _COL_ERROR       := Color("FF8A80")
 
 var _question_label: Label
-var _choices_container: GridContainer
 var _choice_buttons: Array[Button] = []
-var _feedback_label: Label
-var _panel: PanelContainer
-var _choices_panel: PanelContainer
-var _instructions: Label
+var _choice_labels: Array[Label] = []
+var _choice_panels: Array[PanelContainer] = []
+var _instructions_label: Label
+var _question_panel: PanelContainer
 
 
 func _ready() -> void:
@@ -22,158 +31,266 @@ func _ready() -> void:
 	anchor_bottom = 1.0
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	_create_ui()
+	_create_question_panel()
+	_create_answer_area()
 
 	QuizManager.question_changed.connect(_on_question_changed)
 	QuizManager.answer_result.connect(_on_answer_result)
+	GameManager.game_paused.connect(_on_game_paused)
+	GameManager.game_resumed.connect(_on_game_resumed)
 
 
-func _create_ui() -> void:
-	var question_center := CenterContainer.new()
-	question_center.anchors_preset = Control.PRESET_TOP_WIDE
-	question_center.anchor_right = 1.0
-	question_center.offset_top = 128
-	question_center.offset_bottom = 236
-	question_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(question_center)
+func _create_question_panel() -> void:
+	var top_strip := Control.new()
+	top_strip.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	top_strip.anchor_right = 1.0
+	top_strip.offset_top = 10.0
+	top_strip.offset_bottom = 140.0
+	top_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(top_strip)
 
-	_panel = PanelContainer.new()
-	_panel.custom_minimum_size = Vector2(380, 88)
-	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.anchor_right = 1.0
+	center.anchor_bottom = 1.0
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_strip.add_child(center)
 
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.97, 0.95, 0.88, 0.90)
-	style.corner_radius_top_left = 22
-	style.corner_radius_top_right = 22
-	style.corner_radius_bottom_left = 22
-	style.corner_radius_bottom_right = 22
-	style.content_margin_left = 22.0
-	style.content_margin_right = 22.0
-	style.content_margin_top = 16.0
-	style.content_margin_bottom = 16.0
-	style.border_color = Color("8A5A35").darkened(0.08)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.shadow_color = Color(0.20, 0.12, 0.04, 0.10)
-	style.shadow_size = 5
-	_panel.add_theme_stylebox_override("panel", style)
-	question_center.add_child(_panel)
+	_question_panel = PanelContainer.new()
+	_question_panel.custom_minimum_size = Vector2(720, 110)
+	_question_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_question_panel.add_theme_stylebox_override("panel", _make_panel_style(_COL_CREAM, _COL_DARK_GREEN, 6, 28, 10))
+	center.add_child(_question_panel)
 
-	var question_box := VBoxContainer.new()
-	question_box.alignment = BoxContainer.ALIGNMENT_CENTER
-	question_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(question_box)
+	var q_center := CenterContainer.new()
+	q_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	q_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	q_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_question_panel.add_child(q_center)
 
-	_question_label = UITheme.make_label("", UITheme.FONT_HEADING - 2, UITheme.get_color("text_ink", QUIZ_SKIN), QUIZ_SKIN)
+	_question_label = Label.new()
+	_question_label.text = ""
 	_question_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_question_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_question_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	question_box.add_child(_question_label)
+	if UITheme.font_display:
+		_question_label.add_theme_font_override("font", UITheme.font_display)
+	_question_label.add_theme_font_size_override("font_size", 40)
+	_question_label.add_theme_color_override("font_color", _COL_DARK_GREEN)
+	q_center.add_child(_question_label)
 
-	var answer_center := CenterContainer.new()
-	answer_center.anchors_preset = Control.PRESET_BOTTOM_WIDE
-	answer_center.anchor_top = 1.0
-	answer_center.anchor_right = 1.0
-	answer_center.anchor_bottom = 1.0
-	answer_center.offset_top = -250
-	answer_center.offset_bottom = -56
-	answer_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(answer_center)
 
-	_choices_panel = PanelContainer.new()
-	_choices_panel.custom_minimum_size = Vector2(360, 170)
-	_choices_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var answers_style := style.duplicate() as StyleBoxFlat
-	answers_style.bg_color = Color(0.97, 0.95, 0.88, 0.76)
-	answers_style.content_margin_left = 18.0
-	answers_style.content_margin_right = 18.0
-	answers_style.content_margin_top = 16.0
-	answers_style.content_margin_bottom = 14.0
-	_choices_panel.add_theme_stylebox_override("panel", answers_style)
-	answer_center.add_child(_choices_panel)
+func _create_answer_area() -> void:
+	# This container sits directly below the top question panel
+	var area := Control.new()
+	area.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	area.anchor_right = 1.0
+	area.offset_top = 150.0
+	area.offset_bottom = 300.0
+	area.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(area)
 
-	var answers_vbox := VBoxContainer.new()
-	answers_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	answers_vbox.add_theme_constant_override("separation", 10)
-	answers_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_choices_panel.add_child(answers_vbox)
+	var center := CenterContainer.new()
+	center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	center.anchor_right = 1.0
+	center.anchor_bottom = 1.0
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	area.add_child(center)
 
-	_choices_container = GridContainer.new()
-	_choices_container.columns = 2
-	_choices_container.add_theme_constant_override("h_separation", 16)
-	_choices_container.add_theme_constant_override("v_separation", 12)
-	_choices_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	answers_vbox.add_child(_choices_container)
+	var vbox := VBoxContainer.new()
+	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_theme_constant_override("separation", 16)
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	center.add_child(vbox)
+
+	# Instruction pill
+	var pill_center := CenterContainer.new()
+	pill_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pill_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(pill_center)
+
+	var pill := PanelContainer.new()
+	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pill.add_theme_stylebox_override("panel", _make_panel_style(_COL_DARK_GREEN, _COL_DARK_GREEN, 0, 22, 0))
+	pill_center.add_child(pill)
+
+	var pill_margin := MarginContainer.new()
+	pill_margin.add_theme_constant_override("margin_left", 24)
+	pill_margin.add_theme_constant_override("margin_right", 24)
+	pill_margin.add_theme_constant_override("margin_top", 8)
+	pill_margin.add_theme_constant_override("margin_bottom", 8)
+	pill_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pill.add_child(pill_margin)
+
+	_instructions_label = Label.new()
+	_instructions_label.text = "Choose the correct answer"
+	_instructions_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_instructions_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_instructions_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if UITheme.font_button:
+		_instructions_label.add_theme_font_override("font", UITheme.font_button)
+	_instructions_label.add_theme_font_size_override("font_size", 21)
+	_instructions_label.add_theme_color_override("font_color", _COL_WHITE)
+	pill_margin.add_child(_instructions_label)
+
+	# Compact answer row directly below the question
+	var answers_center := CenterContainer.new()
+	answers_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	answers_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(answers_center)
+
+	# same visual width zone as the question box
+	var row_shell := HBoxContainer.new()
+	row_shell.custom_minimum_size = Vector2(820, 0) # adjust later if needed
+	row_shell.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	row_shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	answers_center.add_child(row_shell)
+
+	var left_spacer := Control.new()
+	left_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row_shell.add_child(left_spacer)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.add_theme_constant_override("separation", 12)
+	btn_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row_shell.add_child(btn_row)
 
 	for i in 4:
-		var choice_btn := _create_choice_button(i)
-		_choices_container.add_child(choice_btn)
-		_choice_buttons.append(choice_btn)
+		var card := _create_answer_card(i)
+		btn_row.add_child(card)
 
-	_feedback_label = UITheme.make_label("", UITheme.FONT_BODY, UITheme.get_color("primary_dark", QUIZ_SKIN), QUIZ_SKIN)
-	_feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_feedback_label.modulate.a = 0.0
-	_feedback_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	answers_vbox.add_child(_feedback_label)
-
-	var is_mobile: bool = OS.has_feature("mobile") or OS.has_feature("android") or OS.has_feature("ios")
-	var hint_text := "Answer correctly: Jump | Slide | Blast | Bridge" if is_mobile else "Press 1-4: Jump | Slide | Blast | Bridge"
-	_instructions = UITheme.make_label(hint_text, UITheme.FONT_SMALL, UITheme.get_color("text_dim", QUIZ_SKIN), QUIZ_SKIN)
-	_instructions.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_instructions.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	answers_vbox.add_child(_instructions)
+	var right_spacer := Control.new()
+	right_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row_shell.add_child(right_spacer)
 
 
-func _create_choice_button(index: int) -> Button:
-	var btn := Button.new()
-	btn.custom_minimum_size = Vector2(150, 56)
-	btn.text = "--"
-	btn.flat = false
+func _create_answer_card(index: int) -> Control:
+	var root := Control.new()
+	root.custom_minimum_size = Vector2(150, 84)
+	root.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	root.mouse_filter = Control.MOUSE_FILTER_PASS
 
-	if UITheme.font_primary:
-		btn.add_theme_font_override("font", UITheme.font_primary)
-	btn.add_theme_font_size_override("font_size", UITheme.FONT_HEADING)
+	var panel := PanelContainer.new()
+	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	panel.anchor_right = 1.0
+	panel.anchor_bottom = 1.0
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_theme_stylebox_override("panel", _make_panel_style(_COL_CREAM, _COL_DARK_GREEN, 3, 22, 4))
+	root.add_child(panel)
+	_choice_panels.append(panel)
 
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(0.31, 0.22, 0.13, 0.96)
-	normal.corner_radius_top_left = 18
-	normal.corner_radius_top_right = 18
-	normal.corner_radius_bottom_left = 18
-	normal.corner_radius_bottom_right = 18
-	normal.content_margin_left = 20.0
-	normal.content_margin_right = 20.0
-	normal.content_margin_top = 8.0
-	normal.content_margin_bottom = 8.0
-	normal.bg_color = UITheme.get_color("panel_light", QUIZ_SKIN)
-	normal.border_color = Color("8A5A35")
-	normal.border_width_left = 3
-	normal.border_width_right = 3
-	normal.border_width_top = 3
-	normal.border_width_bottom = 3
-	normal.shadow_color = Color(0.30, 0.18, 0.08, 0.12)
-	normal.shadow_size = 4
-	btn.add_theme_stylebox_override("normal", normal)
+	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
+	margin.anchor_right = 1.0
+	margin.anchor_bottom = 1.0
+	margin.add_theme_constant_override("margin_left", 5)
+	margin.add_theme_constant_override("margin_right", 5)
+	margin.add_theme_constant_override("margin_top", 3)
+	margin.add_theme_constant_override("margin_bottom", 3)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(margin)
 
-	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = Color("FFF8E6")
-	hover.border_color = UITheme.get_color("primary", QUIZ_SKIN)
-	hover.shadow_size = 6
-	btn.add_theme_stylebox_override("hover", hover)
+	var row := HBoxContainer.new()
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	row.alignment = BoxContainer.ALIGNMENT_CENTER
+	row.add_theme_constant_override("separation", 5)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_child(row)
 
-	var pressed := normal.duplicate() as StyleBoxFlat
-	pressed.bg_color = UITheme.get_color("primary", QUIZ_SKIN)
-	pressed.border_color = UITheme.get_color("primary_dark", QUIZ_SKIN)
-	pressed.shadow_size = 2
-	btn.add_theme_stylebox_override("pressed", pressed)
+	var badge := PanelContainer.new()
+	badge.custom_minimum_size = Vector2(56, 56)
+	badge.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	btn.add_theme_color_override("font_color", UITheme.get_color("text_ink", QUIZ_SKIN))
-	btn.add_theme_color_override("font_hover_color", Color.WHITE)
-	btn.add_theme_color_override("font_pressed_color", Color.WHITE)
+	var badge_style := StyleBoxFlat.new()
+	badge_style.bg_color = _COL_DARK_GREEN
+	badge_style.corner_radius_top_left = 28
+	badge_style.corner_radius_top_right = 28
+	badge_style.corner_radius_bottom_left = 28
+	badge_style.corner_radius_bottom_right = 28
+	badge.add_theme_stylebox_override("panel", badge_style)
+
+	row.add_child(badge)
+
+	var badge_center := CenterContainer.new()
+	badge_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	badge_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	badge_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.add_child(badge_center)
+
+	var badge_label := Label.new()
+	badge_label.text = str(index + 1)
+	badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	badge_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if UITheme.font_display:
+		badge_label.add_theme_font_override("font", UITheme.font_display)
+	badge_label.add_theme_font_size_override("font_size", 22)
+	badge_label.add_theme_color_override("font_color", _COL_WHITE)
+	badge_center.add_child(badge_label)
+
+	var answer_lbl := Label.new()
+	answer_lbl.text = "--"
+	answer_lbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	answer_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	answer_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	answer_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if UITheme.font_display:
+		answer_lbl.add_theme_font_override("font", UITheme.font_display)
+	answer_lbl.add_theme_font_size_override("font_size", 28)
+	answer_lbl.add_theme_color_override("font_color", _COL_DARK_GREEN)
+	row.add_child(answer_lbl)
+	_choice_labels.append(answer_lbl)
+
+	var click_overlay := Button.new()
+	click_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	click_overlay.anchor_right = 1.0
+	click_overlay.anchor_bottom = 1.0
+	click_overlay.focus_mode = Control.FOCUS_NONE
+	click_overlay.text = ""
+	click_overlay.flat = true
+	click_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	var empty_style := StyleBoxEmpty.new()
+	click_overlay.add_theme_stylebox_override("normal", empty_style)
+	click_overlay.add_theme_stylebox_override("hover", empty_style)
+	click_overlay.add_theme_stylebox_override("pressed", empty_style)
+	click_overlay.add_theme_stylebox_override("focus", empty_style)
 
 	var idx := index
-	btn.pressed.connect(func(): _on_choice_pressed(idx))
-	return btn
+	click_overlay.pressed.connect(func(): _on_choice_pressed(idx))
+	click_overlay.mouse_entered.connect(func():
+		panel.add_theme_stylebox_override("panel", _make_panel_style(_COL_CREAM_HOVER, _COL_MID_GREEN, 3, 22, 6))
+	)
+	click_overlay.mouse_exited.connect(func():
+		panel.add_theme_stylebox_override("panel", _make_panel_style(_COL_CREAM, _COL_DARK_GREEN, 3, 22, 4))
+	)
+
+	root.add_child(click_overlay)
+	_choice_buttons.append(click_overlay)
+
+	return root
+
+
+func _make_panel_style(bg: Color, border: Color, border_width: int, radius: int, shadow_size: int) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg
+	s.border_color = border
+	s.border_width_left = border_width
+	s.border_width_right = border_width
+	s.border_width_top = border_width
+	s.border_width_bottom = border_width
+	s.corner_radius_top_left = radius
+	s.corner_radius_top_right = radius
+	s.corner_radius_bottom_left = radius
+	s.corner_radius_bottom_right = radius
+	s.shadow_color = Color(0, 0, 0, 0.14)
+	s.shadow_size = shadow_size
+	s.shadow_offset = Vector2(0, 3)
+	return s
 
 
 func _on_choice_pressed(index: int) -> void:
@@ -183,33 +300,50 @@ func _on_choice_pressed(index: int) -> void:
 func _on_question_changed(question: Dictionary) -> void:
 	if question.is_empty():
 		_question_label.text = ""
-		for btn in _choice_buttons:
-			btn.text = "--"
-		_instructions.text = ""
+		for lbl in _choice_labels:
+			lbl.text = "--"
+		_instructions_label.text = "Choose the correct answer"
+		_instructions_label.add_theme_color_override("font_color", _COL_WHITE)
 		return
 
 	_question_label.text = question.get("text", "?")
+
 	var choices: Array = question.get("choices", [])
-	for i in mini(choices.size(), _choice_buttons.size()):
-		_choice_buttons[i].text = str(choices[i])
+	for i in range(_choice_labels.size()):
+		if i < choices.size():
+			_choice_labels[i].text = str(choices[i])
+		else:
+			_choice_labels[i].text = "--"
 
-	_instructions.text = "Answer correctly to pass the obstacle!"
+	_instructions_label.text = "Choose the correct answer"
+	_instructions_label.add_theme_color_override("font_color", _COL_WHITE)
 
-	_panel.scale = Vector2(0.95, 0.95)
-	_choices_panel.scale = Vector2(0.97, 0.97)
+	_question_panel.pivot_offset = _question_panel.size * 0.5
+	_question_panel.scale = Vector2(0.94, 0.94)
 	var tw := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
-	tw.tween_property(_panel, "scale", Vector2.ONE, 0.2)
-	tw.parallel().tween_property(_choices_panel, "scale", Vector2.ONE, 0.2)
+	tw.tween_property(_question_panel, "scale", Vector2.ONE, 0.20)
 
 
 func _on_answer_result(correct: bool) -> void:
 	if correct:
-		_feedback_label.text = "CORRECT!"
-		_feedback_label.add_theme_color_override("font_color", Color(0.42, 0.82, 0.34))
+		_instructions_label.text = "✓ Correct!"
+		_instructions_label.add_theme_color_override("font_color", _COL_SUCCESS)
 	else:
-		_feedback_label.text = "WRONG!"
-		_feedback_label.add_theme_color_override("font_color", UITheme.get_color("danger", QUIZ_SKIN))
+		_instructions_label.text = "✗ Try again!"
+		_instructions_label.add_theme_color_override("font_color", _COL_ERROR)
 
-	_feedback_label.modulate.a = 1.0
 	var tw := create_tween()
-	tw.tween_property(_feedback_label, "modulate:a", 0.0, 0.6).set_delay(0.3)
+	tw.tween_interval(0.8)
+	tw.tween_callback(func():
+		_instructions_label.text = "Choose the correct answer"
+		_instructions_label.add_theme_color_override("font_color", _COL_WHITE)
+	)
+
+
+func _on_game_paused() -> void:
+	visible = false
+
+
+func _on_game_resumed() -> void:
+	if GameManager.is_quiz_mode():
+		visible = true

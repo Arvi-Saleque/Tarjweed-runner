@@ -697,14 +697,16 @@ static func _spawn_river_crossing(chunk: Node3D, chunk_length: float, chunk_dist
 static func _pick_pattern(difficulty: float) -> int:
 	## Returns a pattern type:
 	## 0 = single lane blocked
-	## 1 = two lanes blocked (must switch to specific lane)
+	## 1 = two lanes blocked (one lane always left open — passability guaranteed)
+	## Pattern 2 (all three lanes) is intentionally never returned; the player
+	## must always have at least one escape lane.
 	var roll: float = randf()
 
-	# At low difficulty, mostly single lane. At high difficulty, more multi-lane.
-	var two_lane_chance: float = clampf(0.05 + (difficulty - 1.0) * 0.15, 0.05, 0.35)
+	# At low difficulty, mostly single lane. At high difficulty, more two-lane.
+	var two_lane_chance: float = clampf(0.05 + (difficulty - 1.0) * 0.15, 0.05, 0.40)
 
 	if roll < two_lane_chance:
-		return 1  # Two lanes blocked
+		return 1  # Two lanes blocked, one always open
 	return 0  # Single lane blocked
 
 

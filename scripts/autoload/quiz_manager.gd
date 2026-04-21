@@ -118,52 +118,123 @@ func _on_game_over() -> void:
 
 
 func _generate_question() -> void:
-	## Generate a RANDOM quiz question — not tied to obstacle type.
 	var obs_type: int = _detect_nearby_obstacle_type(true)
 	var q_type: QuestionType = OBS_TYPE_TO_QUESTION.get(obs_type, QuestionType.ADDITION) as QuestionType
 
-	var number_scale: float = GameManager.get_quiz_number_scale()
-	var max_num: int = 10 + int(GameManager.difficulty_multiplier * 5.0 * number_scale)
-	max_num = mini(max_num, 50)
+	# Tier-aware question generation:
+	#   tier 0 = before threshold | tier 1 = after threshold
+	#
+	# Easy   tier 0: 1-digit + / −
+	# Easy   tier 1: 2-digit + / −
+	# Medium tier 0: 2-digit + / −  or  1-digit × / ÷
+	# Medium tier 1: 2-digit + / −  or  2-digit ÷ (e.g. 50 ÷ 5)
+	# Hard   tier 0: same as Medium tier 0
+	# Hard   tier 1: 2-digit × (e.g. 12 × 8)  plus Medium tier 1 options
+	var tier: int = _get_quiz_tier()
+	var diff: String = GameManager.current_difficulty_id
 
 	var a: int = 0
 	var b: int = 0
 	var correct_answer: int = 0
 	var question_text: String = ""
 
+	match diff:
+		"easy":
+			# Force only + and − regardless of obstacle type
+			q_type = QuestionType.ADDITION if randi() % 2 == 0 else QuestionType.SUBTRACTION
+			if tier == 0:
+				# 1-digit operands (1–9)
+				a = randi_range(1, 9)
+				b = randi_range(1, 9)
+			else:
+				# 2-digit operands (10–30)
+				a = randi_range(10, 30)
+				b = randi_range(1, 20)
+		"medium":
+			if q_type == QuestionType.MULTIPLICATION or q_type == QuestionType.DIVISION:
+				# Mult/div obstacle encountered
+				if tier == 0:
+					# 1-digit × or ÷
+					if q_type == QuestionType.MULTIPLICATION:
+						a = randi_range(1, 9)
+						b = randi_range(1, 9)
+					else:
+						b = randi_range(1, 9)
+						correct_answer = randi_range(1, 9)
+						a = b * correct_answer
+				else:
+					# tier 1: 2-digit ÷ (e.g. 50 ÷ 5)
+					q_type = QuestionType.DIVISION
+					b = randi_range(2, 10)
+					correct_answer = randi_range(2, 10)
+					a = b * correct_answer   # a can reach 100
+			else:
+				# + and − always use 2-digit operands in medium
+				a = randi_range(10, 40)
+				b = randi_range(1, 30)
+		"hard":
+			if q_type == QuestionType.MULTIPLICATION:
+				if tier == 0:
+					# 1-digit ×
+					a = randi_range(1, 9)
+					b = randi_range(1, 9)
+				else:
+					# 2-digit × (e.g. 12 × 8)
+					a = randi_range(10, 20)
+					b = randi_range(2, 12)
+			elif q_type == QuestionType.DIVISION:
+				if tier == 0:
+					b = randi_range(1, 9)
+					correct_answer = randi_range(1, 9)
+					a = b * correct_answer
+				else:
+					b = randi_range(2, 10)
+					correct_answer = randi_range(2, 10)
+					a = b * correct_answer
+			else:
+				# + and − — 2-digit
+				a = randi_range(10, 50)
+				b = randi_range(1, 40)
+		_:
+			# Fallback (pronunciation mode or unknown — simple 1-digit)
+			q_type = QuestionType.ADDITION
+			a = randi_range(1, 9)
+			b = randi_range(1, 9)
+
+	# Build question text and correct answer for each type
 	match q_type:
 		QuestionType.ADDITION:
-			a = randi_range(1, max_num)
-			b = randi_range(1, max_num)
 			correct_answer = a + b
 			question_text = "%d + %d = ?" % [a, b]
 		QuestionType.SUBTRACTION:
-			a = randi_range(1, max_num)
-			b = randi_range(1, max_num)
 			if a < b:
-				var temp := a
-				a = b
-				b = temp
+				var tmp := a; a = b; b = tmp
 			correct_answer = a - b
 			question_text = "%d - %d = ?" % [a, b]
 		QuestionType.MULTIPLICATION:
-			a = randi_range(1, 12)
-			b = randi_range(1, 12)
 			correct_answer = a * b
 			question_text = "%d × %d = ?" % [a, b]
 		QuestionType.DIVISION:
-			# Generate clean division (no remainder)
-			b = randi_range(1, 12)
-			correct_answer = randi_range(1, 12)
-			a = b * correct_answer
+			# a and correct_answer already set above for div; re-confirm text
 			question_text = "%d ÷ %d = ?" % [a, b]
 
-	# Generate 4 choices (1 correct, 3 wrong)
+	# Generate 4 answer choices: 1 correct + 3 plausible wrong answers
+	var spread: int = maxi(3, int(correct_answer * 0.3))
 	var choices: Array[int] = [correct_answer]
+	var attempts: int = 0
+	while choices.size() < 4 and attempts < 60:
+		attempts += 1
+		var wrong: int = correct_answer + randi_range(-spread, spread)
+		if wrong <= 0 or wrong == correct_answer or wrong in choices:
+			continue
+		choices.append(wrong)
+
+	# Fill any remaining slots if spread was too narrow
+	var filler: int = 1
 	while choices.size() < 4:
-		var wrong: int = correct_answer + randi_range(-10, 10)
-		if wrong != correct_answer and wrong > 0 and wrong not in choices:
-			choices.append(wrong)
+		if filler != correct_answer and filler not in choices:
+			choices.append(filler)
+		filler += 1
 
 	choices.shuffle()
 	var correct_index: int = choices.find(correct_answer)
@@ -175,9 +246,17 @@ func _generate_question() -> void:
 		"correct_answer": correct_answer,
 		"question_type": q_type,
 		"obstacle_type": obs_type,
+		"tier": tier,
 	}
 
 	question_changed.emit(current_question)
+
+
+## Returns 0 (before threshold) or 1 (after threshold) based on difficulty.
+## Threshold distance is 1000 m for all difficulties.
+func _get_quiz_tier() -> int:
+	const THRESHOLD: float = 1000.0
+	return 1 if GameManager.distance >= THRESHOLD else 0
 
 
 func _detect_nearby_obstacle_type(mark_used: bool = false) -> int:

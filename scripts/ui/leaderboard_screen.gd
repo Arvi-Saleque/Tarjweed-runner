@@ -27,16 +27,6 @@ func _build_layout() -> void:
 	content.add_child(left)
 	var left_body := left.get_meta("body") as VBoxContainer
 
-	var hint := UITheme.make_label(
-		"Game Over will feed this board automatically once the new menu flow is wired in end to end.",
-		UITheme.FONT_SMALL,
-		UITheme.get_color("text_dim", NatureMenuStyle.SKIN),
-		NatureMenuStyle.SKIN
-	)
-	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	left_body.add_child(hint)
-
 	var wallet := NatureMenuStyle.make_card("Coin Wallet", "", Vector2(0, 120), true)
 	left_body.add_child(wallet)
 	var wallet_body := wallet.get_meta("body") as VBoxContainer
@@ -52,7 +42,7 @@ func _build_layout() -> void:
 	)
 	left_body.add_child(back_btn)
 
-	var board := NatureMenuStyle.make_card("Top Runs", "Name, distance, and coins are shown now. Difficulty can be added later.", Vector2(780, 620))
+	var board := NatureMenuStyle.make_card("Top Runs", "Ranked by distance. Keep running to climb the board!", Vector2(780, 620))
 	board.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.add_child(board)
 	var board_body := board.get_meta("body") as VBoxContainer
