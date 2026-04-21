@@ -1,0 +1,7 @@
+# Words confirmed working with Vosk
+# Format: Word | Pronunciation hint
+
+Cat | CAT
+Dog | DOG
+Eat | EET
+Sun | SUN
