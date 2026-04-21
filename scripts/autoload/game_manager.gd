@@ -84,6 +84,7 @@ var current_speed: float = BASE_SPEED
 var difficulty_multiplier: float = 1.0
 var play_time: float = 0.0   # Seconds since game_started
 var current_mode: String = "normal"
+var current_quiz_style: String = "math"
 var current_visual_theme: String = "nature"
 var current_player_variant: String = "nature_default"
 var current_player_name: String = MenuFlowCatalog.DEFAULT_PLAYER_NAME
@@ -239,6 +240,9 @@ func get_speed_ratio() -> float:
 
 
 func get_difficulty_profile() -> Dictionary:
+	# Quiz and pronunciation modes run at Easy speed/obstacle profile.
+	if is_quiz_mode() or is_pronunciation_mode():
+		return DIFFICULTY_PROFILES["easy"] as Dictionary
 	return DIFFICULTY_PROFILES.get(current_difficulty_id, DIFFICULTY_PROFILES[MenuFlowCatalog.DEFAULT_DIFFICULTY]) as Dictionary
 
 

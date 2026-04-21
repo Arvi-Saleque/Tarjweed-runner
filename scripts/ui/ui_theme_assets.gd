@@ -4,6 +4,8 @@ const FONT_PRIMARY := "res://fonts/Atkinson_Hyperlegible/AtkinsonHyperlegible-Re
 const FONT_NARROW := "res://fonts/Atkinson_Hyperlegible/AtkinsonHyperlegible-Bold.ttf"
 const FONT_DISPLAY := "res://fonts/Fredoka/static/Fredoka-Bold.ttf"
 const FONT_BUTTON := "res://fonts/Fredoka/static/Fredoka-SemiBold.ttf"
+const FONT_ARABIC := "res://fonts/Noto_Naskh_Arabic/static/NotoNaskhArabic-Bold.ttf"
+const FONT_BANGLA := "res://fonts/Noto_Sans_Bengali/static/NotoSansBengali-SemiBold.ttf"
 
 const BTN_PRIMARY := "res://assets/UI/kenney_adventure/button_brown.png"
 const BTN_SECONDARY := "res://assets/UI/kenney_adventure/button_grey.png"

@@ -1,21 +1,130 @@
 extends Node
 ## QuizManager — Generates and tracks quiz questions for Quiz mode.
-## 4 question types tied to 4 obstacle types:
-##   Addition → Jump | Subtraction → Slide | Multiplication → Blast | Division → Bridge
+## Supports 4 quiz styles: math, arabic_huroof, bangla_english, english_bangla.
+## Math: 4 question types tied to 4 obstacle types (Addition/Subtraction/Multiplication/Division).
 
 signal question_changed(question: Dictionary)
 signal answer_result(correct: bool)
 
-# Question types mapped to obstacle types
+# Question types mapped to obstacle types (math only)
 enum QuestionType { ADDITION, SUBTRACTION, MULTIPLICATION, DIVISION }
 
-# Maps obstacle type index to question type
 const OBS_TYPE_TO_QUESTION: Dictionary = {
-	0: QuestionType.ADDITION,       # Jump
-	1: QuestionType.SUBTRACTION,    # Slide
-	2: QuestionType.MULTIPLICATION, # Blast
-	3: QuestionType.DIVISION,       # Bridge
+	0: QuestionType.ADDITION,
+	1: QuestionType.SUBTRACTION,
+	2: QuestionType.MULTIPLICATION,
+	3: QuestionType.DIVISION,
 }
+
+# --- Arabic Letters (Huroof) — letter shown as question, Bangla name as answer ---
+const ARABIC_HUROOF: Array[Dictionary] = [
+	{"letter": "ا", "bangla": "আলিফ"},
+	{"letter": "ب", "bangla": "বা"},
+	{"letter": "ت", "bangla": "তা"},
+	{"letter": "ث", "bangla": "ছা"},
+	{"letter": "ج", "bangla": "জিম"},
+	{"letter": "ح", "bangla": "হা"},
+	{"letter": "خ", "bangla": "খা"},
+	{"letter": "د", "bangla": "দাল"},
+	{"letter": "ذ", "bangla": "জাল"},
+	{"letter": "ر", "bangla": "রা"},
+	{"letter": "ز", "bangla": "যাই"},
+	{"letter": "س", "bangla": "সিন"},
+	{"letter": "ش", "bangla": "শিন"},
+	{"letter": "ص", "bangla": "সোয়াদ"},
+	{"letter": "ض", "bangla": "দোয়াদ"},
+	{"letter": "ط", "bangla": "তোয়া"},
+	{"letter": "ظ", "bangla": "জোয়া"},
+	{"letter": "ع", "bangla": "আইন"},
+	{"letter": "غ", "bangla": "গাইন"},
+	{"letter": "ف", "bangla": "ফা"},
+	{"letter": "ق", "bangla": "ক্বাফ"},
+	{"letter": "ك", "bangla": "কাফ"},
+	{"letter": "ل", "bangla": "লাম"},
+	{"letter": "م", "bangla": "মিম"},
+	{"letter": "ن", "bangla": "নুন"},
+	{"letter": "و", "bangla": "ওয়াও"},
+	{"letter": "ه", "bangla": "হা"},
+	{"letter": "ي", "bangla": "ইয়া"},
+]
+
+# --- Arabic Letters + Harakat — letter+harakat as question, Bangla sound as answer ---
+const ARABIC_HARAKAT: Array[Dictionary] = [
+	{"text": "بَ", "bangla": "বা"},
+	{"text": "بِ", "bangla": "বি"},
+	{"text": "بُ", "bangla": "বু"},
+	{"text": "تَ", "bangla": "তা"},
+	{"text": "تِ", "bangla": "তি"},
+	{"text": "تُ", "bangla": "তু"},
+	{"text": "سَ", "bangla": "সা"},
+	{"text": "سِ", "bangla": "সি"},
+	{"text": "سُ", "bangla": "সু"},
+	{"text": "مَ", "bangla": "মা"},
+	{"text": "مِ", "bangla": "মি"},
+	{"text": "مُ", "bangla": "মু"},
+	{"text": "نَ", "bangla": "না"},
+	{"text": "نِ", "bangla": "নি"},
+	{"text": "نُ", "bangla": "নু"},
+	{"text": "رَ", "bangla": "রা"},
+	{"text": "رِ", "bangla": "রি"},
+	{"text": "رُ", "bangla": "রু"},
+	{"text": "لَ", "bangla": "লা"},
+	{"text": "لِ", "bangla": "লি"},
+	{"text": "لُ", "bangla": "লু"},
+	{"text": "كَ", "bangla": "কা"},
+	{"text": "كِ", "bangla": "কি"},
+	{"text": "كُ", "bangla": "কু"},
+]
+
+# --- Short Arabic Words — Arabic word as question, Bangla meaning as answer ---
+const ARABIC_WORDS: Array[Dictionary] = [
+	{"arabic": "كِتَاب", "bangla": "বই"},
+	{"arabic": "بَيْت", "bangla": "ঘর"},
+	{"arabic": "مَاء", "bangla": "পানি"},
+	{"arabic": "نَار", "bangla": "আগুন"},
+	{"arabic": "أُمّ", "bangla": "মা"},
+	{"arabic": "أَب", "bangla": "বাবা"},
+	{"arabic": "قَلَم", "bangla": "কলম"},
+	{"arabic": "بَاب", "bangla": "দরজা"},
+	{"arabic": "شَمْس", "bangla": "সূর্য"},
+	{"arabic": "قَمَر", "bangla": "চাঁদ"},
+	{"arabic": "نَجْم", "bangla": "তারা"},
+	{"arabic": "كَلْب", "bangla": "কুকুর"},
+]
+
+# --- Word Bank — Bangla/English pairs for translation quizzes ---
+const WORD_BANK: Array[Dictionary] = [
+	{"bangla": "বিড়াল", "english": "Cat"},
+	{"bangla": "কুকুর", "english": "Dog"},
+	{"bangla": "মাছ", "english": "Fish"},
+	{"bangla": "পাখি", "english": "Bird"},
+	{"bangla": "গরু", "english": "Cow"},
+	{"bangla": "ঘোড়া", "english": "Horse"},
+	{"bangla": "হাতি", "english": "Elephant"},
+	{"bangla": "বাঘ", "english": "Tiger"},
+	{"bangla": "সিংহ", "english": "Lion"},
+	{"bangla": "বানর", "english": "Monkey"},
+	{"bangla": "খরগোশ", "english": "Rabbit"},
+	{"bangla": "ব্যাঙ", "english": "Frog"},
+	{"bangla": "সাপ", "english": "Snake"},
+	{"bangla": "আপেল", "english": "Apple"},
+	{"bangla": "কলা", "english": "Banana"},
+	{"bangla": "আম", "english": "Mango"},
+	{"bangla": "গাছ", "english": "Tree"},
+	{"bangla": "ফুল", "english": "Flower"},
+	{"bangla": "পানি", "english": "Water"},
+	{"bangla": "আগুন", "english": "Fire"},
+	{"bangla": "সূর্য", "english": "Sun"},
+	{"bangla": "চাঁদ", "english": "Moon"},
+	{"bangla": "তারা", "english": "Star"},
+	{"bangla": "বই", "english": "Book"},
+	{"bangla": "কলম", "english": "Pen"},
+	{"bangla": "ঘর", "english": "House"},
+	{"bangla": "রাস্তা", "english": "Road"},
+	{"bangla": "নদী", "english": "River"},
+	{"bangla": "পাহাড়", "english": "Mountain"},
+	{"bangla": "আকাশ", "english": "Sky"},
+]
 
 # Current question data
 var current_question: Dictionary = {}
@@ -118,6 +227,131 @@ func _on_game_over() -> void:
 
 
 func _generate_question() -> void:
+	var style: String = GameManager.current_quiz_style
+	match style:
+		"arabic_huroof":
+			_generate_arabic_huroof_question()
+		"bangla_english":
+			_generate_word_meaning_question("bangla_english")
+		"english_bangla":
+			_generate_word_meaning_question("english_bangla")
+		_:
+			_generate_math_question()
+
+
+func _generate_arabic_huroof_question() -> void:
+	var diff: String = GameManager.current_difficulty_id
+	var pool: Array[Dictionary]
+	var question_key: String
+	var answer_key: String
+
+	match diff:
+		"hard":
+			pool = ARABIC_WORDS
+			question_key = "arabic"
+			answer_key = "bangla"
+		"medium":
+			pool = ARABIC_HARAKAT
+			question_key = "text"
+			answer_key = "bangla"
+		_:  # easy (and any unknown)
+			pool = ARABIC_HUROOF
+			question_key = "letter"
+			answer_key = "bangla"
+
+	var idx: int = randi() % pool.size()
+	var correct_entry: Dictionary = pool[idx]
+	var correct_answer: String = correct_entry[answer_key]
+
+	# Pick 3 distinct wrong answers from the same pool
+	var choices: Array = [correct_answer]
+	var attempts: int = 0
+	while choices.size() < 4 and attempts < 80:
+		attempts += 1
+		var wrong_entry: Dictionary = pool[randi() % pool.size()]
+		var wrong: String = wrong_entry[answer_key]
+		if wrong != correct_answer and not (wrong in choices):
+			choices.append(wrong)
+
+	# Filler from pool if not enough variety
+	for entry in pool:
+		if choices.size() >= 4:
+			break
+		var val: String = entry[answer_key]
+		if not (val in choices):
+			choices.append(val)
+
+	choices.shuffle()
+	var correct_index: int = choices.find(correct_answer)
+
+	current_question = {
+		"text": correct_entry[question_key],
+		"choices": choices,
+		"correct_index": correct_index,
+		"correct_answer": correct_answer,
+		"question_type": -1,
+		"obstacle_type": _detect_nearby_obstacle_type(true),
+		"tier": _get_quiz_tier(),
+		"question_font": "arabic",
+		"answer_font": "bangla",
+	}
+	question_changed.emit(current_question)
+
+
+func _generate_word_meaning_question(style: String) -> void:
+	var idx: int = randi() % WORD_BANK.size()
+	var correct_entry: Dictionary = WORD_BANK[idx]
+
+	var question_text: String
+	var correct_answer: String
+	var q_font: String
+	var a_font: String
+
+	if style == "bangla_english":
+		question_text = correct_entry["bangla"]
+		correct_answer = correct_entry["english"]
+		q_font = "bangla"
+		a_font = "latin"
+	else:  # english_bangla
+		question_text = correct_entry["english"]
+		correct_answer = correct_entry["bangla"]
+		q_font = "latin"
+		a_font = "bangla"
+
+	var choices: Array = [correct_answer]
+	var attempts: int = 0
+	while choices.size() < 4 and attempts < 80:
+		attempts += 1
+		var wrong_entry: Dictionary = WORD_BANK[randi() % WORD_BANK.size()]
+		var wrong: String = wrong_entry["english"] if style == "bangla_english" else wrong_entry["bangla"]
+		if wrong != correct_answer and not (wrong in choices):
+			choices.append(wrong)
+
+	for entry in WORD_BANK:
+		if choices.size() >= 4:
+			break
+		var val: String = entry["english"] if style == "bangla_english" else entry["bangla"]
+		if not (val in choices):
+			choices.append(val)
+
+	choices.shuffle()
+	var correct_index: int = choices.find(correct_answer)
+
+	current_question = {
+		"text": question_text,
+		"choices": choices,
+		"correct_index": correct_index,
+		"correct_answer": correct_answer,
+		"question_type": -1,
+		"obstacle_type": _detect_nearby_obstacle_type(true),
+		"tier": _get_quiz_tier(),
+		"question_font": q_font,
+		"answer_font": a_font,
+	}
+	question_changed.emit(current_question)
+
+
+func _generate_math_question() -> void:
 	var obs_type: int = _detect_nearby_obstacle_type(true)
 	var q_type: QuestionType = OBS_TYPE_TO_QUESTION.get(obs_type, QuestionType.ADDITION) as QuestionType
 
@@ -247,6 +481,8 @@ func _generate_question() -> void:
 		"question_type": q_type,
 		"obstacle_type": obs_type,
 		"tier": tier,
+		"question_font": "latin",
+		"answer_font": "latin",
 	}
 
 	question_changed.emit(current_question)

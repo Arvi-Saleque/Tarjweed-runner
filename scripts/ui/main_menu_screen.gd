@@ -172,8 +172,9 @@ func _open_settings() -> void:
 	_overlay_host.add_child(_settings_popup)
 
 
-func _start_game_from_setup(player_name: String, difficulty_id: String, mode_id: String) -> void:
+func _start_game_from_setup(player_name: String, difficulty_id: String, mode_id: String, quiz_style_id: String) -> void:
 	GameManager.current_mode = mode_id
+	GameManager.current_quiz_style = quiz_style_id
 	GameManager.current_visual_theme = "nature"
 	GameManager.apply_menu_setup(player_name, difficulty_id, GameManager.current_player_variant)
 	_refresh_summary()

@@ -1,7 +1,11 @@
 extends Control
 
-const UISkinIds = preload("res://scripts/ui/ui_skin_ids.gd")
-const PRONUNCIATION_SKIN := UISkinIds.NATURE
+const _COL_DARK_GREEN := Color("1E5128")
+const _COL_MID_GREEN  := Color("2D7A3D")
+const _COL_CREAM      := Color("FFFAE8")
+const _COL_WHITE      := Color.WHITE
+const _COL_SUCCESS    := Color("A8E063")
+const _COL_ERROR      := Color("FF8A80")
 
 var _word_label: Label
 var _hint_label: Label
@@ -37,94 +41,132 @@ func _ready() -> void:
 
 
 func _create_ui() -> void:
-	var prompt_strip := HBoxContainer.new()
-	prompt_strip.anchors_preset = Control.PRESET_TOP_WIDE
-	prompt_strip.anchor_right = 1.0
-	prompt_strip.offset_left = 240
-	prompt_strip.offset_right = -380
-	prompt_strip.offset_top = 136
-	prompt_strip.offset_bottom = 258
-	prompt_strip.add_theme_constant_override("separation", 0)
-	prompt_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(prompt_strip)
+	# ── Top: Word prompt panel (same layout as quiz question panel) ──────────
+	var top_strip := Control.new()
+	top_strip.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	top_strip.anchor_right = 1.0
+	top_strip.offset_top = 10.0
+	top_strip.offset_bottom = 150.0
+	top_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(top_strip)
 
-	var left_spacer := Control.new()
-	left_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	prompt_strip.add_child(left_spacer)
+	var top_center := CenterContainer.new()
+	top_center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	top_center.anchor_right = 1.0
+	top_center.anchor_bottom = 1.0
+	top_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	top_strip.add_child(top_center)
 
 	_panel = PanelContainer.new()
-	_panel.custom_minimum_size = Vector2(420, 112)
+	_panel.custom_minimum_size = Vector2(720, 120)
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel.add_theme_stylebox_override("panel", _make_panel_style(_COL_CREAM, _COL_DARK_GREEN, 6, 28, 10))
+	top_center.add_child(_panel)
 
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.97, 0.95, 0.88, 0.90)
-	style.corner_radius_top_left = 22
-	style.corner_radius_top_right = 22
-	style.corner_radius_bottom_left = 22
-	style.corner_radius_bottom_right = 22
-	style.content_margin_left = 24.0
-	style.content_margin_right = 24.0
-	style.content_margin_top = 18.0
-	style.content_margin_bottom = 18.0
-	style.border_color = Color("8A5A35")
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.shadow_color = Color(0.20, 0.12, 0.04, 0.10)
-	style.shadow_size = 5
-	_panel.add_theme_stylebox_override("panel", style)
-	prompt_strip.add_child(_panel)
+	var word_center := CenterContainer.new()
+	word_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	word_center.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	word_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel.add_child(word_center)
 
-	var right_spacer := Control.new()
-	right_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right_spacer.size_flags_stretch_ratio = 2.1
-	right_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	prompt_strip.add_child(right_spacer)
+	var word_vbox := VBoxContainer.new()
+	word_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	word_vbox.add_theme_constant_override("separation", 2)
+	word_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	word_center.add_child(word_vbox)
+
+	var prompt_label := Label.new()
+	prompt_label.text = "Say this word:"
+	prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	prompt_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if UITheme.font_button:
+		prompt_label.add_theme_font_override("font", UITheme.font_button)
+	prompt_label.add_theme_font_size_override("font_size", 18)
+	prompt_label.add_theme_color_override("font_color", _COL_DARK_GREEN.lightened(0.35))
+	word_vbox.add_child(prompt_label)
+
+	_word_label = Label.new()
+	_word_label.text = ""
+	_word_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_word_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if UITheme.font_display:
+		_word_label.add_theme_font_override("font", UITheme.font_display)
+	_word_label.add_theme_font_size_override("font_size", 40)
+	_word_label.add_theme_color_override("font_color", _COL_DARK_GREEN)
+	word_vbox.add_child(_word_label)
+
+	_hint_label = Label.new()
+	_hint_label.text = ""
+	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if UITheme.font_button:
+		_hint_label.add_theme_font_override("font", UITheme.font_button)
+	_hint_label.add_theme_font_size_override("font_size", 15)
+	_hint_label.add_theme_color_override("font_color", _COL_DARK_GREEN.lightened(0.45))
+	word_vbox.add_child(_hint_label)
+
+	# ── Below: Instruction pill + Mic card ──────────────────────────────────
+	var mid_area := Control.new()
+	mid_area.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	mid_area.anchor_right = 1.0
+	mid_area.offset_top = 160.0
+	mid_area.offset_bottom = 390.0
+	mid_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(mid_area)
+
+	var mid_center := CenterContainer.new()
+	mid_center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	mid_center.anchor_right = 1.0
+	mid_center.anchor_bottom = 1.0
+	mid_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mid_area.add_child(mid_center)
 
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 6)
+	vbox.add_theme_constant_override("separation", 16)
 	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_child(vbox)
+	mid_center.add_child(vbox)
 
-	var prompt_label := UITheme.make_label("Say this word:", UITheme.FONT_BODY, UITheme.get_color("text_dim", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
-	prompt_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	prompt_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(prompt_label)
+	# Instruction pill — same dark-green pill as quiz HUD
+	var pill_center := CenterContainer.new()
+	pill_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	pill_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(pill_center)
 
-	_word_label = UITheme.make_label("", UITheme.FONT_TITLE, UITheme.get_color("text_ink", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
-	_word_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_word_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(_word_label)
+	var pill := PanelContainer.new()
+	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pill.add_theme_stylebox_override("panel", _make_panel_style(_COL_DARK_GREEN, _COL_DARK_GREEN, 0, 22, 0))
+	pill_center.add_child(pill)
 
-	_hint_label = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("text_dim", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
-	_hint_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hint_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(_hint_label)
+	var pill_margin := MarginContainer.new()
+	pill_margin.add_theme_constant_override("margin_left", 24)
+	pill_margin.add_theme_constant_override("margin_right", 24)
+	pill_margin.add_theme_constant_override("margin_top", 8)
+	pill_margin.add_theme_constant_override("margin_bottom", 8)
+	pill_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pill.add_child(pill_margin)
 
-	var listen_center := CenterContainer.new()
-	listen_center.anchors_preset = Control.PRESET_BOTTOM_WIDE
-	listen_center.anchor_top = 1.0
-	listen_center.anchor_right = 1.0
-	listen_center.anchor_bottom = 1.0
-	listen_center.offset_top = -222
-	listen_center.offset_bottom = -54
-	listen_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(listen_center)
+	_instructions = Label.new()
+	_instructions.text = "Speak the word into your microphone!"
+	_instructions.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_instructions.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if UITheme.font_button:
+		_instructions.add_theme_font_override("font", UITheme.font_button)
+	_instructions.add_theme_font_size_override("font_size", 21)
+	_instructions.add_theme_color_override("font_color", _COL_WHITE)
+	pill_margin.add_child(_instructions)
+
+	# Mic + volume card — same cream/green style as quiz answer cards
+	var mic_center := CenterContainer.new()
+	mic_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mic_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(mic_center)
 
 	_listen_panel = PanelContainer.new()
-	_listen_panel.custom_minimum_size = Vector2(460, 150)
+	_listen_panel.custom_minimum_size = Vector2(540, 80)
 	_listen_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var listen_style := style.duplicate() as StyleBoxFlat
-	listen_style.bg_color = Color(0.97, 0.95, 0.88, 0.76)
-	listen_style.content_margin_left = 18.0
-	listen_style.content_margin_right = 18.0
-	listen_style.content_margin_top = 16.0
-	listen_style.content_margin_bottom = 16.0
-	_listen_panel.add_theme_stylebox_override("panel", listen_style)
-	listen_center.add_child(_listen_panel)
+	_listen_panel.add_theme_stylebox_override("panel", _make_panel_style(_COL_CREAM, _COL_DARK_GREEN, 3, 22, 4))
+	mic_center.add_child(_listen_panel)
 
 	var listen_vbox := VBoxContainer.new()
 	listen_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -142,34 +184,27 @@ func _create_ui() -> void:
 	_mic_icon_label.text = "MIC"
 	if UITheme.font_button:
 		_mic_icon_label.add_theme_font_override("font", UITheme.font_button)
-	_mic_icon_label.add_theme_font_size_override("font_size", 32)
-	_mic_icon_label.add_theme_color_override("font_color", UITheme.get_color("primary_dark", PRONUNCIATION_SKIN))
+	_mic_icon_label.add_theme_font_size_override("font_size", 22)
+	_mic_icon_label.add_theme_color_override("font_color", _COL_DARK_GREEN)
 	_mic_icon_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	mic_row.add_child(_mic_icon_label)
 
 	_volume_bar = ProgressBar.new()
-	_volume_bar.custom_minimum_size = Vector2(300, 24)
+	_volume_bar.custom_minimum_size = Vector2(340, 20)
 	_volume_bar.min_value = 0.0
 	_volume_bar.max_value = 1.0
 	_volume_bar.value = 0.0
 	_volume_bar.show_percentage = false
 	_volume_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
 	var bar_bg := StyleBoxFlat.new()
-	bar_bg.bg_color = Color("FFF4D8")
+	bar_bg.bg_color = Color("E8E0CC")
 	bar_bg.corner_radius_top_left = 6
 	bar_bg.corner_radius_top_right = 6
 	bar_bg.corner_radius_bottom_left = 6
 	bar_bg.corner_radius_bottom_right = 6
-	bar_bg.border_width_left = 2
-	bar_bg.border_width_right = 2
-	bar_bg.border_width_top = 2
-	bar_bg.border_width_bottom = 2
-	bar_bg.border_color = Color("8A5A35")
 	_volume_bar.add_theme_stylebox_override("background", bar_bg)
-
 	var bar_fill := StyleBoxFlat.new()
-	bar_fill.bg_color = UITheme.get_color("primary", PRONUNCIATION_SKIN)
+	bar_fill.bg_color = _COL_MID_GREEN
 	bar_fill.corner_radius_top_left = 6
 	bar_fill.corner_radius_top_right = 6
 	bar_fill.corner_radius_bottom_left = 6
@@ -177,26 +212,35 @@ func _create_ui() -> void:
 	_volume_bar.add_theme_stylebox_override("fill", bar_fill)
 	mic_row.add_child(_volume_bar)
 
-	_status_label = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("primary_dark", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
+	_status_label = Label.new()
+	_status_label.text = ""
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if UITheme.font_button:
+		_status_label.add_theme_font_override("font", UITheme.font_button)
+	_status_label.add_theme_font_size_override("font_size", 18)
+	_status_label.add_theme_color_override("font_color", _COL_MID_GREEN)
 	listen_vbox.add_child(_status_label)
 
-	_recognized_label = UITheme.make_label("", UITheme.FONT_BODY, UITheme.get_color("text_dim", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
+	_recognized_label = Label.new()
+	_recognized_label.text = ""
 	_recognized_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_recognized_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if UITheme.font_button:
+		_recognized_label.add_theme_font_override("font", UITheme.font_button)
+	_recognized_label.add_theme_font_size_override("font_size", 16)
+	_recognized_label.add_theme_color_override("font_color", _COL_DARK_GREEN.lightened(0.3))
 	listen_vbox.add_child(_recognized_label)
 
-	_feedback_label = UITheme.make_label("", UITheme.FONT_BODY, UITheme.get_color("primary_dark", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
+	_feedback_label = Label.new()
+	_feedback_label.text = ""
 	_feedback_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_feedback_label.modulate.a = 0.0
 	_feedback_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if UITheme.font_display:
+		_feedback_label.add_theme_font_override("font", UITheme.font_display)
+	_feedback_label.add_theme_font_size_override("font_size", 24)
 	listen_vbox.add_child(_feedback_label)
-
-	_instructions = UITheme.make_label("Speak the word into your microphone!", UITheme.FONT_SMALL, UITheme.get_color("text_dim", PRONUNCIATION_SKIN), PRONUNCIATION_SKIN)
-	_instructions.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_instructions.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	listen_vbox.add_child(_instructions)
 
 
 func _on_question_changed(question: Dictionary) -> void:
@@ -220,10 +264,10 @@ func _on_question_changed(question: Dictionary) -> void:
 func _on_answer_result(correct: bool) -> void:
 	if correct:
 		_feedback_label.text = "CORRECT!"
-		_feedback_label.add_theme_color_override("font_color", Color(0.42, 0.82, 0.34))
+		_feedback_label.add_theme_color_override("font_color", _COL_SUCCESS)
 	else:
 		_feedback_label.text = "TRY AGAIN"
-		_feedback_label.add_theme_color_override("font_color", UITheme.get_color("danger", PRONUNCIATION_SKIN))
+		_feedback_label.add_theme_color_override("font_color", _COL_ERROR)
 	_feedback_label.modulate.a = 1.0
 	var tw := create_tween()
 	tw.tween_property(_feedback_label, "modulate:a", 0.0, 0.6).set_delay(0.3)
@@ -231,11 +275,14 @@ func _on_answer_result(correct: bool) -> void:
 
 func _on_mic_status_changed(listening: bool) -> void:
 	if listening:
-		_status_label.text = "Listening..."
-		_mic_icon_label.modulate = UITheme.get_color("primary", PRONUNCIATION_SKIN)
+		if PronunciationManager._vosk_available:
+			_status_label.text = "Listening..."
+		else:
+			_status_label.text = "Listening... (speak to accept)"
+		_mic_icon_label.add_theme_color_override("font_color", _COL_MID_GREEN)
 	else:
 		_status_label.text = ""
-		_mic_icon_label.modulate = UITheme.get_color("text_dim", PRONUNCIATION_SKIN)
+		_mic_icon_label.add_theme_color_override("font_color", _COL_DARK_GREEN)
 		_volume_bar.value = 0.0
 
 
@@ -251,11 +298,28 @@ func _on_volume_updated(level: float) -> void:
 	var bar_fill := _volume_bar.get_theme_stylebox("fill") as StyleBoxFlat
 	if bar_fill:
 		if level < 0.5:
-			bar_fill.bg_color = UITheme.get_color("primary", PRONUNCIATION_SKIN)
+			bar_fill.bg_color = _COL_MID_GREEN
 		elif level < 0.75:
-			bar_fill.bg_color = UITheme.get_color("accent", PRONUNCIATION_SKIN)
+			bar_fill.bg_color = Color("E8A030")
 		else:
-			bar_fill.bg_color = UITheme.get_color("danger", PRONUNCIATION_SKIN)
+			bar_fill.bg_color = _COL_ERROR
+
+
+func _make_panel_style(bg: Color, border: Color, border_width: int, radius: int, shadow_size: int) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg
+	s.border_color = border
+	s.border_width_left = border_width
+	s.border_width_right = border_width
+	s.border_width_top = border_width
+	s.border_width_bottom = border_width
+	s.corner_radius_top_left = radius
+	s.corner_radius_top_right = radius
+	s.corner_radius_bottom_left = radius
+	s.corner_radius_bottom_right = radius
+	s.shadow_color = Color(0, 0, 0, 0.14)
+	s.shadow_size = shadow_size
+	return s
 
 
 func _on_game_paused() -> void:

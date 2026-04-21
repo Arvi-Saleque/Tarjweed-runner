@@ -30,10 +30,16 @@ var _vosk_available: bool = false
 var _vocabulary_sent: bool = false
 
 # Timing
-const LISTEN_TIMEOUT: float = 2.5   # max seconds to listen per word
+const LISTEN_TIMEOUT: float = 4.0   # max seconds to listen per word
 const COOLDOWN_TIME: float = 0.5    # delay between words
 var _listen_timer: float = 0.0
 var _cooldown_timer: float = 0.0
+
+# VAD fallback (used when Vosk server is unavailable)
+# Accept the word when the user sustains audio above threshold long enough.
+const VAD_THRESHOLD: float = 0.12   # normalized 0-1 volume level to count as speech
+const VAD_SUSTAIN: float = 0.7      # seconds of sustained speech to accept
+var _vad_timer: float = 0.0
 
 # Audio conversion
 var _mix_rate: float = 44100.0
@@ -43,6 +49,7 @@ const MIC_BUS := &"MicCapture"
 # Send audio every N frames to avoid flooding WebSocket
 const SEND_INTERVAL: float = 0.02  # 20ms chunks for faster response
 var _send_timer: float = 0.0
+var _diag_timer: float = 0.0  # diagnostic print interval
 
 
 
@@ -61,6 +68,24 @@ func _setup_mic() -> void:
 	var input_devices := AudioServer.get_input_device_list()
 	print("PronunciationManager: Input devices: ", input_devices)
 
+	# Prefer a real physical device — skip known virtual/software devices.
+	# Fall back to "Default" only if nothing better is found.
+	var skip_keywords := ["virtual", "droidcam", "audiorelay", "vb-audio", "cable"]
+	var chosen_device: String = "Default"
+	for dev in input_devices:
+		var dev_lower: String = dev.to_lower()
+		var is_virtual := false
+		for kw in skip_keywords:
+			if kw in dev_lower:
+				is_virtual = true
+				break
+		if not is_virtual and dev != "Default":
+			chosen_device = dev
+			break  # take the first real device found
+
+	AudioServer.input_device = chosen_device
+	print("PronunciationManager: Using input device: ", chosen_device)
+
 	var bus_idx := AudioServer.get_bus_index(MIC_BUS)
 	if bus_idx == -1:
 		push_error("PronunciationManager: MicCapture bus not found!")
@@ -74,7 +99,7 @@ func _setup_mic() -> void:
 	_mic_player.stream = AudioStreamMicrophone.new()
 	_mic_player.bus = MIC_BUS
 	add_child(_mic_player)
-	print("PronunciationManager: Mic setup complete.")
+	print("PronunciationManager: Mic setup complete. Bus index: %d" % bus_idx)
 
 
 # ── Vosk WebSocket ───────────────────────────────────────────────────────────
@@ -121,6 +146,15 @@ func _process(delta: float) -> void:
 
 	if not _is_active or not GameManager.is_pronunciation_mode():
 		return
+
+	# Diagnostic: print mic state every second while active
+	_diag_timer += delta
+	if _diag_timer >= 1.0:
+		_diag_timer = 0.0
+		var frames := _capture_effect.get_frames_available() if _capture_effect else -1
+		var playing := _mic_player.playing if _mic_player else false
+		print("MIC DIAG | listening=%s  frames_avail=%d  mic_playing=%s  vosk=%s" % [
+			str(_is_listening), frames, str(playing), str(_ws_connected)])
 
 	if _cooldown_timer > 0.0:
 		_cooldown_timer -= delta
@@ -178,12 +212,12 @@ func _handle_vosk_message(text: String) -> void:
 	if msg_type == "partial":
 		recognized = data.get("text", "")
 		recognized_text_changed.emit(recognized)
-		# Accept on partial match too — much faster response
+		# Accept if the target word appears anywhere in the partial result
 		if _is_listening and not current_question.is_empty():
 			var target: String = current_question.get("text", "").to_lower().strip_edges()
 			var heard: String = recognized.to_lower().strip_edges()
-			if heard == target:
-				print("PronunciationManager: PARTIAL MATCH '%s'!" % heard)
+			if target in heard:
+				print("PronunciationManager: PARTIAL MATCH '%s' in '%s'!" % [target, heard])
 				_on_pronunciation_result(true)
 
 	elif msg_type == "result" or msg_type == "final":
@@ -193,7 +227,7 @@ func _handle_vosk_message(text: String) -> void:
 			var target: String = current_question.get("text", "").to_lower().strip_edges()
 			var heard: String = recognized.to_lower().strip_edges()
 			print("PronunciationManager: Vosk heard '%s', target '%s'" % [heard, target])
-			if heard == target:
+			if target in heard:
 				_on_pronunciation_result(true)
 
 
@@ -202,31 +236,45 @@ func _handle_vosk_message(text: String) -> void:
 func _poll_mic_and_send(delta: float) -> void:
 	if _capture_effect == null:
 		return
+
 	var frames_available := _capture_effect.get_frames_available()
-	if frames_available <= 0:
-		return
 
-	var buffer: PackedVector2Array = _capture_effect.get_buffer(frames_available)
-	if buffer.is_empty():
-		return
+	# Always update volume display every tick (not gated by send timer)
+	if frames_available > 0:
+		var peek_buffer: PackedVector2Array = _capture_effect.get_buffer(frames_available)
+		if not peek_buffer.is_empty():
+			var sum_sq: float = 0.0
+			for frame in peek_buffer:
+				var mono: float = (frame.x + frame.y) * 0.5
+				sum_sq += mono * mono
+			var rms: float = sqrt(sum_sq / peek_buffer.size())
+			var db: float = -80.0
+			if rms > 0.0:
+				db = 20.0 * log(rms) / log(10.0)
+			var normalized: float = clampf((db + 60.0) / 60.0, 0.0, 1.0)
+			volume_updated.emit(normalized)
 
-	var sum_sq: float = 0.0
-	for frame in buffer:
-		var mono: float = (frame.x + frame.y) * 0.5
-		sum_sq += mono * mono
-	var rms: float = sqrt(sum_sq / buffer.size())
-	var db: float = -80.0
-	if rms > 0.0:
-		db = 20.0 * log(rms) / log(10.0)
-	var normalized: float = clampf((db + 60.0) / 60.0, 0.0, 1.0)
-	volume_updated.emit(normalized)
+			# VAD fallback: no Vosk → accept after sustained speech above threshold
+			if not _vosk_available and _is_listening:
+				if normalized >= VAD_THRESHOLD:
+					_vad_timer += delta
+					if _vad_timer >= VAD_SUSTAIN:
+						print("PronunciationManager: VAD accepted (no Vosk server)")
+						_on_pronunciation_result(true)
+						return
+				else:
+					_vad_timer = 0.0
 
-	_send_timer += delta
-	if _send_timer >= SEND_INTERVAL and _ws_connected:
-		_send_timer = 0.0
-		var pcm := _convert_to_pcm16(buffer)
-		if pcm.size() > 0:
-			_ws.send(pcm, WebSocketPeer.WRITE_MODE_BINARY)
+			# Also send the PCM chunk to Vosk if interval elapsed
+			_send_timer += delta
+			if _send_timer >= SEND_INTERVAL and _ws_connected:
+				_send_timer = 0.0
+				var pcm := _convert_to_pcm16(peek_buffer)
+				if pcm.size() > 0:
+					_ws.send(pcm, WebSocketPeer.WRITE_MODE_BINARY)
+	else:
+		volume_updated.emit(0.0)
+		_send_timer += delta
 
 
 func _convert_to_pcm16(buffer: PackedVector2Array) -> PackedByteArray:
@@ -275,11 +323,17 @@ func _start_listening() -> void:
 	_send_reset()  # Fresh recognizer state for new word
 	if _capture_effect:
 		_capture_effect.clear_buffer()
+	else:
+		push_error("PronunciationManager: _start_listening — capture_effect is null!")
 	if _mic_player:
 		_mic_player.play()
+		print("PronunciationManager: mic_player playing = ", _mic_player.playing)
+	else:
+		push_error("PronunciationManager: _start_listening — mic_player is null!")
 	_is_listening = true
 	_listen_timer = 0.0
 	_send_timer = 0.0
+	_vad_timer = 0.0
 	recognized_text_changed.emit("")
 	mic_status_changed.emit(true)
 	print("PronunciationManager: Listening for '%s'..." % current_question.get("text", ""))

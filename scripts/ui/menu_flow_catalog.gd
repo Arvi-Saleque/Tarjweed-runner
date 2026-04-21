@@ -2,7 +2,31 @@ extends RefCounted
 
 const DEFAULT_PLAYER_NAME := "Explorer"
 const DEFAULT_DIFFICULTY := "medium"
+const DEFAULT_QUIZ_STYLE := "math"
 const LEADERBOARD_LIMIT := 15
+
+const QUIZ_STYLES: Array[Dictionary] = [
+	{
+		"id": "math",
+		"title": "MATH",
+		"subtitle": "Arithmetic equations",
+	},
+	{
+		"id": "arabic_huroof",
+		"title": "ARABIC",
+		"subtitle": "Letters & sounds",
+	},
+	{
+		"id": "bangla_english",
+		"title": "BN→EN",
+		"subtitle": "Bangla to English",
+	},
+	{
+		"id": "english_bangla",
+		"title": "EN→BN",
+		"subtitle": "English to Bangla",
+	},
+]
 
 const DIFFICULTIES: Array[Dictionary] = [
 	{

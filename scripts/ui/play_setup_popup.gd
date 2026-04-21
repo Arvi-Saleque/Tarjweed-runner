@@ -2,7 +2,7 @@ extends Control
 
 signal closed
 signal choose_runner_requested
-signal start_requested(player_name: String, difficulty_id: String, mode_id: String)
+signal start_requested(player_name: String, difficulty_id: String, mode_id: String, quiz_style_id: String)
 
 const NatureMenuStyle = preload("res://scripts/ui/nature_menu_style.gd")
 const MenuFlowCatalog = preload("res://scripts/ui/menu_flow_catalog.gd")
@@ -11,6 +11,11 @@ const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
 var _name_input: LineEdit
 var _mode_buttons: Dictionary = {}
 var _difficulty_buttons: Dictionary = {}
+var _quiz_style_buttons: Dictionary = {}
+var _quiz_style_label: Label
+var _quiz_style_row: HBoxContainer
+var _difficulty_label: Label
+var _difficulty_row: HBoxContainer
 var _preview: TextureRect
 var _runner_title: Label
 var _runner_subtitle: Label
@@ -18,12 +23,14 @@ var _summary_mode: Label
 var _summary_difficulty: Label
 var _selected_mode: String = "normal"
 var _selected_difficulty: String = MenuFlowCatalog.DEFAULT_DIFFICULTY
+var _selected_quiz_style: String = MenuFlowCatalog.DEFAULT_QUIZ_STYLE
 
 
 func _ready() -> void:
 	NatureMenuStyle.decorate_root(self)
 	_selected_mode = GameManager.current_mode if not GameManager.current_mode.is_empty() else "normal"
 	_selected_difficulty = GameManager.current_difficulty_id if not GameManager.current_difficulty_id.is_empty() else MenuFlowCatalog.DEFAULT_DIFFICULTY
+	_selected_quiz_style = GameManager.current_quiz_style if not GameManager.current_quiz_style.is_empty() else MenuFlowCatalog.DEFAULT_QUIZ_STYLE
 	_build_popup()
 	_refresh_runner_preview()
 	_refresh_mode_buttons()
@@ -103,20 +110,42 @@ func _build_popup() -> void:
 		mode_row.add_child(mode_btn)
 		_mode_buttons[mode_id] = mode_btn
 
-	var difficulty_label := UITheme.make_label("Difficulty", UITheme.FONT_SMALL, UITheme.get_color("text_ink_soft", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
-	difficulty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	setup_body.add_child(difficulty_label)
+	# Quiz Style sub-row — only visible when mode == "quiz"
+	_quiz_style_label = UITheme.make_label("Quiz Style", UITheme.FONT_SMALL, UITheme.get_color("text_ink_soft", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
+	_quiz_style_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_quiz_style_label.visible = (_selected_mode == "quiz")
+	setup_body.add_child(_quiz_style_label)
 
-	var difficulty_row := HBoxContainer.new()
-	difficulty_row.add_theme_constant_override("separation", 12)
-	setup_body.add_child(difficulty_row)
+	_quiz_style_row = HBoxContainer.new()
+	_quiz_style_row.add_theme_constant_override("separation", 10)
+	_quiz_style_row.visible = (_selected_mode == "quiz")
+	setup_body.add_child(_quiz_style_row)
+
+	for qs in MenuFlowCatalog.QUIZ_STYLES:
+		var qs_id: String = str(qs.get("id", "math"))
+		var qs_btn: Button = NatureMenuStyle.make_value_chip(str(qs.get("title", "")), qs_id == _selected_quiz_style)
+		qs_btn.custom_minimum_size = Vector2(100, 52)
+		qs_btn.tooltip_text = str(qs.get("subtitle", ""))
+		qs_btn.pressed.connect(func(): _set_quiz_style(qs_id))
+		_quiz_style_row.add_child(qs_btn)
+		_quiz_style_buttons[qs_id] = qs_btn
+
+	_difficulty_label = UITheme.make_label("Difficulty", UITheme.FONT_SMALL, UITheme.get_color("text_ink_soft", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
+	_difficulty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_difficulty_label.visible = (_selected_mode != "pronunciation")
+	setup_body.add_child(_difficulty_label)
+
+	_difficulty_row = HBoxContainer.new()
+	_difficulty_row.add_theme_constant_override("separation", 12)
+	_difficulty_row.visible = (_selected_mode != "pronunciation")
+	setup_body.add_child(_difficulty_row)
 
 	for difficulty in MenuFlowCatalog.DIFFICULTIES:
 		var difficulty_id: String = str(difficulty.get("id", ""))
 		var btn: Button = NatureMenuStyle.make_value_chip(str(difficulty.get("title", "")), difficulty_id == _selected_difficulty)
 		btn.custom_minimum_size = Vector2(120, 56)
 		btn.pressed.connect(func(): _set_difficulty(difficulty_id))
-		difficulty_row.add_child(btn)
+		_difficulty_row.add_child(btn)
 		_difficulty_buttons[difficulty_id] = btn
 
 	var runner_hint := UITheme.make_label("Runner Preview", UITheme.FONT_SMALL, UITheme.get_color("text_ink_soft", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
@@ -191,11 +220,29 @@ func _set_difficulty(difficulty_id: String) -> void:
 	_refresh_summary()
 
 
+func _set_quiz_style(style_id: String) -> void:
+	AudioManager.play_ui_sound(AudioManager.ui_click)
+	_selected_quiz_style = style_id
+	_refresh_quiz_style_buttons()
+	_refresh_summary()
+
+
 func _set_mode(mode_id: String) -> void:
 	AudioManager.play_ui_sound(AudioManager.ui_click)
 	_selected_mode = mode_id
 	_refresh_mode_buttons()
 	_refresh_summary()
+	# Show quiz style row only when quiz mode is active
+	if _quiz_style_label:
+		_quiz_style_label.visible = (mode_id == "quiz")
+	if _quiz_style_row:
+		_quiz_style_row.visible = (mode_id == "quiz")
+	# Hide difficulty row for pronunciation mode
+	var show_diff: bool = (mode_id != "pronunciation")
+	if _difficulty_label:
+		_difficulty_label.visible = show_diff
+	if _difficulty_row:
+		_difficulty_row.visible = show_diff
 
 
 func _refresh_mode_buttons() -> void:
@@ -218,11 +265,25 @@ func _refresh_difficulty_buttons() -> void:
 		UITheme._apply_button_variant(btn, "primary" if is_selected else "secondary", NatureMenuStyle.SKIN)
 
 
+func _refresh_quiz_style_buttons() -> void:
+	for qs in MenuFlowCatalog.QUIZ_STYLES:
+		var qs_id: String = str(qs.get("id", ""))
+		var btn := _quiz_style_buttons.get(qs_id) as Button
+		if btn == null:
+			continue
+		UITheme._apply_button_variant(btn, "primary" if qs_id == _selected_quiz_style else "secondary", NatureMenuStyle.SKIN)
+
+
 func _refresh_summary() -> void:
 	if _summary_mode:
-		_summary_mode.text = "Mode: %s" % _selected_mode.capitalize()
+		var mode_text := "Mode: %s" % _selected_mode.capitalize()
+		if _selected_mode == "quiz":
+			mode_text += " (%s)" % _selected_quiz_style.capitalize().replace("_", " ")
+		_summary_mode.text = mode_text
 	if _summary_difficulty:
-		_summary_difficulty.text = "Difficulty: %s" % _selected_difficulty.capitalize()
+		_summary_difficulty.visible = (_selected_mode != "pronunciation")
+		if _selected_mode != "pronunciation":
+			_summary_difficulty.text = "Difficulty: %s" % _selected_difficulty.capitalize()
 
 
 func _refresh_runner_preview() -> void:
@@ -245,4 +306,5 @@ func _on_start_pressed() -> void:
 	var player_name := _name_input.text.strip_edges()
 	if player_name.is_empty():
 		player_name = MenuFlowCatalog.DEFAULT_PLAYER_NAME
-	start_requested.emit(player_name, _selected_difficulty, _selected_mode)
+	var quiz_style := _selected_quiz_style if _selected_mode == "quiz" else MenuFlowCatalog.DEFAULT_QUIZ_STYLE
+	start_requested.emit(player_name, _selected_difficulty, _selected_mode, quiz_style)

@@ -12,6 +12,8 @@ var font_primary: Font
 var font_narrow: Font
 var font_display: Font
 var font_button: Font
+var font_arabic: Font   # Noto Naskh Arabic Bold
+var font_bangla: Font   # Noto Sans Bengali SemiBold
 
 # --- Colors ---
 const COLOR_PRIMARY := UIThemeTokens.COLOR_PRIMARY         # Warm brown
@@ -84,6 +86,8 @@ func _load_fonts() -> void:
 	font_narrow = _try_load_font(UIThemeAssets.FONT_NARROW)
 	font_display = _try_load_font(UIThemeAssets.FONT_DISPLAY)
 	font_button = _try_load_font(UIThemeAssets.FONT_BUTTON)
+	font_arabic = _try_load_font(UIThemeAssets.FONT_ARABIC)
+	font_bangla = _try_load_font(UIThemeAssets.FONT_BANGLA)
 	if font_primary == null and ThemeDB.fallback_font != null:
 		font_primary = ThemeDB.fallback_font
 	if font_button == null:

@@ -306,6 +306,13 @@ func _on_question_changed(question: Dictionary) -> void:
 		_instructions_label.add_theme_color_override("font_color", _COL_WHITE)
 		return
 
+	# Apply font + text direction based on script
+	var q_font_id: String = question.get("question_font", "latin")
+	var a_font_id: String = question.get("answer_font", "latin")
+	_apply_script_font(_question_label, q_font_id, true)
+	for lbl in _choice_labels:
+		_apply_script_font(lbl, a_font_id, false)
+
 	_question_label.text = question.get("text", "?")
 
 	var choices: Array = question.get("choices", [])
@@ -322,6 +329,27 @@ func _on_question_changed(question: Dictionary) -> void:
 	_question_panel.scale = Vector2(0.94, 0.94)
 	var tw := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	tw.tween_property(_question_panel, "scale", Vector2.ONE, 0.20)
+
+
+## Apply the correct font and direction to a label based on script id.
+## font_id: "arabic" | "bangla" | "latin"
+func _apply_script_font(lbl: Label, font_id: String, is_question: bool) -> void:
+	match font_id:
+		"arabic":
+			if UITheme.font_arabic:
+				lbl.add_theme_font_override("font", UITheme.font_arabic)
+			lbl.add_theme_font_size_override("font_size", 52 if is_question else 30)
+			lbl.text_direction = Control.TEXT_DIRECTION_RTL
+		"bangla":
+			if UITheme.font_bangla:
+				lbl.add_theme_font_override("font", UITheme.font_bangla)
+			lbl.add_theme_font_size_override("font_size", 44 if is_question else 26)
+			lbl.text_direction = Control.TEXT_DIRECTION_LTR
+		_:  # latin / math
+			if UITheme.font_display:
+				lbl.add_theme_font_override("font", UITheme.font_display)
+			lbl.add_theme_font_size_override("font_size", 40 if is_question else 28)
+			lbl.text_direction = Control.TEXT_DIRECTION_LTR
 
 
 func _on_answer_result(correct: bool) -> void:
