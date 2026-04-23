@@ -13,11 +13,16 @@ const _COL_WHITE       := Color.WHITE
 const _COL_SUCCESS     := Color("A8E063")
 const _COL_ERROR       := Color("FF8A80")
 const _COL_ERROR_FILL  := Color(1.0, 0.91, 0.91, 1.0)
+const _COL_SELECTED    := Color("FFF1BF")
+const _COL_SELECTED_BORDER := Color("D6A33C")
+
+enum ChoiceVisualState { IDLE, HOVER, SELECTED, CORRECT, WRONG, DISABLED }
 
 var _question_label: Label
 var _choice_buttons: Array[Button] = []
 var _choice_labels: Array[Label] = []
 var _choice_panels: Array[PanelContainer] = []
+var _choice_states: Array[int] = []
 var _instructions_label: Label
 var _question_panel: PanelContainer
 var _hovered_choice_index: int = -1
@@ -280,6 +285,7 @@ func _create_answer_card(index: int) -> Control:
 
 	root.add_child(click_overlay)
 	_choice_buttons.append(click_overlay)
+	_choice_states.append(ChoiceVisualState.IDLE)
 
 	return root
 
@@ -307,14 +313,25 @@ func _refresh_choice_styles() -> void:
 		var bg := _COL_CREAM
 		var border := _COL_DARK_GREEN
 		var shadow := 4
-		if i == _highlighted_wrong_index:
-			bg = _COL_ERROR_FILL
-			border = _COL_ERROR
-			shadow = 6
-		elif not _answer_locked and i == _hovered_choice_index:
-			bg = _COL_CREAM_HOVER
-			border = _COL_MID_GREEN
-			shadow = 6
+		var state: int = _choice_states[i] if i < _choice_states.size() else ChoiceVisualState.IDLE
+		match state:
+			ChoiceVisualState.SELECTED:
+				bg = _COL_SELECTED
+				border = _COL_SELECTED_BORDER
+				shadow = 7
+			ChoiceVisualState.DISABLED:
+				bg = _COL_CREAM_HOVER
+				border = _COL_MID_GREEN
+				shadow = 3
+			_:
+				if i == _highlighted_wrong_index:
+					bg = _COL_ERROR_FILL
+					border = _COL_ERROR
+					shadow = 6
+				elif not _answer_locked and i == _hovered_choice_index:
+					bg = _COL_CREAM_HOVER
+					border = _COL_MID_GREEN
+					shadow = 6
 		_choice_panels[i].add_theme_stylebox_override("panel", _make_panel_style(bg, border, 3, 22, shadow))
 
 
@@ -326,13 +343,17 @@ func _set_choice_interactable(enabled: bool) -> void:
 func _on_choice_pressed(index: int) -> void:
 	if _answer_locked:
 		return
-	QuizManager._check_answer(index)
+	_answer_locked = true
+	_set_choice_interactable(false)
+	_set_choice_state(index, ChoiceVisualState.SELECTED)
+	QuizManager.call_deferred("_check_answer", index)
 
 
 func _on_question_changed(question: Dictionary) -> void:
 	_answer_locked = false
 	_hovered_choice_index = -1
 	_highlighted_wrong_index = -1
+	_reset_choice_states()
 	_set_choice_interactable(true)
 	_refresh_choice_styles()
 
@@ -401,6 +422,17 @@ func _on_answer_result(correct: bool, choice_index: int, _correct_index: int) ->
 		_instructions_label.text = "Try again!"
 		_instructions_label.add_theme_color_override("font_color", _COL_ERROR)
 		_highlighted_wrong_index = choice_index
+	_refresh_choice_styles()
+
+
+func _reset_choice_states() -> void:
+	for i in range(_choice_states.size()):
+		_choice_states[i] = ChoiceVisualState.IDLE
+
+
+func _set_choice_state(selected_index: int, selected_state: int) -> void:
+	for i in range(_choice_states.size()):
+		_choice_states[i] = selected_state if i == selected_index else ChoiceVisualState.DISABLED
 	_refresh_choice_styles()
 
 
