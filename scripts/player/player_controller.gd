@@ -19,6 +19,8 @@ const GRAVITY: float = 35.0
 const JUMP_FORCE: float = 13.0
 const LANE_SWITCH_SPEED: float = 10.0
 const SLIDE_DURATION: float = 0.8
+const STUMBLE_DURATION: float = 0.60
+const HIT_INVINCIBILITY_DURATION: float = 1.35
 
 # Collision shape sizes
 const STAND_HEIGHT: float = 1.8
@@ -500,7 +502,6 @@ func _update_stumble(delta: float) -> void:
 	_stumble_timer -= delta
 	if _stumble_timer <= 0.0:
 		current_state = PlayerState.RUNNING
-		_is_invincible = false
 
 
 func _update_invincibility(delta: float) -> void:
@@ -605,17 +606,52 @@ func _handle_collision(node: Node) -> void:
 		if _is_supported_on_river_zone(node):
 			return
 		# No bridge — die
-		hit_obstacle.emit()
-		AudioManager.play_impact()
-		GameManager.trigger_game_over()
-		_die(node)
+		_handle_damage_collision(node)
 		return
 
 	if node.is_in_group("obstacles") and not node.is_in_group("river_kill_zones"):
-		hit_obstacle.emit()
-		AudioManager.play_impact()
-		GameManager.trigger_game_over()
-		_die(node)
+		_handle_damage_collision(node)
+
+
+func _handle_damage_collision(hit_node: Node) -> void:
+	hit_obstacle.emit()
+	AudioManager.play_impact()
+	if GameManager.consume_life():
+		_take_damage(hit_node)
+	else:
+		_die(hit_node)
+
+
+func _take_damage(hit_node: Node = null) -> void:
+	if current_state == PlayerState.SLIDING:
+		_end_slide()
+
+	current_state = PlayerState.STUMBLE
+	_stumble_timer = STUMBLE_DURATION
+	_is_invincible = true
+	_invincible_timer = HIT_INVINCIBILITY_DURATION
+	vertical_velocity = 0.0
+	velocity = Vector3.ZERO
+	_input_buffer_jump = false
+	_input_buffer_slide = false
+	_buffer_timer = 0.0
+	_jump_anticipation_timer = 0.0
+	_land_impact_timer = 0.10
+	_lane_lean_impulse = 0.0
+
+	var hit_side: float = 0.0
+	if hit_node is Node3D:
+		hit_side = signf(global_position.x - (hit_node as Node3D).global_position.x)
+	if is_zero_approx(hit_side):
+		hit_side = 1.0 if current_lane != 2 else -1.0
+	_lane_lean_impulse = 0.28 * hit_side
+
+	if player_model:
+		var tween := create_tween().set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		tween.tween_property(player_model, "rotation:z", deg_to_rad(-12.0 * hit_side), 0.10)
+		tween.parallel().tween_property(player_model, "position:y", 0.08, 0.10)
+		tween.tween_property(player_model, "rotation:z", 0.0, 0.24)
+		tween.parallel().tween_property(player_model, "position:y", 0.0, 0.24)
 
 
 func _die(hit_node: Node = null) -> void:
