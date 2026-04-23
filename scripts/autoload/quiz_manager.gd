@@ -20,8 +20,8 @@ const OBS_TYPE_TO_QUESTION: Dictionary = {
 	2: QuestionType.MULTIPLICATION,
 	3: QuestionType.DIVISION,
 }
-const TARGET_CAPTURE_TTI_MAX: float = 3.0
-const TARGET_CAPTURE_TTI_MIN: float = 2.0
+const TARGET_CAPTURE_TTI_MAX: float = 4.75
+const TARGET_CAPTURE_TTI_MIN: float = 3.40
 const VALIDATION_WINDOW_SECONDS: float = 0.45
 const POST_FEEDBACK_GAP_SECONDS: float = 0.20
 const JUMP_ACTION_TTI_SECONDS: float = 0.45
@@ -574,7 +574,7 @@ func _update_scheduled_question_flow() -> void:
 		return
 
 	if _is_active_target_cleared():
-		_release_active_target(QuizTargetState.CLEARED)
+		_advance_after_target_clear()
 		return
 
 	_active_target["state"] = QuizTargetState.ACTIVE_QUIZ_TARGET
@@ -729,6 +729,23 @@ func _release_active_target(target_state: int) -> void:
 	_question_locked = false
 	current_question = {}
 	question_changed.emit({})
+
+
+func _advance_after_target_clear() -> void:
+	var cleared_row_id: int = _active_target.get("quiz_row_id", -1) as int
+	if cleared_row_id >= 0:
+		_resolved_row_ids[cleared_row_id] = true
+
+	_active_target = _make_empty_target()
+	_current_obstacle_marker = null
+	_question_locked = false
+	current_question = {}
+
+	_capture_upcoming_target()
+	_spawn_first_question_for_active_target()
+
+	if current_question.is_empty():
+		question_changed.emit({})
 
 
 func _stop_quiz_progression_on_failure() -> void:
