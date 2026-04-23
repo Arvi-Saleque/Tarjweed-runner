@@ -613,6 +613,11 @@ func _update_scheduled_question_flow() -> void:
 	if _get_now_ms() < next_question_at_ms:
 		return
 
+	if _is_active_target_cleared():
+		_release_active_target(QuizTargetState.CLEARED)
+		return
+
+	_active_target["state"] = QuizTargetState.ACTIVE_QUIZ_TARGET
 	_unlock_and_generate_next_question()
 
 
@@ -749,6 +754,24 @@ func _get_row_time_to_impact(row_root: Node3D) -> float:
 
 func _get_now_ms() -> int:
 	return Time.get_ticks_msec()
+
+
+func _is_active_target_cleared() -> bool:
+	var row_root := _active_target.get("row_root") as Node3D
+	if row_root == null or not is_instance_valid(row_root):
+		return true
+	return row_root.global_position.z > QUIZ_PASS_Z
+
+
+func _release_active_target(target_state: int) -> void:
+	var row_id: int = _active_target.get("quiz_row_id", -1) as int
+	if row_id >= 0 and target_state == QuizTargetState.CLEARED:
+		_resolved_row_ids[row_id] = true
+	_active_target = _make_empty_target()
+	_current_obstacle_marker = null
+	_question_locked = false
+	current_question = {}
+	question_changed.emit({})
 
 
 ## Returns 0 (before threshold) or 1 (after threshold) based on difficulty.
