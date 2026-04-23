@@ -11,9 +11,11 @@ signal game_over_triggered
 signal game_paused
 signal game_resumed
 signal coin_collected(value: int)
+signal coin_delta_feedback(delta: int)
 signal score_updated(new_score: int)
 signal distance_updated(new_distance: float)
 signal speed_changed(new_speed: float)
+signal lives_changed(current_lives: int, max_lives: int)
 
 # --- Enums ---
 enum GameState { MENU, PLAYING, PAUSED, GAME_OVER }
@@ -22,9 +24,12 @@ enum GameState { MENU, PLAYING, PAUSED, GAME_OVER }
 const BASE_SPEED: float = 12.0
 const MAX_SPEED: float = 28.0
 const SPEED_INCREMENT: float = 0.15        # Speed increase per second of play
+const MAX_LIVES: int = 3
 const LANE_WIDTH: float = 2.0
 const LANE_COUNT: int = 3
 const LANE_POSITIONS: Array[float] = [-2.0, 0.0, 2.0]
+const QUIZ_CORRECT_COIN_REWARD: int = 50
+const QUIZ_WRONG_COIN_PENALTY: int = -20
 
 const COIN_VALUES: Dictionary = {
 	"gold": 1,
@@ -79,6 +84,7 @@ var current_state: GameState = GameState.MENU
 var score: int = 0
 var score_bonus: int = 0
 var coins: int = 0
+var current_lives: int = MAX_LIVES
 var distance: float = 0.0
 var current_speed: float = BASE_SPEED
 var difficulty_multiplier: float = 1.0
@@ -178,6 +184,7 @@ func start_game() -> void:
 	current_state = GameState.PLAYING
 	get_tree().paused = false
 	game_started.emit()
+	lives_changed.emit(current_lives, MAX_LIVES)
 
 
 func trigger_game_over() -> void:
@@ -222,11 +229,28 @@ func resume_game() -> void:
 func collect_coin(type: String = "gold") -> void:
 	var resolved_type: String = "gold"
 	var value: int = COIN_VALUES.get(resolved_type, 1)
-	coins += value
-	score_bonus += value
-	score = int(distance) + score_bonus
-	coin_collected.emit(value)
-	score_updated.emit(score)
+	_apply_coin_delta(value, value, false)
+
+
+func apply_quiz_answer_coin_delta(is_correct: bool) -> int:
+	var popup_delta: int = QUIZ_CORRECT_COIN_REWARD if is_correct else QUIZ_WRONG_COIN_PENALTY
+	_apply_coin_delta(popup_delta, popup_delta, true)
+	return popup_delta
+
+
+func consume_life() -> bool:
+	if current_state != GameState.PLAYING:
+		return false
+	current_lives = maxi(current_lives - 1, 0)
+	lives_changed.emit(current_lives, MAX_LIVES)
+	if current_lives <= 0:
+		trigger_game_over()
+		return false
+	return true
+
+
+func get_max_lives() -> int:
+	return MAX_LIVES
 
 
 func go_to_menu() -> void:
@@ -303,9 +327,23 @@ func _reset_run() -> void:
 	score = 0
 	score_bonus = 0
 	coins = 0
+	current_lives = MAX_LIVES
 	distance = 0.0
 	current_speed = get_effective_base_speed()
 	difficulty_multiplier = float(profile.get("difficulty_min", 1.0))
 	obstacle_frequency = float(profile.get("obstacle_base", 0.3))
 	play_time = 0.0
 	previous_high_score = 0
+
+
+func _apply_coin_delta(score_delta: int, coin_delta: int, emit_feedback: bool) -> void:
+	var applied_coin_delta: int = coin_delta
+	if applied_coin_delta < 0:
+		applied_coin_delta = maxi(applied_coin_delta, -coins)
+	coins += applied_coin_delta
+	score_bonus += score_delta
+	score = int(distance) + score_bonus
+	coin_collected.emit(applied_coin_delta)
+	score_updated.emit(score)
+	if emit_feedback:
+		coin_delta_feedback.emit(score_delta)
