@@ -131,6 +131,7 @@ var current_question: Dictionary = {}
 var _is_active: bool = false
 var _player: CharacterBody3D = null
 var _current_obstacle_marker: Node3D = null
+var _awaiting_next_question_after_success: bool = false
 var _question_locked: bool = false
 
 # Answer key mapping (1, 2, 3, 4 keys)
@@ -159,6 +160,7 @@ func _process(_delta: float) -> void:
 		return
 	if not GameManager.is_quiz_mode():
 		return
+	_update_success_progression()
 	_handle_answer_input()
 
 
@@ -183,14 +185,14 @@ func _check_answer(choice_index: int) -> void:
 	if is_correct:
 		answer_result.emit(true, choice_index, correct_index)
 		_trigger_player_action()
-		_generate_question()
+		_awaiting_next_question_after_success = true
 	else:
 		answer_result.emit(false, choice_index, correct_index)
+		_awaiting_next_question_after_success = false
+		_current_obstacle_marker = null
 		await get_tree().create_timer(WRONG_ANSWER_DELAY).timeout
 		if _is_active and GameManager.is_quiz_mode():
-			_generate_question()
-
-	_question_locked = false
+			_unlock_and_generate_next_question()
 
 
 func _trigger_player_action() -> void:
@@ -225,6 +227,7 @@ func _trigger_player_action() -> void:
 func _on_game_started() -> void:
 	if GameManager.is_quiz_mode():
 		_is_active = true
+		_awaiting_next_question_after_success = false
 		_question_locked = false
 		_player = null
 		_current_obstacle_marker = null
@@ -232,6 +235,7 @@ func _on_game_started() -> void:
 		_generate_question()
 	else:
 		_is_active = false
+		_awaiting_next_question_after_success = false
 		_question_locked = false
 		_current_obstacle_marker = null
 		current_question = {}
@@ -239,6 +243,7 @@ func _on_game_started() -> void:
 
 func _on_game_over() -> void:
 	_is_active = false
+	_awaiting_next_question_after_success = false
 	_question_locked = false
 	_current_obstacle_marker = null
 	current_question = {}
@@ -574,6 +579,28 @@ func _find_next_obstacle_marker() -> Node3D:
 			best_marker = marker as Node3D
 
 	return best_marker
+
+
+func _update_success_progression() -> void:
+	if not _awaiting_next_question_after_success:
+		return
+	if not _is_current_obstacle_marker_cleared():
+		return
+
+	_awaiting_next_question_after_success = false
+	_current_obstacle_marker = null
+	_unlock_and_generate_next_question()
+
+
+func _is_current_obstacle_marker_cleared() -> bool:
+	if _current_obstacle_marker == null or not is_instance_valid(_current_obstacle_marker):
+		return true
+	return _current_obstacle_marker.global_position.z > 2.0
+
+
+func _unlock_and_generate_next_question() -> void:
+	_question_locked = false
+	_generate_question()
 
 
 ## Returns 0 (before threshold) or 1 (after threshold) based on difficulty.
