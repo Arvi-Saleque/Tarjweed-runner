@@ -141,6 +141,7 @@ const WORD_BANK: Array[Dictionary] = [
 # Current question data
 var current_question: Dictionary = {}
 var _is_active: bool = false
+var _is_failed: bool = false
 var _player: CharacterBody3D = null
 var _current_obstacle_marker: Node3D = null
 var _awaiting_next_question_after_success: bool = false
@@ -172,6 +173,8 @@ func _register_input_actions() -> void:
 
 func _process(_delta: float) -> void:
 	if not _is_active:
+		return
+	if _is_failed:
 		return
 	if not GameManager.is_quiz_mode():
 		return
@@ -251,9 +254,7 @@ func _on_game_started() -> void:
 
 
 func _on_game_over() -> void:
-	_is_active = false
-	_reset_quiz_runtime_state()
-	question_changed.emit({})
+	_stop_quiz_progression_on_failure()
 
 
 func _generate_question() -> void:
@@ -651,6 +652,7 @@ func _make_empty_target() -> Dictionary:
 
 func _reset_quiz_runtime_state() -> void:
 	current_question = {}
+	_is_failed = false
 	_current_obstacle_marker = null
 	_awaiting_next_question_after_success = false
 	_question_locked = false
@@ -772,6 +774,20 @@ func _release_active_target(target_state: int) -> void:
 	_current_obstacle_marker = null
 	_question_locked = false
 	current_question = {}
+	question_changed.emit({})
+
+
+func _stop_quiz_progression_on_failure() -> void:
+	_is_active = false
+	_is_failed = true
+	if _has_active_target():
+		_active_target["state"] = QuizTargetState.FAILED
+		_active_target["failed"] = true
+		_active_target["feedback_until_ms"] = 0
+		_active_target["next_question_at_ms"] = 0
+	_question_locked = true
+	current_question = {}
+	_current_obstacle_marker = null
 	question_changed.emit({})
 
 
