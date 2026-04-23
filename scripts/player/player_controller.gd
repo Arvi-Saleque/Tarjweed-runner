@@ -1580,7 +1580,10 @@ func _spawn_landing_pulse() -> void:
 	var tween := create_tween()
 	tween.tween_property(pulse, "scale", Vector3(4.4, 1.0, 4.4), 0.26).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	tween.parallel().tween_property(pulse, "position:y", pulse.position.y + 0.04, 0.26)
-	tween.parallel().tween_property(pulse, "modulate:a", 0.0, 0.26)
+	var pulse_alpha := material.albedo_color.a
+	tween.parallel().tween_method(func(alpha: float):
+		material.albedo_color.a = alpha
+	, pulse_alpha, 0.0, 0.26)
 	tween.tween_callback(pulse.queue_free)
 
 
@@ -1614,7 +1617,10 @@ func _spawn_quiz_action_burst(action_type: int) -> void:
 	var tween := create_tween()
 	tween.tween_property(burst, "scale", Vector3(3.6, 1.0, 3.6), 0.24).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	tween.parallel().tween_property(burst, "position:y", burst.position.y + 0.08, 0.24)
-	tween.parallel().tween_property(burst, "modulate:a", 0.0, 0.24)
+	var burst_alpha := material.albedo_color.a
+	tween.parallel().tween_method(func(alpha: float):
+		material.albedo_color.a = alpha
+	, burst_alpha, 0.0, 0.24)
 	tween.tween_callback(burst.queue_free)
 
 
