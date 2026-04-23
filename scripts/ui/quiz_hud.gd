@@ -11,6 +11,7 @@ const _COL_CREAM       := Color("FFFAE8")
 const _COL_CREAM_HOVER := Color("F4F0DE")
 const _COL_WHITE       := Color.WHITE
 const _COL_SUCCESS     := Color("A8E063")
+const _COL_SUCCESS_FILL := Color("E8FAD9")
 const _COL_ERROR       := Color("FF8A80")
 const _COL_ERROR_FILL  := Color(1.0, 0.91, 0.91, 1.0)
 const _COL_SELECTED    := Color("FFF1BF")
@@ -26,7 +27,6 @@ var _choice_states: Array[int] = []
 var _instructions_label: Label
 var _question_panel: PanelContainer
 var _hovered_choice_index: int = -1
-var _highlighted_wrong_index: int = -1
 var _answer_locked: bool = false
 
 
@@ -319,16 +319,20 @@ func _refresh_choice_styles() -> void:
 				bg = _COL_SELECTED
 				border = _COL_SELECTED_BORDER
 				shadow = 7
+			ChoiceVisualState.CORRECT:
+				bg = _COL_SUCCESS_FILL
+				border = _COL_SUCCESS
+				shadow = 8
+			ChoiceVisualState.WRONG:
+				bg = _COL_ERROR_FILL
+				border = _COL_ERROR
+				shadow = 8
 			ChoiceVisualState.DISABLED:
 				bg = _COL_CREAM_HOVER
 				border = _COL_MID_GREEN
 				shadow = 3
 			_:
-				if i == _highlighted_wrong_index:
-					bg = _COL_ERROR_FILL
-					border = _COL_ERROR
-					shadow = 6
-				elif not _answer_locked and i == _hovered_choice_index:
+				if not _answer_locked and i == _hovered_choice_index:
 					bg = _COL_CREAM_HOVER
 					border = _COL_MID_GREEN
 					shadow = 6
@@ -352,7 +356,6 @@ func _on_choice_pressed(index: int) -> void:
 func _on_question_changed(question: Dictionary) -> void:
 	_answer_locked = false
 	_hovered_choice_index = -1
-	_highlighted_wrong_index = -1
 	_reset_choice_states()
 	_set_choice_interactable(true)
 	_refresh_choice_styles()
@@ -417,12 +420,11 @@ func _on_answer_result(correct: bool, choice_index: int, _correct_index: int) ->
 	if correct:
 		_instructions_label.text = "Correct!"
 		_instructions_label.add_theme_color_override("font_color", _COL_SUCCESS)
-		_highlighted_wrong_index = -1
+		_show_validation_states(choice_index, _correct_index, true)
 	else:
 		_instructions_label.text = "Try again!"
 		_instructions_label.add_theme_color_override("font_color", _COL_ERROR)
-		_highlighted_wrong_index = choice_index
-	_refresh_choice_styles()
+		_show_validation_states(choice_index, _correct_index, false)
 
 
 func _reset_choice_states() -> void:
@@ -433,6 +435,17 @@ func _reset_choice_states() -> void:
 func _set_choice_state(selected_index: int, selected_state: int) -> void:
 	for i in range(_choice_states.size()):
 		_choice_states[i] = selected_state if i == selected_index else ChoiceVisualState.DISABLED
+	_refresh_choice_styles()
+
+
+func _show_validation_states(choice_index: int, correct_index: int, is_correct: bool) -> void:
+	for i in range(_choice_states.size()):
+		if i == choice_index:
+			_choice_states[i] = ChoiceVisualState.CORRECT if is_correct else ChoiceVisualState.WRONG
+		elif not is_correct and i == correct_index:
+			_choice_states[i] = ChoiceVisualState.CORRECT
+		else:
+			_choice_states[i] = ChoiceVisualState.DISABLED
 	_refresh_choice_styles()
 
 
