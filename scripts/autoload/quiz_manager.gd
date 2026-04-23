@@ -208,9 +208,11 @@ func _check_answer(choice_index: int) -> void:
 
 	if is_correct:
 		_arm_active_target_action()
+		GameManager.apply_quiz_answer_coin_delta(true)
 		answer_result.emit(true, choice_index, correct_index)
 		_trigger_player_action()
 	else:
+		GameManager.apply_quiz_answer_coin_delta(false)
 		answer_result.emit(false, choice_index, correct_index)
 	if _has_active_target():
 		_active_target["feedback_until_ms"] = feedback_until_ms
