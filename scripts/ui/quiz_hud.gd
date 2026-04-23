@@ -12,6 +12,7 @@ const _COL_CREAM_HOVER := Color("F4F0DE")
 const _COL_WHITE       := Color.WHITE
 const _COL_SUCCESS     := Color("A8E063")
 const _COL_ERROR       := Color("FF8A80")
+const _COL_ERROR_FILL  := Color(1.0, 0.91, 0.91, 1.0)
 
 var _question_label: Label
 var _choice_buttons: Array[Button] = []
@@ -19,6 +20,8 @@ var _choice_labels: Array[Label] = []
 var _choice_panels: Array[PanelContainer] = []
 var _instructions_label: Label
 var _question_panel: PanelContainer
+var _hovered_choice_index: int = -1
+var _highlighted_wrong_index: int = -1
 var _answer_locked: bool = false
 
 
@@ -264,10 +267,15 @@ func _create_answer_card(index: int) -> Control:
 	var idx := index
 	click_overlay.pressed.connect(func(): _on_choice_pressed(idx))
 	click_overlay.mouse_entered.connect(func():
-		panel.add_theme_stylebox_override("panel", _make_panel_style(_COL_CREAM_HOVER, _COL_MID_GREEN, 3, 22, 6))
+		if _answer_locked:
+			return
+		_hovered_choice_index = idx
+		_refresh_choice_styles()
 	)
 	click_overlay.mouse_exited.connect(func():
-		panel.add_theme_stylebox_override("panel", _make_panel_style(_COL_CREAM, _COL_DARK_GREEN, 3, 22, 4))
+		if _hovered_choice_index == idx:
+			_hovered_choice_index = -1
+		_refresh_choice_styles()
 	)
 
 	root.add_child(click_overlay)
@@ -294,6 +302,27 @@ func _make_panel_style(bg: Color, border: Color, border_width: int, radius: int,
 	return s
 
 
+func _refresh_choice_styles() -> void:
+	for i in range(_choice_panels.size()):
+		var bg := _COL_CREAM
+		var border := _COL_DARK_GREEN
+		var shadow := 4
+		if i == _highlighted_wrong_index:
+			bg = _COL_ERROR_FILL
+			border = _COL_ERROR
+			shadow = 6
+		elif not _answer_locked and i == _hovered_choice_index:
+			bg = _COL_CREAM_HOVER
+			border = _COL_MID_GREEN
+			shadow = 6
+		_choice_panels[i].add_theme_stylebox_override("panel", _make_panel_style(bg, border, 3, 22, shadow))
+
+
+func _set_choice_interactable(enabled: bool) -> void:
+	for button in _choice_buttons:
+		button.disabled = not enabled
+
+
 func _on_choice_pressed(index: int) -> void:
 	if _answer_locked:
 		return
@@ -302,6 +331,10 @@ func _on_choice_pressed(index: int) -> void:
 
 func _on_question_changed(question: Dictionary) -> void:
 	_answer_locked = false
+	_hovered_choice_index = -1
+	_highlighted_wrong_index = -1
+	_set_choice_interactable(true)
+	_refresh_choice_styles()
 
 	if question.is_empty():
 		_question_label.text = ""
@@ -357,14 +390,18 @@ func _apply_script_font(lbl: Label, font_id: String, is_question: bool) -> void:
 			lbl.text_direction = Control.TEXT_DIRECTION_LTR
 
 
-func _on_answer_result(correct: bool, _choice_index: int, _correct_index: int) -> void:
+func _on_answer_result(correct: bool, choice_index: int, _correct_index: int) -> void:
 	_answer_locked = true
+	_set_choice_interactable(false)
 	if correct:
 		_instructions_label.text = "Correct!"
 		_instructions_label.add_theme_color_override("font_color", _COL_SUCCESS)
+		_highlighted_wrong_index = -1
 	else:
 		_instructions_label.text = "Try again!"
 		_instructions_label.add_theme_color_override("font_color", _COL_ERROR)
+		_highlighted_wrong_index = choice_index
+	_refresh_choice_styles()
 
 
 func _on_game_paused() -> void:
