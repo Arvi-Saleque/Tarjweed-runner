@@ -203,6 +203,7 @@ func _check_answer(choice_index: int) -> void:
 	var next_question_at_ms: int = feedback_until_ms + int(POST_FEEDBACK_GAP_SECONDS * 1000.0)
 
 	if is_correct:
+		_arm_active_target_action()
 		answer_result.emit(true, choice_index, correct_index)
 		_trigger_player_action()
 	else:
@@ -772,6 +773,12 @@ func _release_active_target(target_state: int) -> void:
 	_question_locked = false
 	current_question = {}
 	question_changed.emit({})
+
+
+func _arm_active_target_action() -> void:
+	if not _has_active_target():
+		return
+	_active_target["action_armed"] = true
 
 
 ## Returns 0 (before threshold) or 1 (after threshold) based on difficulty.
