@@ -40,8 +40,14 @@ nature-assets/
 road-asset/
 rock-assets/
 ui-assets/
+new-assets/
 new_plan.md
 tmp_nature_*.png
+fantasy.md
+
+# Local duplicate fallbacks not needed while MP3 runtime assets exist
+assets/Audio/backgroundmainmenu.wav
+assets/Audio/playing.wav
 
 # Keep only the runtime font subset used by the game UI
 fonts/*
