@@ -144,7 +144,6 @@ var _is_active: bool = false
 var _is_failed: bool = false
 var _player: CharacterBody3D = null
 var _current_obstacle_marker: Node3D = null
-var _awaiting_next_question_after_success: bool = false
 var _question_locked: bool = false
 var _active_target: Dictionary = {}
 var _resolved_row_ids: Dictionary = {}
@@ -152,7 +151,6 @@ var _next_question_id: int = 1
 
 # Answer key mapping (1, 2, 3, 4 keys)
 var _answer_actions: Array[String] = ["quiz_answer_1", "quiz_answer_2", "quiz_answer_3", "quiz_answer_4"]
-const WRONG_ANSWER_DELAY: float = 0.5
 
 
 func _ready() -> void:
@@ -217,7 +215,6 @@ func _check_answer(choice_index: int) -> void:
 	if _has_active_target():
 		_active_target["feedback_until_ms"] = feedback_until_ms
 		_active_target["next_question_at_ms"] = next_question_at_ms
-	_awaiting_next_question_after_success = false
 
 
 func _trigger_player_action() -> void:
@@ -532,10 +529,7 @@ func _claim_next_obstacle_marker() -> Node3D:
 	if next_row.is_empty():
 		return null
 	_set_active_target_from_row(next_row)
-	var marker := _active_target.get("marker") as Node3D
-	if marker:
-		marker.set_meta("quiz_used", true)
-	return marker
+	return _active_target.get("marker") as Node3D
 
 
 func _set_current_obstacle_marker(marker: Node3D) -> int:
@@ -554,54 +548,6 @@ func _resolve_current_obstacle_type() -> int:
 	return current_question.get("obstacle_type", 0) as int
 
 
-func _find_matching_marker_obstacle(group_name: String, max_z_delta: float = 1.0) -> Node:
-	var row_root := _active_target.get("row_root") as Node
-	if row_root and is_instance_valid(row_root) and row_root.is_in_group(group_name):
-		return row_root
-
-	if _current_obstacle_marker == null or not is_instance_valid(_current_obstacle_marker):
-		return null
-
-	var marker_parent := _current_obstacle_marker.get_parent()
-	var marker_z: float = _current_obstacle_marker.global_position.z
-	var best_match: Node = null
-	var best_delta: float = INF
-
-	for candidate in get_tree().get_nodes_in_group(group_name):
-		if not (candidate is Node3D):
-			continue
-		if candidate.get_parent() != marker_parent:
-			continue
-		var z_delta: float = absf((candidate as Node3D).global_position.z - marker_z)
-		if z_delta > max_z_delta or z_delta >= best_delta:
-			continue
-		best_delta = z_delta
-		best_match = candidate
-
-	return best_match
-
-
-func _find_next_obstacle_marker() -> Node3D:
-	## Find the nearest UPCOMING quiz obstacle marker.
-	var markers := get_tree().get_nodes_in_group("quiz_obstacles")
-	var best_marker: Node3D = null
-	var best_z: float = -99999.0
-
-	for marker in markers:
-		if not (marker is Node3D):
-			continue
-		if marker.get_meta("quiz_used", false):
-			continue
-		var z: float = (marker as Node3D).global_position.z
-		if z > 2.0:
-			continue  # Already passed the player
-		if z > best_z:
-			best_z = z
-			best_marker = marker as Node3D
-
-	return best_marker
-
-
 func _update_scheduled_question_flow() -> void:
 	if not _question_locked or not _is_active or not GameManager.is_quiz_mode():
 		return
@@ -618,12 +564,6 @@ func _update_scheduled_question_flow() -> void:
 
 	_active_target["state"] = QuizTargetState.ACTIVE_QUIZ_TARGET
 	_unlock_and_generate_next_question()
-
-
-func _is_current_obstacle_marker_cleared() -> bool:
-	if _current_obstacle_marker == null or not is_instance_valid(_current_obstacle_marker):
-		return true
-	return _current_obstacle_marker.global_position.z > 2.0
 
 
 func _unlock_and_generate_next_question() -> void:
@@ -654,7 +594,6 @@ func _reset_quiz_runtime_state() -> void:
 	current_question = {}
 	_is_failed = false
 	_current_obstacle_marker = null
-	_awaiting_next_question_after_success = false
 	_question_locked = false
 	_active_target = _make_empty_target()
 	_resolved_row_ids.clear()
@@ -912,29 +851,3 @@ func _get_quiz_tier() -> int:
 	const THRESHOLD: float = 1000.0
 	return 1 if GameManager.distance >= THRESHOLD else 0
 
-
-func _detect_nearby_obstacle_type(mark_used: bool = false) -> int:
-	## Find the nearest UPCOMING quiz obstacle marker.
-	## Returns the obstacle type (0-3), or 0 (jump) if none remain.
-	var markers := get_tree().get_nodes_in_group("quiz_obstacles")
-	var best_marker: Node = null
-	var best_z: float = -99999.0
-
-	for marker in markers:
-		if marker.get_meta("quiz_used", false):
-			continue
-		var z: float = marker.global_position.z
-		if z > 2.0:
-			continue  # Already passed the player
-		if z > best_z:
-			best_z = z
-			best_marker = marker
-
-	# Check if the nearest obstacle is within range
-	if best_marker:
-		if mark_used:
-			best_marker.set_meta("quiz_used", true)
-		return best_marker.get_meta("quiz_obstacle_type", 0) as int
-
-	# No obstacle nearby — default to jump
-	return 0
