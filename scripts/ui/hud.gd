@@ -10,6 +10,7 @@ var _pause_btn: Button
 var _root: Control
 var _skin: String = "nature"
 var _speed_label: Label
+var _life_labels: Array[Label] = []
 
 # Coin collect flash
 var _coin_flash_tween: Tween
@@ -34,6 +35,7 @@ func _create_hud() -> void:
 	add_child(_root)
 
 	_create_top_bar()
+	_create_lives_panel()
 
 	if not GameManager.is_quiz_mode() and not GameManager.is_pronunciation_mode():
 		_create_speed_indicator()
@@ -365,6 +367,7 @@ func _connect_signals() -> void:
 	GameManager.coin_delta_feedback.connect(_on_coin_delta_feedback)
 	GameManager.distance_updated.connect(_on_distance_updated)
 	GameManager.speed_changed.connect(_on_speed_changed)
+	GameManager.lives_changed.connect(_on_lives_changed)
 
 
 func _on_game_started() -> void:
@@ -372,6 +375,7 @@ func _on_game_started() -> void:
 		child.queue_free()
 
 	_create_top_bar()
+	_create_lives_panel()
 
 	if not GameManager.is_quiz_mode() and not GameManager.is_pronunciation_mode():
 		_create_speed_indicator()
@@ -380,6 +384,7 @@ func _on_game_started() -> void:
 	_coins_label.text = "0"
 	_score_label.text = "0"
 	_distance_label.text = "0m"
+	_refresh_lives(GameManager.current_lives, GameManager.get_max_lives())
 
 	if _speed_bar:
 		_speed_bar.value = 0.0
@@ -432,6 +437,10 @@ func _on_coin_delta_feedback(delta: int) -> void:
 	_spawn_coin_delta_popup(delta)
 
 
+func _on_lives_changed(current_lives: int, max_lives: int) -> void:
+	_refresh_lives(current_lives, max_lives)
+
+
 func _on_distance_updated(new_distance: float) -> void:
 	_distance_label.text = "%dm" % int(new_distance)
 
@@ -476,6 +485,65 @@ func _format_number(n: int) -> String:
 		result = s[i] + result
 		count += 1
 	return result
+
+
+func _create_lives_panel() -> void:
+	_life_labels.clear()
+
+	var lives_outer := UITheme.make_panel("dark", _skin)
+	lives_outer.custom_minimum_size = Vector2(170, 58)
+	lives_outer.anchor_left = 0.0
+	lives_outer.anchor_top = 0.0
+	lives_outer.anchor_right = 0.0
+	lives_outer.anchor_bottom = 0.0
+	lives_outer.offset_left = 20.0
+	lives_outer.offset_top = 104.0
+	lives_outer.offset_right = 190.0
+	lives_outer.offset_bottom = 162.0
+	lives_outer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(lives_outer)
+
+	var lives_margin := MarginContainer.new()
+	lives_margin.add_theme_constant_override("margin_left", 10)
+	lives_margin.add_theme_constant_override("margin_right", 10)
+	lives_margin.add_theme_constant_override("margin_top", 6)
+	lives_margin.add_theme_constant_override("margin_bottom", 6)
+	lives_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lives_outer.add_child(lives_margin)
+
+	var lives_panel := UITheme.make_panel("light", _skin)
+	lives_margin.add_child(lives_panel)
+
+	var lives_row := HBoxContainer.new()
+	lives_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	lives_row.add_theme_constant_override("separation", 10)
+	lives_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	lives_panel.add_child(lives_row)
+
+	for i in GameManager.get_max_lives():
+		var heart := Label.new()
+		heart.text = "♥"
+		heart.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		heart.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		heart.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		if ThemeDB.fallback_font:
+			heart.add_theme_font_override("font", ThemeDB.fallback_font)
+		heart.add_theme_font_size_override("font_size", 28)
+		lives_row.add_child(heart)
+		_life_labels.append(heart)
+
+	_refresh_lives(GameManager.current_lives, GameManager.get_max_lives())
+
+
+func _refresh_lives(current_lives: int, max_lives: int) -> void:
+	var full_color := Color("E34B4B")
+	var empty_color := Color(0.52, 0.30, 0.34, 0.35)
+	for i in range(_life_labels.size()):
+		var heart := _life_labels[i]
+		if heart == null:
+			continue
+		heart.add_theme_color_override("font_color", full_color if i < current_lives else empty_color)
+		heart.scale = Vector2.ONE if i < current_lives else Vector2(0.90, 0.90)
 
 
 func _spawn_coin_delta_popup(delta: int) -> void:
