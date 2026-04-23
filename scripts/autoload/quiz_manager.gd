@@ -4,7 +4,7 @@ extends Node
 ## Math: 4 question types tied to 4 obstacle types (Addition/Subtraction/Multiplication/Division).
 
 signal question_changed(question: Dictionary)
-signal answer_result(correct: bool)
+signal answer_result(correct: bool, choice_index: int, correct_index: int)
 
 # Question types mapped to obstacle types (math only)
 enum QuestionType { ADDITION, SUBTRACTION, MULTIPLICATION, DIVISION }
@@ -130,9 +130,11 @@ const WORD_BANK: Array[Dictionary] = [
 var current_question: Dictionary = {}
 var _is_active: bool = false
 var _player: CharacterBody3D = null
+var _question_locked: bool = false
 
 # Answer key mapping (1, 2, 3, 4 keys)
 var _answer_actions: Array[String] = ["quiz_answer_1", "quiz_answer_2", "quiz_answer_3", "quiz_answer_4"]
+const WRONG_ANSWER_DELAY: float = 0.5
 
 
 func _ready() -> void:
@@ -160,7 +162,7 @@ func _process(_delta: float) -> void:
 
 
 func _handle_answer_input() -> void:
-	if current_question.is_empty():
+	if current_question.is_empty() or _question_locked:
 		return
 	for i in 4:
 		var action := _answer_actions[i]
@@ -170,20 +172,24 @@ func _handle_answer_input() -> void:
 
 
 func _check_answer(choice_index: int) -> void:
-	if current_question.is_empty():
+	if current_question.is_empty() or _question_locked:
 		return
 
+	_question_locked = true
 	var correct_index: int = current_question.get("correct_index", -1)
 	var is_correct: bool = (choice_index == correct_index)
 
 	if is_correct:
-		answer_result.emit(true)
+		answer_result.emit(true, choice_index, correct_index)
 		_trigger_player_action()
+		_generate_question()
 	else:
-		answer_result.emit(false)
+		answer_result.emit(false, choice_index, correct_index)
+		await get_tree().create_timer(WRONG_ANSWER_DELAY).timeout
+		if _is_active and GameManager.is_quiz_mode():
+			_generate_question()
 
-	# Either way, move to the next question — one chance per question
-	_generate_question()
+	_question_locked = false
 
 
 func _trigger_player_action() -> void:
@@ -212,16 +218,19 @@ func _trigger_player_action() -> void:
 func _on_game_started() -> void:
 	if GameManager.is_quiz_mode():
 		_is_active = true
+		_question_locked = false
 		_player = null
 		await get_tree().create_timer(0.5).timeout
 		_generate_question()
 	else:
 		_is_active = false
+		_question_locked = false
 		current_question = {}
 
 
 func _on_game_over() -> void:
 	_is_active = false
+	_question_locked = false
 	current_question = {}
 	question_changed.emit({})
 

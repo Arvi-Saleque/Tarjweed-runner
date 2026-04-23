@@ -19,6 +19,7 @@ var _choice_labels: Array[Label] = []
 var _choice_panels: Array[PanelContainer] = []
 var _instructions_label: Label
 var _question_panel: PanelContainer
+var _answer_locked: bool = false
 
 
 func _ready() -> void:
@@ -294,10 +295,14 @@ func _make_panel_style(bg: Color, border: Color, border_width: int, radius: int,
 
 
 func _on_choice_pressed(index: int) -> void:
+	if _answer_locked:
+		return
 	QuizManager._check_answer(index)
 
 
 func _on_question_changed(question: Dictionary) -> void:
+	_answer_locked = false
+
 	if question.is_empty():
 		_question_label.text = ""
 		for lbl in _choice_labels:
@@ -352,20 +357,14 @@ func _apply_script_font(lbl: Label, font_id: String, is_question: bool) -> void:
 			lbl.text_direction = Control.TEXT_DIRECTION_LTR
 
 
-func _on_answer_result(correct: bool) -> void:
+func _on_answer_result(correct: bool, _choice_index: int, _correct_index: int) -> void:
+	_answer_locked = true
 	if correct:
-		_instructions_label.text = "✓ Correct!"
+		_instructions_label.text = "Correct!"
 		_instructions_label.add_theme_color_override("font_color", _COL_SUCCESS)
 	else:
-		_instructions_label.text = "✗ Try again!"
+		_instructions_label.text = "Try again!"
 		_instructions_label.add_theme_color_override("font_color", _COL_ERROR)
-
-	var tw := create_tween()
-	tw.tween_interval(0.8)
-	tw.tween_callback(func():
-		_instructions_label.text = "Choose the correct answer"
-		_instructions_label.add_theme_color_override("font_color", _COL_WHITE)
-	)
 
 
 func _on_game_paused() -> void:
