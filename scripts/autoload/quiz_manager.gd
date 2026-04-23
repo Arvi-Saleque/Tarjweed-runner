@@ -228,8 +228,8 @@ func _trigger_player_action() -> void:
 			if _has_active_target():
 				_active_target["action_armed"] = true
 		1:  # Slide obstacle
-			if _player.has_method("quiz_slide"):
-				_player.call("quiz_slide")
+			if _has_active_target():
+				_active_target["action_armed"] = true
 		2:  # Giant rock — blast
 			var rock_target := _find_matching_marker_obstacle("giant_rocks")
 			if rock_target and _player.has_method("quiz_blast_target"):
@@ -795,6 +795,9 @@ func _update_action_execution() -> void:
 		QuizActionType.JUMP:
 			if _get_active_target_time_to_impact() <= JUMP_ACTION_TTI_SECONDS:
 				_fire_jump_action()
+		QuizActionType.SLIDE:
+			if _get_active_target_time_to_impact() <= SLIDE_ACTION_TTI_SECONDS:
+				_fire_slide_action()
 
 
 func _get_active_target_time_to_impact() -> float:
@@ -808,6 +811,15 @@ func _fire_jump_action() -> void:
 		_player.call("quiz_jump")
 	_active_target["action_fired"] = true
 	action_confirmation.emit(QuizActionType.JUMP)
+
+
+func _fire_slide_action() -> void:
+	if _player == null:
+		_player = get_tree().get_first_node_in_group("player") as CharacterBody3D
+	if _player and _player.has_method("quiz_slide"):
+		_player.call("quiz_slide")
+	_active_target["action_fired"] = true
+	action_confirmation.emit(QuizActionType.SLIDE)
 
 
 ## Returns 0 (before threshold) or 1 (after threshold) based on difficulty.
