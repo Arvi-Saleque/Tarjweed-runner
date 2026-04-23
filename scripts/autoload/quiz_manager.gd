@@ -526,13 +526,13 @@ func _generate_math_question() -> void:
 
 func _claim_next_obstacle_marker() -> Node3D:
 	if _has_active_target():
-		return _active_target.get("marker") as Node3D
+		return _get_active_target_marker()
 
 	var next_row := _find_nearest_quiz_row()
 	if next_row.is_empty():
 		return null
 	_set_active_target_from_row(next_row)
-	return _active_target.get("marker") as Node3D
+	return _get_active_target_marker()
 
 
 func _set_current_obstacle_marker(marker: Node3D) -> int:
@@ -555,7 +555,7 @@ func _finalize_current_question_payload() -> void:
 
 
 func _resolve_current_obstacle_type() -> int:
-	var active_row := _active_target.get("row_root") as Node
+	var active_row := _get_active_target_row()
 	if active_row and is_instance_valid(active_row):
 		return _active_target.get("obstacle_type", QuizActionType.JUMP) as int
 	if _current_obstacle_marker and is_instance_valid(_current_obstacle_marker):
@@ -622,7 +622,7 @@ func _set_active_target_from_row(row_data: Dictionary) -> void:
 	_active_target["quiz_row_id"] = row_data.get("quiz_row_id", -1)
 	_active_target["obstacle_type"] = row_data.get("obstacle_type", QuizActionType.JUMP)
 	_active_target["state"] = QuizTargetState.UPCOMING
-	_current_obstacle_marker = _active_target.get("marker") as Node3D
+	_current_obstacle_marker = _get_active_target_marker()
 
 
 func _find_nearest_quiz_row() -> Dictionary:
@@ -692,8 +692,7 @@ func _spawn_first_question_for_active_target() -> void:
 
 
 func _has_active_target() -> bool:
-	var row_root := _active_target.get("row_root") as Node
-	return row_root != null and is_instance_valid(row_root)
+	return _get_active_target_row() != null
 
 
 func _get_capture_window_seconds() -> float:
@@ -711,7 +710,7 @@ func _get_now_ms() -> int:
 
 
 func _is_active_target_cleared() -> bool:
-	var row_root := _active_target.get("row_root") as Node3D
+	var row_root := _get_active_target_row()
 	if row_root == null or not is_instance_valid(row_root):
 		return true
 	var action_type: int = _active_target.get("obstacle_type", QuizActionType.JUMP) as int
@@ -793,7 +792,7 @@ func _update_action_execution() -> void:
 
 
 func _get_active_target_time_to_impact() -> float:
-	return _get_row_time_to_impact(_active_target.get("row_root") as Node3D)
+	return _get_row_time_to_impact(_get_active_target_row())
 
 
 func _fire_jump_action() -> void:
@@ -815,7 +814,7 @@ func _fire_slide_action() -> void:
 
 
 func _is_active_target_blast_ready() -> bool:
-	var row_root := _active_target.get("row_root") as Node3D
+	var row_root := _get_active_target_row()
 	if row_root == null or not is_instance_valid(row_root):
 		return false
 	if not row_root.is_in_group("giant_rocks"):
@@ -828,7 +827,7 @@ func _is_active_target_blast_ready() -> bool:
 func _fire_blast_action() -> void:
 	if _player == null:
 		_player = get_tree().get_first_node_in_group("player") as CharacterBody3D
-	var rock_target := _active_target.get("row_root") as Node
+	var rock_target := _get_active_target_row()
 	if _player and rock_target and is_instance_valid(rock_target) and _player.has_method("quiz_blast_target"):
 		_player.call("quiz_blast_target", rock_target)
 		_active_target["action_fired"] = true
@@ -851,7 +850,7 @@ func _is_blast_row_destroyed(row_root: Node) -> bool:
 
 
 func _is_active_target_bridge_ready() -> bool:
-	var row_root := _active_target.get("row_root") as Node3D
+	var row_root := _get_active_target_row()
 	if row_root == null or not is_instance_valid(row_root):
 		return false
 	if not row_root.is_in_group("river_crossings"):
@@ -864,7 +863,7 @@ func _is_active_target_bridge_ready() -> bool:
 func _fire_bridge_action() -> void:
 	if _player == null:
 		_player = get_tree().get_first_node_in_group("player") as CharacterBody3D
-	var river_target := _active_target.get("row_root") as Node
+	var river_target := _get_active_target_row()
 	if _player and river_target and is_instance_valid(river_target) and _player.has_method("quiz_bridge_target"):
 		_player.call("quiz_bridge_target", river_target)
 		_active_target["action_fired"] = true
@@ -875,6 +874,24 @@ func _is_bridge_row_built(row_root: Node) -> bool:
 	if row_root == null or not is_instance_valid(row_root):
 		return false
 	return row_root.has_meta("bridge_lane_0")
+
+
+func _get_active_target_row() -> Node3D:
+	var row_root = _active_target.get("row_root")
+	if row_root == null or not is_instance_valid(row_root):
+		return null
+	if row_root is Node3D:
+		return row_root as Node3D
+	return null
+
+
+func _get_active_target_marker() -> Node3D:
+	var marker = _active_target.get("marker")
+	if marker == null or not is_instance_valid(marker):
+		return null
+	if marker is Node3D:
+		return marker as Node3D
+	return null
 
 
 ## Returns 0 (before threshold) or 1 (after threshold) based on difficulty.
