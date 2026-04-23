@@ -325,6 +325,7 @@ func _generate_arabic_huroof_question() -> void:
 		"question_font": "arabic",
 		"answer_font": "bangla",
 	}
+	_finalize_current_question_payload()
 	question_changed.emit(current_question)
 
 
@@ -380,6 +381,7 @@ func _generate_word_meaning_question(style: String) -> void:
 		"question_font": q_font,
 		"answer_font": a_font,
 	}
+	_finalize_current_question_payload()
 	question_changed.emit(current_question)
 
 
@@ -518,6 +520,7 @@ func _generate_math_question() -> void:
 		"answer_font": "latin",
 	}
 
+	_finalize_current_question_payload()
 	question_changed.emit(current_question)
 
 
@@ -537,6 +540,18 @@ func _set_current_obstacle_marker(marker: Node3D) -> int:
 	if _current_obstacle_marker:
 		return _current_obstacle_marker.get_meta("quiz_obstacle_type", 0) as int
 	return 0
+
+
+func _finalize_current_question_payload() -> void:
+	var question_id: int = _next_question_id
+	_next_question_id += 1
+	current_question["question_id"] = question_id
+	current_question["quiz_row_id"] = _active_target.get("quiz_row_id", -1) as int
+	current_question["obstacle_type"] = _resolve_current_obstacle_type()
+	current_question["target_state"] = _active_target.get("state", QuizTargetState.UPCOMING) as int
+	current_question["time_to_impact_s"] = _get_active_target_time_to_impact() if _has_active_target() else -1.0
+	if _has_active_target():
+		_active_target["question_id"] = question_id
 
 
 func _resolve_current_obstacle_type() -> int:
@@ -850,4 +865,3 @@ func _is_bridge_row_built(row_root: Node) -> bool:
 func _get_quiz_tier() -> int:
 	const THRESHOLD: float = 1000.0
 	return 1 if GameManager.distance >= THRESHOLD else 0
-
