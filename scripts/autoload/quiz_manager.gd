@@ -3,6 +3,8 @@ extends Node
 ## Supports 4 quiz styles: math, arabic_huroof, bangla_english, english_bangla.
 ## Math: 4 question types tied to 4 obstacle types (Addition/Subtraction/Multiplication/Division).
 
+const PlayerTuning = preload("res://scripts/player/player_tuning.gd")
+
 signal question_changed(question: Dictionary)
 signal answer_result(correct: bool, choice_index: int, correct_index: int)
 signal action_confirmation(action_type: int)
@@ -231,11 +233,8 @@ func _trigger_player_action() -> void:
 			if _has_active_target():
 				_active_target["action_armed"] = true
 		2:  # Giant rock — blast
-			var rock_target := _find_matching_marker_obstacle("giant_rocks")
-			if rock_target and _player.has_method("quiz_blast_target"):
-				_player.call("quiz_blast_target", rock_target)
-			elif _player.has_method("quiz_blast"):
-				_player.call("quiz_blast")
+			if _has_active_target():
+				_active_target["action_armed"] = true
 		3:  # River — bridge
 			var river_target := _find_matching_marker_obstacle("river_crossings")
 			if river_target and _player.has_method("quiz_bridge_target"):
@@ -762,6 +761,9 @@ func _is_active_target_cleared() -> bool:
 	var row_root := _active_target.get("row_root") as Node3D
 	if row_root == null or not is_instance_valid(row_root):
 		return true
+	var action_type: int = _active_target.get("obstacle_type", QuizActionType.JUMP) as int
+	if action_type == QuizActionType.BLAST:
+		return _is_blast_target_cleared(row_root)
 	return row_root.global_position.z > QUIZ_PASS_Z
 
 
@@ -798,6 +800,9 @@ func _update_action_execution() -> void:
 		QuizActionType.SLIDE:
 			if _get_active_target_time_to_impact() <= SLIDE_ACTION_TTI_SECONDS:
 				_fire_slide_action()
+		QuizActionType.BLAST:
+			if _is_active_target_blast_ready():
+				_fire_blast_action()
 
 
 func _get_active_target_time_to_impact() -> float:
@@ -820,6 +825,42 @@ func _fire_slide_action() -> void:
 		_player.call("quiz_slide")
 	_active_target["action_fired"] = true
 	action_confirmation.emit(QuizActionType.SLIDE)
+
+
+func _is_active_target_blast_ready() -> bool:
+	var row_root := _active_target.get("row_root") as Node3D
+	if row_root == null or not is_instance_valid(row_root):
+		return false
+	if not row_root.is_in_group("giant_rocks"):
+		return false
+	if _is_blast_row_destroyed(row_root):
+		return false
+	return absf(row_root.global_position.z) <= PlayerTuning.GIANT_ROCK_BLAST_RANGE
+
+
+func _fire_blast_action() -> void:
+	if _player == null:
+		_player = get_tree().get_first_node_in_group("player") as CharacterBody3D
+	var rock_target := _active_target.get("row_root") as Node
+	if _player and rock_target and is_instance_valid(rock_target) and _player.has_method("quiz_blast_target"):
+		_player.call("quiz_blast_target", rock_target)
+		_active_target["action_fired"] = true
+		action_confirmation.emit(QuizActionType.BLAST)
+
+
+func _is_blast_target_cleared(row_root: Node3D) -> bool:
+	if row_root == null or not is_instance_valid(row_root):
+		return true
+	if _is_blast_row_destroyed(row_root):
+		return true
+	return row_root.global_position.z > QUIZ_PASS_Z
+
+
+func _is_blast_row_destroyed(row_root: Node) -> bool:
+	if row_root == null or not is_instance_valid(row_root):
+		return true
+	var rock_state = row_root.get("state")
+	return rock_state != null and int(rock_state) >= 2
 
 
 ## Returns 0 (before threshold) or 1 (after threshold) based on difficulty.
