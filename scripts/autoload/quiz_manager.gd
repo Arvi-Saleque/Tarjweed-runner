@@ -672,7 +672,8 @@ func _capture_upcoming_target() -> void:
 		return
 
 	var time_to_impact_s: float = _get_row_time_to_impact(next_row.get("row_root") as Node3D)
-	if time_to_impact_s > _get_capture_window_seconds():
+	var should_preload_question_now: bool = current_question.is_empty()
+	if not should_preload_question_now and time_to_impact_s > _get_capture_window_seconds():
 		return
 
 	_set_active_target_from_row(next_row)
