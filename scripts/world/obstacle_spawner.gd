@@ -37,6 +37,7 @@ const QUIZ_TYPE_JUMP: int = 0
 const QUIZ_TYPE_SLIDE: int = 1
 const QUIZ_TYPE_BLAST: int = 2
 const QUIZ_TYPE_RIVER: int = 3
+const QUIZ_ROW_SEQ_KEY: String = "_quiz_row_seq_id"
 
 # Scale ranges for different obstacle models
 const OBSTACLE_SCALES: Dictionary = {
@@ -241,21 +242,30 @@ static func _spawn_quiz_obstacles(chunk: Node3D, chunk_length: float, generator:
 static func _create_quiz_row_typed(parent: Node3D, z_pos: float, generator: Node3D, obs_type: int) -> void:
 	## Create a quiz obstacle row based on type.
 	## All rows block all 3 lanes. The type determines HOW to clear them.
+	var row_id: int = _next_quiz_row_id()
 
 	# Store the obstacle type as metadata on a marker node so QuizManager can read it
 	var marker := Node3D.new()
 	marker.name = "QuizObstacleMarker"
 	marker.position = Vector3(0.0, 0.0, z_pos)
 	marker.set_meta("quiz_obstacle_type", obs_type)
+	marker.set_meta("quiz_row_id", row_id)
 	marker.add_to_group("quiz_obstacles")
 	parent.add_child(marker)
 
 	match obs_type:
 		QUIZ_TYPE_JUMP:
 			# Ground blocks across all 3 lanes — answer addition to jump
+			var jump_row := Node3D.new()
+			jump_row.name = "QuizJumpRow"
+			jump_row.position = Vector3(0.0, 0.0, z_pos)
+			jump_row.set_meta("quiz_row_id", row_id)
+			jump_row.set_meta("quiz_obstacle_type", obs_type)
+			jump_row.add_to_group("quiz_target_rows")
+			parent.add_child(jump_row)
 			for lane_idx in 3:
 				var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
-				var pos := Vector3(lane_x, 0.0, z_pos)
+				var pos := Vector3(lane_x, 0.0, 0.0)
 				var obs_script: GDScript = load(OBSTACLE_SCRIPT) as GDScript
 				if not obs_script:
 					return
@@ -263,7 +273,9 @@ static func _create_quiz_row_typed(parent: Node3D, z_pos: float, generator: Node
 				obstacle.set_script(obs_script)
 				obstacle.position = pos
 				obstacle.name = "QuizJumpBlock"
-				parent.add_child(obstacle)
+				obstacle.set_meta("quiz_row_id", row_id)
+				obstacle.set_meta("quiz_obstacle_type", obs_type)
+				jump_row.add_child(obstacle)
 				var block_mat := StandardMaterial3D.new()
 				block_mat.albedo_color = Color(0.2, 0.7, 0.3)  # Green for addition
 				obstacle.call("setup_placeholder",
@@ -272,9 +284,16 @@ static func _create_quiz_row_typed(parent: Node3D, z_pos: float, generator: Node
 
 		QUIZ_TYPE_SLIDE:
 			# Overhead blocks across all 3 lanes — answer subtraction to slide
+			var slide_row := Node3D.new()
+			slide_row.name = "QuizSlideRow"
+			slide_row.position = Vector3(0.0, 0.0, z_pos)
+			slide_row.set_meta("quiz_row_id", row_id)
+			slide_row.set_meta("quiz_obstacle_type", obs_type)
+			slide_row.add_to_group("quiz_target_rows")
+			parent.add_child(slide_row)
 			for lane_idx in 3:
 				var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
-				var pos := Vector3(lane_x, 0.0, z_pos)
+				var pos := Vector3(lane_x, 0.0, 0.0)
 				var obs_script: GDScript = load(OBSTACLE_SCRIPT) as GDScript
 				if not obs_script:
 					return
@@ -282,7 +301,9 @@ static func _create_quiz_row_typed(parent: Node3D, z_pos: float, generator: Node
 				obstacle.set_script(obs_script)
 				obstacle.position = pos
 				obstacle.name = "QuizSlideBlock"
-				parent.add_child(obstacle)
+				obstacle.set_meta("quiz_row_id", row_id)
+				obstacle.set_meta("quiz_obstacle_type", obs_type)
+				slide_row.add_child(obstacle)
 				# Create overhead obstacle using placeholder
 				var block_mat := StandardMaterial3D.new()
 				block_mat.albedo_color = Color(0.85, 0.55, 0.1)  # Orange for subtraction
@@ -301,6 +322,9 @@ static func _create_quiz_row_typed(parent: Node3D, z_pos: float, generator: Node
 			rock.set_script(rock_script)
 			rock.position = Vector3(0.0, 0.0, z_pos)
 			rock.name = "QuizGiantRock"
+			rock.set_meta("quiz_row_id", row_id)
+			rock.set_meta("quiz_obstacle_type", obs_type)
+			rock.add_to_group("quiz_target_rows")
 			parent.add_child(rock)
 			var model_scene: PackedScene = null
 			if generator and generator.has_method("get_random_giant_rock_scene"):
@@ -313,8 +337,11 @@ static func _create_quiz_row_typed(parent: Node3D, z_pos: float, generator: Node
 			var river := Node3D.new()
 			river.name = "QuizRiverCrossing"
 			river.position = Vector3(0.0, 0.0, z_pos)
+			river.set_meta("quiz_row_id", row_id)
+			river.set_meta("quiz_obstacle_type", obs_type)
 			river.add_to_group("river_crossings")
 			river.add_to_group("quiz_rivers")
+			river.add_to_group("quiz_target_rows")
 
 			_add_river_visuals(river)
 
@@ -342,6 +369,12 @@ static func _create_quiz_row_typed(parent: Node3D, z_pos: float, generator: Node
 # =============================================================================
 # SHARED HELPERS
 # =============================================================================
+
+
+static func _next_quiz_row_id() -> int:
+	var next_row_id: int = GameManager.get_meta(QUIZ_ROW_SEQ_KEY, 0) as int
+	GameManager.set_meta(QUIZ_ROW_SEQ_KEY, next_row_id + 1)
+	return next_row_id
 
 
 static func _add_river_visuals(river: Node3D) -> void:
