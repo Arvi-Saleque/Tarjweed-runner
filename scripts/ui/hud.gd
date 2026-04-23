@@ -362,6 +362,7 @@ func _connect_signals() -> void:
 	GameManager.game_over_triggered.connect(_on_game_over)
 	GameManager.score_updated.connect(_on_score_updated)
 	GameManager.coin_collected.connect(_on_coin_collected)
+	GameManager.coin_delta_feedback.connect(_on_coin_delta_feedback)
 	GameManager.distance_updated.connect(_on_distance_updated)
 	GameManager.speed_changed.connect(_on_speed_changed)
 
@@ -407,11 +408,14 @@ func _on_score_updated(new_score: int) -> void:
 
 func _on_coin_collected(value: int) -> void:
 	_coins_label.text = str(GameManager.coins)
+	if value == 0:
+		return
 
 	# Flash the coin icon gold
 	if _coin_flash_tween and _coin_flash_tween.is_valid():
 		_coin_flash_tween.kill()
-	_coin_icon.modulate = UITheme.get_color("accent", _skin) * 2.0
+	var flash_color := UITheme.get_color("accent", _skin) * 2.0 if value > 0 else UITheme.get_color("danger", _skin) * 1.5
+	_coin_icon.modulate = flash_color
 	_coin_flash_tween = create_tween()
 	_coin_flash_tween.tween_property(_coin_icon, "modulate", Color.WHITE, 0.3)
 
@@ -420,6 +424,12 @@ func _on_coin_collected(value: int) -> void:
 	var pop_tween := create_tween()
 	pop_tween.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_ELASTIC)
 	pop_tween.tween_property(_coins_label, "scale", Vector2.ONE, 0.4)
+
+
+func _on_coin_delta_feedback(delta: int) -> void:
+	if delta == 0:
+		return
+	_spawn_coin_delta_popup(delta)
 
 
 func _on_distance_updated(new_distance: float) -> void:
@@ -466,3 +476,38 @@ func _format_number(n: int) -> String:
 		result = s[i] + result
 		count += 1
 	return result
+
+
+func _spawn_coin_delta_popup(delta: int) -> void:
+	if _root == null or _coin_icon == null:
+		return
+
+	var popup := HBoxContainer.new()
+	popup.add_theme_constant_override("separation", 4)
+	popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(popup)
+
+	var amount_color := Color("7ED957") if delta > 0 else Color("FF6B6B")
+	var amount_label := UITheme.make_label("%+d" % delta, UITheme.FONT_BODY, amount_color, _skin)
+	amount_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	popup.add_child(amount_label)
+
+	var popup_icon := TextureRect.new()
+	popup_icon.texture = _coin_icon.texture if _coin_icon.texture != null else UITheme.icon_coin
+	popup_icon.custom_minimum_size = Vector2(22, 22)
+	popup_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	popup_icon.modulate = UITheme.get_color("accent", _skin)
+	popup_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	popup.add_child(popup_icon)
+
+	var root_origin := _root.get_global_rect().position
+	var coin_origin := _coin_icon.get_global_rect().position - root_origin
+	popup.position = coin_origin + Vector2(50.0, 6.0)
+	popup.modulate.a = 0.0
+
+	var tween := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween.tween_property(popup, "modulate:a", 1.0, 0.08)
+	tween.parallel().tween_property(popup, "position:y", popup.position.y - 24.0, 0.52)
+	tween.tween_interval(0.06)
+	tween.tween_property(popup, "modulate:a", 0.0, 0.22)
+	tween.tween_callback(popup.queue_free)
