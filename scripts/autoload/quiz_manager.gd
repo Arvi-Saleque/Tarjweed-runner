@@ -130,6 +130,7 @@ const WORD_BANK: Array[Dictionary] = [
 var current_question: Dictionary = {}
 var _is_active: bool = false
 var _player: CharacterBody3D = null
+var _current_obstacle_marker: Node3D = null
 var _question_locked: bool = false
 
 # Answer key mapping (1, 2, 3, 4 keys)
@@ -199,7 +200,7 @@ func _trigger_player_action() -> void:
 	if not _player:
 		return
 
-	var obs_type: int = current_question.get("obstacle_type", 0) as int
+	var obs_type: int = _resolve_current_obstacle_type()
 	match obs_type:
 		0:  # Jump obstacle (or no obstacle nearby)
 			if _player.has_method("quiz_jump"):
@@ -208,10 +209,16 @@ func _trigger_player_action() -> void:
 			if _player.has_method("quiz_slide"):
 				_player.call("quiz_slide")
 		2:  # Giant rock — blast
-			if _player.has_method("quiz_blast"):
+			var rock_target := _find_matching_marker_obstacle("giant_rocks")
+			if rock_target and _player.has_method("quiz_blast_target"):
+				_player.call("quiz_blast_target", rock_target)
+			elif _player.has_method("quiz_blast"):
 				_player.call("quiz_blast")
 		3:  # River — bridge
-			if _player.has_method("quiz_bridge"):
+			var river_target := _find_matching_marker_obstacle("river_crossings")
+			if river_target and _player.has_method("quiz_bridge_target"):
+				_player.call("quiz_bridge_target", river_target)
+			elif _player.has_method("quiz_bridge"):
 				_player.call("quiz_bridge")
 
 
@@ -220,17 +227,20 @@ func _on_game_started() -> void:
 		_is_active = true
 		_question_locked = false
 		_player = null
+		_current_obstacle_marker = null
 		await get_tree().create_timer(0.5).timeout
 		_generate_question()
 	else:
 		_is_active = false
 		_question_locked = false
+		_current_obstacle_marker = null
 		current_question = {}
 
 
 func _on_game_over() -> void:
 	_is_active = false
 	_question_locked = false
+	_current_obstacle_marker = null
 	current_question = {}
 	question_changed.emit({})
 
@@ -253,6 +263,8 @@ func _generate_arabic_huroof_question() -> void:
 	var pool: Array[Dictionary]
 	var question_key: String
 	var answer_key: String
+	var marker := _claim_next_obstacle_marker()
+	var obstacle_type: int = _set_current_obstacle_marker(marker)
 
 	match diff:
 		"hard":
@@ -299,7 +311,7 @@ func _generate_arabic_huroof_question() -> void:
 		"correct_index": correct_index,
 		"correct_answer": correct_answer,
 		"question_type": -1,
-		"obstacle_type": _detect_nearby_obstacle_type(true),
+		"obstacle_type": obstacle_type,
 		"tier": _get_quiz_tier(),
 		"question_font": "arabic",
 		"answer_font": "bangla",
@@ -308,6 +320,8 @@ func _generate_arabic_huroof_question() -> void:
 
 
 func _generate_word_meaning_question(style: String) -> void:
+	var marker := _claim_next_obstacle_marker()
+	var obstacle_type: int = _set_current_obstacle_marker(marker)
 	var idx: int = randi() % WORD_BANK.size()
 	var correct_entry: Dictionary = WORD_BANK[idx]
 
@@ -352,7 +366,7 @@ func _generate_word_meaning_question(style: String) -> void:
 		"correct_index": correct_index,
 		"correct_answer": correct_answer,
 		"question_type": -1,
-		"obstacle_type": _detect_nearby_obstacle_type(true),
+		"obstacle_type": obstacle_type,
 		"tier": _get_quiz_tier(),
 		"question_font": q_font,
 		"answer_font": a_font,
@@ -361,7 +375,8 @@ func _generate_word_meaning_question(style: String) -> void:
 
 
 func _generate_math_question() -> void:
-	var obs_type: int = _detect_nearby_obstacle_type(true)
+	var marker := _claim_next_obstacle_marker()
+	var obs_type: int = _set_current_obstacle_marker(marker)
 	var q_type: QuestionType = OBS_TYPE_TO_QUESTION.get(obs_type, QuestionType.ADDITION) as QuestionType
 
 	# Tier-aware question generation:
@@ -495,6 +510,70 @@ func _generate_math_question() -> void:
 	}
 
 	question_changed.emit(current_question)
+
+
+func _claim_next_obstacle_marker() -> Node3D:
+	var marker := _find_next_obstacle_marker()
+	if marker:
+		marker.set_meta("quiz_used", true)
+	return marker
+
+
+func _set_current_obstacle_marker(marker: Node3D) -> int:
+	_current_obstacle_marker = marker
+	if _current_obstacle_marker:
+		return _current_obstacle_marker.get_meta("quiz_obstacle_type", 0) as int
+	return 0
+
+
+func _resolve_current_obstacle_type() -> int:
+	if _current_obstacle_marker and is_instance_valid(_current_obstacle_marker):
+		return _current_obstacle_marker.get_meta("quiz_obstacle_type", 0) as int
+	return current_question.get("obstacle_type", 0) as int
+
+
+func _find_matching_marker_obstacle(group_name: String, max_z_delta: float = 1.0) -> Node:
+	if _current_obstacle_marker == null or not is_instance_valid(_current_obstacle_marker):
+		return null
+
+	var marker_parent := _current_obstacle_marker.get_parent()
+	var marker_z: float = _current_obstacle_marker.global_position.z
+	var best_match: Node = null
+	var best_delta: float = INF
+
+	for candidate in get_tree().get_nodes_in_group(group_name):
+		if not (candidate is Node3D):
+			continue
+		if candidate.get_parent() != marker_parent:
+			continue
+		var z_delta: float = absf((candidate as Node3D).global_position.z - marker_z)
+		if z_delta > max_z_delta or z_delta >= best_delta:
+			continue
+		best_delta = z_delta
+		best_match = candidate
+
+	return best_match
+
+
+func _find_next_obstacle_marker() -> Node3D:
+	## Find the nearest UPCOMING quiz obstacle marker.
+	var markers := get_tree().get_nodes_in_group("quiz_obstacles")
+	var best_marker: Node3D = null
+	var best_z: float = -99999.0
+
+	for marker in markers:
+		if not (marker is Node3D):
+			continue
+		if marker.get_meta("quiz_used", false):
+			continue
+		var z: float = (marker as Node3D).global_position.z
+		if z > 2.0:
+			continue  # Already passed the player
+		if z > best_z:
+			best_z = z
+			best_marker = marker as Node3D
+
+	return best_marker
 
 
 ## Returns 0 (before threshold) or 1 (after threshold) based on difficulty.

@@ -350,6 +350,12 @@ func quiz_blast() -> void:
 		return
 	# In quiz mode, find the nearest approaching giant rock with extended range
 	var target_rock: Node = _find_nearest_ahead("giant_rocks", 120.0)
+	quiz_blast_target(target_rock)
+
+
+func quiz_blast_target(target_rock: Node) -> void:
+	if current_state == PlayerState.DEAD or current_state == PlayerState.STUMBLE:
+		return
 	if target_rock and is_instance_valid(target_rock):
 		_fire_blast_projectile(target_rock)
 
@@ -360,6 +366,12 @@ func quiz_bridge() -> void:
 		return
 	# In quiz mode, find the nearest approaching river with extended range
 	var target_river: Node = _find_nearest_ahead("river_crossings", 120.0)
+	quiz_bridge_target(target_river)
+
+
+func quiz_bridge_target(target_river: Node) -> void:
+	if current_state == PlayerState.DEAD or current_state == PlayerState.STUMBLE:
+		return
 	if target_river and is_instance_valid(target_river):
 		_build_bridge(target_river)
 
