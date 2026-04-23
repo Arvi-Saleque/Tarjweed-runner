@@ -173,6 +173,7 @@ func _process(_delta: float) -> void:
 		return
 	if not GameManager.is_quiz_mode():
 		return
+	_capture_upcoming_target()
 	_update_success_progression()
 	_handle_answer_input()
 
@@ -651,7 +652,7 @@ func _set_active_target_from_row(row_data: Dictionary) -> void:
 	_active_target["row_root"] = row_data.get("row_root")
 	_active_target["quiz_row_id"] = row_data.get("quiz_row_id", -1)
 	_active_target["obstacle_type"] = row_data.get("obstacle_type", QuizActionType.JUMP)
-	_active_target["state"] = QuizTargetState.ACTIVE_QUIZ_TARGET
+	_active_target["state"] = QuizTargetState.UPCOMING
 	_current_obstacle_marker = _active_target.get("marker") as Node3D
 
 
@@ -691,6 +692,37 @@ func _find_marker_for_row(row_id: int) -> Node3D:
 		if marker.get_meta("quiz_row_id", -1) == row_id:
 			return marker as Node3D
 	return null
+
+
+func _capture_upcoming_target() -> void:
+	if _has_active_target():
+		return
+
+	var next_row := _find_nearest_quiz_row()
+	if next_row.is_empty():
+		return
+
+	var time_to_impact_s: float = _get_row_time_to_impact(next_row.get("row_root") as Node3D)
+	if time_to_impact_s > _get_capture_window_seconds():
+		return
+
+	_set_active_target_from_row(next_row)
+	_active_target["state"] = QuizTargetState.IN_RANGE
+
+
+func _has_active_target() -> bool:
+	var row_root := _active_target.get("row_root") as Node
+	return row_root != null and is_instance_valid(row_root)
+
+
+func _get_capture_window_seconds() -> float:
+	return lerpf(TARGET_CAPTURE_TTI_MAX, TARGET_CAPTURE_TTI_MIN, GameManager.get_speed_ratio())
+
+
+func _get_row_time_to_impact(row_root: Node3D) -> float:
+	if row_root == null or not is_instance_valid(row_root):
+		return INF
+	return absf(row_root.global_position.z) / maxf(GameManager.current_speed, 0.001)
 
 
 ## Returns 0 (before threshold) or 1 (after threshold) based on difficulty.
