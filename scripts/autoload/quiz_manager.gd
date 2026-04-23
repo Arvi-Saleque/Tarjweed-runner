@@ -175,6 +175,7 @@ func _process(_delta: float) -> void:
 		return
 	_capture_upcoming_target()
 	_spawn_first_question_for_active_target()
+	_update_action_execution()
 	_update_scheduled_question_flow()
 	_handle_answer_input()
 
@@ -224,8 +225,8 @@ func _trigger_player_action() -> void:
 	var obs_type: int = _resolve_current_obstacle_type()
 	match obs_type:
 		0:  # Jump obstacle (or no obstacle nearby)
-			if _player.has_method("quiz_jump"):
-				_player.call("quiz_jump")
+			if _has_active_target():
+				_active_target["action_armed"] = true
 		1:  # Slide obstacle
 			if _player.has_method("quiz_slide"):
 				_player.call("quiz_slide")
@@ -779,6 +780,15 @@ func _arm_active_target_action() -> void:
 	if not _has_active_target():
 		return
 	_active_target["action_armed"] = true
+
+
+func _update_action_execution() -> void:
+	if not _has_active_target():
+		return
+
+
+func _get_active_target_time_to_impact() -> float:
+	return _get_row_time_to_impact(_active_target.get("row_root") as Node3D)
 
 
 ## Returns 0 (before threshold) or 1 (after threshold) based on difficulty.
