@@ -174,6 +174,7 @@ func _process(_delta: float) -> void:
 	if not GameManager.is_quiz_mode():
 		return
 	_capture_upcoming_target()
+	_spawn_first_question_for_active_target()
 	_update_success_progression()
 	_handle_answer_input()
 
@@ -243,8 +244,6 @@ func _on_game_started() -> void:
 		_is_active = true
 		_player = null
 		_reset_quiz_runtime_state()
-		await get_tree().create_timer(0.5).timeout
-		_generate_question()
 	else:
 		_is_active = false
 		_reset_quiz_runtime_state()
@@ -524,6 +523,9 @@ func _generate_math_question() -> void:
 
 
 func _claim_next_obstacle_marker() -> Node3D:
+	if _has_active_target():
+		return _active_target.get("marker") as Node3D
+
 	var next_row := _find_nearest_quiz_row()
 	if next_row.is_empty():
 		return null
@@ -708,6 +710,18 @@ func _capture_upcoming_target() -> void:
 
 	_set_active_target_from_row(next_row)
 	_active_target["state"] = QuizTargetState.IN_RANGE
+
+
+func _spawn_first_question_for_active_target() -> void:
+	if not _has_active_target():
+		return
+	if not current_question.is_empty() or _question_locked:
+		return
+	if _active_target.get("state", QuizTargetState.UPCOMING) != QuizTargetState.IN_RANGE:
+		return
+
+	_active_target["state"] = QuizTargetState.ACTIVE_QUIZ_TARGET
+	_generate_question()
 
 
 func _has_active_target() -> bool:
