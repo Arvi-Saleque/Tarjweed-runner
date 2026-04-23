@@ -16,6 +16,7 @@ const _COL_ERROR       := Color("FF8A80")
 const _COL_ERROR_FILL  := Color(1.0, 0.91, 0.91, 1.0)
 const _COL_SELECTED    := Color("FFF1BF")
 const _COL_SELECTED_BORDER := Color("D6A33C")
+const _ACTION_CHIP_DURATION_MS: int = 350
 
 enum ChoiceVisualState { IDLE, HOVER, SELECTED, CORRECT, WRONG, DISABLED }
 
@@ -26,6 +27,9 @@ var _choice_panels: Array[PanelContainer] = []
 var _choice_states: Array[int] = []
 var _instructions_label: Label
 var _question_panel: PanelContainer
+var _action_chip_panel: PanelContainer
+var _action_chip_label: Label
+var _action_chip_hide_at_ms: int = 0
 var _hovered_choice_index: int = -1
 var _answer_locked: bool = false
 
@@ -45,6 +49,7 @@ func _ready() -> void:
 
 	QuizManager.question_changed.connect(_on_question_changed)
 	QuizManager.answer_result.connect(_on_answer_result)
+	QuizManager.action_confirmation.connect(_on_action_confirmation)
 	GameManager.game_paused.connect(_on_game_paused)
 	GameManager.game_resumed.connect(_on_game_resumed)
 
@@ -54,7 +59,7 @@ func _create_question_panel() -> void:
 	top_strip.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	top_strip.anchor_right = 1.0
 	top_strip.offset_top = 10.0
-	top_strip.offset_bottom = 140.0
+	top_strip.offset_bottom = 150.0
 	top_strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(top_strip)
 
@@ -66,7 +71,7 @@ func _create_question_panel() -> void:
 	top_strip.add_child(center)
 
 	_question_panel = PanelContainer.new()
-	_question_panel.custom_minimum_size = Vector2(720, 110)
+	_question_panel.custom_minimum_size = Vector2(760, 118)
 	_question_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_question_panel.add_theme_stylebox_override("panel", _make_panel_style(_COL_CREAM, _COL_DARK_GREEN, 6, 28, 10))
 	center.add_child(_question_panel)
@@ -84,7 +89,7 @@ func _create_question_panel() -> void:
 	_question_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if UITheme.font_display:
 		_question_label.add_theme_font_override("font", UITheme.font_display)
-	_question_label.add_theme_font_size_override("font_size", 40)
+	_question_label.add_theme_font_size_override("font_size", 42)
 	_question_label.add_theme_color_override("font_color", _COL_DARK_GREEN)
 	q_center.add_child(_question_label)
 
@@ -95,7 +100,7 @@ func _create_answer_area() -> void:
 	area.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	area.anchor_right = 1.0
 	area.offset_top = 150.0
-	area.offset_bottom = 300.0
+	area.offset_bottom = 320.0
 	area.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(area)
 
@@ -138,9 +143,39 @@ func _create_answer_area() -> void:
 	_instructions_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if UITheme.font_button:
 		_instructions_label.add_theme_font_override("font", UITheme.font_button)
-	_instructions_label.add_theme_font_size_override("font_size", 21)
+	_instructions_label.add_theme_font_size_override("font_size", 22)
 	_instructions_label.add_theme_color_override("font_color", _COL_WHITE)
 	pill_margin.add_child(_instructions_label)
+
+	var chip_center := CenterContainer.new()
+	chip_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chip_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(chip_center)
+
+	_action_chip_panel = PanelContainer.new()
+	_action_chip_panel.visible = false
+	_action_chip_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_action_chip_panel.add_theme_stylebox_override("panel", _make_panel_style(_COL_SELECTED, _COL_SELECTED_BORDER, 3, 18, 4))
+	chip_center.add_child(_action_chip_panel)
+
+	var chip_margin := MarginContainer.new()
+	chip_margin.add_theme_constant_override("margin_left", 18)
+	chip_margin.add_theme_constant_override("margin_right", 18)
+	chip_margin.add_theme_constant_override("margin_top", 5)
+	chip_margin.add_theme_constant_override("margin_bottom", 5)
+	chip_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_action_chip_panel.add_child(chip_margin)
+
+	_action_chip_label = Label.new()
+	_action_chip_label.text = ""
+	_action_chip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_action_chip_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_action_chip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if UITheme.font_button:
+		_action_chip_label.add_theme_font_override("font", UITheme.font_button)
+	_action_chip_label.add_theme_font_size_override("font_size", 18)
+	_action_chip_label.add_theme_color_override("font_color", _COL_DARK_GREEN)
+	chip_margin.add_child(_action_chip_label)
 
 	# Compact answer row directly below the question
 	var answers_center := CenterContainer.new()
@@ -150,7 +185,7 @@ func _create_answer_area() -> void:
 
 	# same visual width zone as the question box
 	var row_shell := HBoxContainer.new()
-	row_shell.custom_minimum_size = Vector2(820, 0) # adjust later if needed
+	row_shell.custom_minimum_size = Vector2(900, 0)
 	row_shell.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	row_shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	answers_center.add_child(row_shell)
@@ -177,7 +212,7 @@ func _create_answer_area() -> void:
 
 func _create_answer_card(index: int) -> Control:
 	var root := Control.new()
-	root.custom_minimum_size = Vector2(150, 84)
+	root.custom_minimum_size = Vector2(168, 92)
 	root.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	root.mouse_filter = Control.MOUSE_FILTER_PASS
 
@@ -250,7 +285,7 @@ func _create_answer_card(index: int) -> Control:
 	answer_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if UITheme.font_display:
 		answer_lbl.add_theme_font_override("font", UITheme.font_display)
-	answer_lbl.add_theme_font_size_override("font_size", 28)
+	answer_lbl.add_theme_font_size_override("font_size", 30)
 	answer_lbl.add_theme_color_override("font_color", _COL_DARK_GREEN)
 	row.add_child(answer_lbl)
 	_choice_labels.append(answer_lbl)
@@ -456,3 +491,37 @@ func _on_game_paused() -> void:
 func _on_game_resumed() -> void:
 	if GameManager.is_quiz_mode():
 		visible = true
+
+
+func _process(_delta: float) -> void:
+	if _action_chip_panel and _action_chip_panel.visible and Time.get_ticks_msec() >= _action_chip_hide_at_ms:
+		_action_chip_panel.visible = false
+
+
+func _on_action_confirmation(action_type: int) -> void:
+	var chip_text := "ACTION!"
+	var chip_fill := _COL_SELECTED
+	var chip_border := _COL_SELECTED_BORDER
+	match action_type:
+		QuizManager.QuizActionType.JUMP:
+			chip_text = "JUMP!"
+			chip_fill = Color("DDF4FF")
+			chip_border = Color("4E9DD9")
+		QuizManager.QuizActionType.SLIDE:
+			chip_text = "SLIDE!"
+			chip_fill = Color("E8FAD9")
+			chip_border = Color("7FBF4D")
+		QuizManager.QuizActionType.BLAST:
+			chip_text = "BLAST!"
+			chip_fill = Color("FFE4D6")
+			chip_border = Color("F28B54")
+		QuizManager.QuizActionType.BRIDGE:
+			chip_text = "BRIDGE!"
+			chip_fill = Color("FFF1BF")
+			chip_border = Color("D6A33C")
+	if _action_chip_panel:
+		_action_chip_panel.add_theme_stylebox_override("panel", _make_panel_style(chip_fill, chip_border, 3, 18, 4))
+		_action_chip_panel.visible = true
+	if _action_chip_label:
+		_action_chip_label.text = chip_text
+	_action_chip_hide_at_ms = Time.get_ticks_msec() + _ACTION_CHIP_DURATION_MS
