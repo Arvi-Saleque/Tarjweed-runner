@@ -240,26 +240,18 @@ func _trigger_player_action() -> void:
 func _on_game_started() -> void:
 	if GameManager.is_quiz_mode():
 		_is_active = true
-		_awaiting_next_question_after_success = false
-		_question_locked = false
 		_player = null
-		_current_obstacle_marker = null
+		_reset_quiz_runtime_state()
 		await get_tree().create_timer(0.5).timeout
 		_generate_question()
 	else:
 		_is_active = false
-		_awaiting_next_question_after_success = false
-		_question_locked = false
-		_current_obstacle_marker = null
-		current_question = {}
+		_reset_quiz_runtime_state()
 
 
 func _on_game_over() -> void:
 	_is_active = false
-	_awaiting_next_question_after_success = false
-	_question_locked = false
-	_current_obstacle_marker = null
-	current_question = {}
+	_reset_quiz_runtime_state()
 	question_changed.emit({})
 
 
@@ -531,7 +523,11 @@ func _generate_math_question() -> void:
 
 
 func _claim_next_obstacle_marker() -> Node3D:
-	var marker := _find_next_obstacle_marker()
+	var next_row := _find_nearest_quiz_row()
+	if next_row.is_empty():
+		return null
+	_set_active_target_from_row(next_row)
+	var marker := _active_target.get("marker") as Node3D
 	if marker:
 		marker.set_meta("quiz_used", true)
 	return marker
@@ -545,12 +541,19 @@ func _set_current_obstacle_marker(marker: Node3D) -> int:
 
 
 func _resolve_current_obstacle_type() -> int:
+	var active_row := _active_target.get("row_root") as Node
+	if active_row and is_instance_valid(active_row):
+		return _active_target.get("obstacle_type", QuizActionType.JUMP) as int
 	if _current_obstacle_marker and is_instance_valid(_current_obstacle_marker):
 		return _current_obstacle_marker.get_meta("quiz_obstacle_type", 0) as int
 	return current_question.get("obstacle_type", 0) as int
 
 
 func _find_matching_marker_obstacle(group_name: String, max_z_delta: float = 1.0) -> Node:
+	var row_root := _active_target.get("row_root") as Node
+	if row_root and is_instance_valid(row_root) and row_root.is_in_group(group_name):
+		return row_root
+
 	if _current_obstacle_marker == null or not is_instance_valid(_current_obstacle_marker):
 		return null
 
@@ -630,6 +633,64 @@ func _make_empty_target() -> Dictionary:
 		"action_fired": false,
 		"failed": false,
 	}
+
+
+func _reset_quiz_runtime_state() -> void:
+	current_question = {}
+	_current_obstacle_marker = null
+	_awaiting_next_question_after_success = false
+	_question_locked = false
+	_active_target = _make_empty_target()
+	_resolved_row_ids.clear()
+	_next_question_id = 1
+
+
+func _set_active_target_from_row(row_data: Dictionary) -> void:
+	_active_target = _make_empty_target()
+	_active_target["marker"] = row_data.get("marker")
+	_active_target["row_root"] = row_data.get("row_root")
+	_active_target["quiz_row_id"] = row_data.get("quiz_row_id", -1)
+	_active_target["obstacle_type"] = row_data.get("obstacle_type", QuizActionType.JUMP)
+	_active_target["state"] = QuizTargetState.ACTIVE_QUIZ_TARGET
+	_current_obstacle_marker = _active_target.get("marker") as Node3D
+
+
+func _find_nearest_quiz_row() -> Dictionary:
+	var best_row: Node3D = null
+	var best_z: float = -99999.0
+
+	for candidate in get_tree().get_nodes_in_group("quiz_target_rows"):
+		if not (candidate is Node3D):
+			continue
+		var row_root := candidate as Node3D
+		var row_id: int = row_root.get_meta("quiz_row_id", -1) as int
+		if _resolved_row_ids.has(row_id):
+			continue
+		var z: float = row_root.global_position.z
+		if z > QUIZ_PASS_Z:
+			continue
+		if z > best_z:
+			best_z = z
+			best_row = row_root
+
+	if best_row == null:
+		return {}
+
+	return {
+		"marker": _find_marker_for_row(best_row.get_meta("quiz_row_id", -1) as int),
+		"row_root": best_row,
+		"quiz_row_id": best_row.get_meta("quiz_row_id", -1),
+		"obstacle_type": best_row.get_meta("quiz_obstacle_type", QuizActionType.JUMP),
+	}
+
+
+func _find_marker_for_row(row_id: int) -> Node3D:
+	for marker in get_tree().get_nodes_in_group("quiz_obstacles"):
+		if not (marker is Node3D):
+			continue
+		if marker.get_meta("quiz_row_id", -1) == row_id:
+			return marker as Node3D
+	return null
 
 
 ## Returns 0 (before threshold) or 1 (after threshold) based on difficulty.
