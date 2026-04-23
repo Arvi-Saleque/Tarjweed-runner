@@ -32,6 +32,7 @@ const PLAYER_EXTRA_ANIM_SCENE_PATHS: Array[String] = PlayerRunnerAssets.EXTRA_AN
 const PLAYER_IDLE_ANIM_OPTIONS: Array[String] = PlayerRunnerAssets.IDLE_ANIM_OPTIONS
 const PLAYER_RUN_ANIM_OPTIONS: Array[String] = PlayerRunnerAssets.RUN_ANIM_OPTIONS
 const PLAYER_JUMP_ANIM_OPTIONS: Array[String] = PlayerRunnerAssets.JUMP_ANIM_OPTIONS
+const QUIZ_ACTION_FEEDBACK_DURATION: float = 0.28
 
 # --- State ---
 enum PlayerState { RUNNING, JUMPING, SLIDING, STUMBLE, DEAD }
@@ -107,6 +108,7 @@ var _runner_shadow: MeshInstance3D = null
 var _runner_shadow_material: StandardMaterial3D = null
 var _movement_dust: GPUParticles3D = null
 var _cyber_trail: GPUParticles3D = null
+var _quiz_action_feedback_timer: float = 0.0
 
 
 func _ready() -> void:
@@ -335,6 +337,7 @@ func quiz_jump() -> void:
 		return
 	if is_grounded or not coyote_timer.is_stopped():
 		_jump()
+		show_quiz_action_feedback(0)
 
 
 ## Called by QuizManager when player answers subtraction correctly — triggers slide
@@ -342,6 +345,7 @@ func quiz_slide() -> void:
 	if current_state == PlayerState.DEAD or current_state == PlayerState.STUMBLE:
 		return
 	_start_slide()
+	show_quiz_action_feedback(1)
 
 
 ## Called by QuizManager when player answers multiplication correctly — triggers blast
@@ -358,6 +362,7 @@ func quiz_blast_target(target_rock: Node) -> void:
 		return
 	if target_rock and is_instance_valid(target_rock):
 		_fire_blast_projectile(target_rock)
+		show_quiz_action_feedback(2)
 
 
 ## Called by QuizManager when player answers division correctly — builds bridge
@@ -374,6 +379,14 @@ func quiz_bridge_target(target_river: Node) -> void:
 		return
 	if target_river and is_instance_valid(target_river):
 		_build_bridge(target_river)
+		show_quiz_action_feedback(3)
+
+
+func show_quiz_action_feedback(action_type: int) -> void:
+	if current_state == PlayerState.DEAD:
+		return
+	_quiz_action_feedback_timer = QUIZ_ACTION_FEEDBACK_DURATION
+	_spawn_quiz_action_burst(action_type)
 
 
 func _find_nearest_ahead(group_name: String, max_range: float) -> Node:
@@ -513,6 +526,8 @@ func _update_runner_presentation(delta: float) -> void:
 		_jump_anticipation_timer = maxf(0.0, _jump_anticipation_timer - delta)
 	if _land_impact_timer > 0.0:
 		_land_impact_timer = maxf(0.0, _land_impact_timer - delta)
+	if _quiz_action_feedback_timer > 0.0:
+		_quiz_action_feedback_timer = maxf(0.0, _quiz_action_feedback_timer - delta)
 
 	_lane_lean_impulse = lerpf(_lane_lean_impulse, 0.0, delta * 8.5)
 	var lane_diff: float = target_x - position.x
@@ -535,6 +550,11 @@ func _update_runner_presentation(delta: float) -> void:
 			target_visual_pos.z += arch_ratio * NATURE_BRIDGE_ARC_FORWARD_SHIFT
 			target_pitch += deg_to_rad(-bridge_normalized_z * NATURE_BRIDGE_ARC_PITCH_DEGREES)
 
+	if _quiz_action_feedback_timer > 0.0:
+		var feedback_progress: float = 1.0 - (_quiz_action_feedback_timer / QUIZ_ACTION_FEEDBACK_DURATION)
+		var pulse_strength: float = sin(feedback_progress * PI)
+		target_visual_pos.y += 0.05 * pulse_strength
+
 	player_model.rotation.x = lerpf(player_model.rotation.x, target_pitch, delta * 10.0)
 	player_model.rotation.z = lerpf(player_model.rotation.z, target_roll, delta * 10.0)
 	player_model.position = player_model.position.lerp(target_visual_pos, delta * 9.0)
@@ -545,6 +565,10 @@ func _update_runner_presentation(delta: float) -> void:
 	elif _land_impact_timer > 0.0:
 		var land_ratio: float = _land_impact_timer / 0.18
 		target_scale = Vector3(1.06 + 0.05 * land_ratio, 0.86 + 0.08 * (1.0 - land_ratio), 1.06 + 0.05 * land_ratio)
+	if _quiz_action_feedback_timer > 0.0:
+		var feedback_progress: float = 1.0 - (_quiz_action_feedback_timer / QUIZ_ACTION_FEEDBACK_DURATION)
+		var pulse_strength: float = sin(feedback_progress * PI)
+		target_scale += Vector3.ONE * (0.14 * pulse_strength)
 	player_model.scale = player_model.scale.lerp(target_scale, delta * 12.0)
 
 	_update_runner_shadow()
@@ -1558,6 +1582,40 @@ func _spawn_landing_pulse() -> void:
 	tween.parallel().tween_property(pulse, "position:y", pulse.position.y + 0.04, 0.26)
 	tween.parallel().tween_property(pulse, "modulate:a", 0.0, 0.26)
 	tween.tween_callback(pulse.queue_free)
+
+
+func _spawn_quiz_action_burst(action_type: int) -> void:
+	var burst := MeshInstance3D.new()
+	var ring := CylinderMesh.new()
+	ring.top_radius = 0.16
+	ring.bottom_radius = 0.20
+	ring.height = 0.022
+	var color := Color("7CCBFF")
+	match action_type:
+		1:
+			color = Color("8BD86B")
+		2:
+			color = Color("FFB36B")
+		3:
+			color = Color("F6D067")
+	var material := StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = Color(color.r, color.g, color.b, 0.52)
+	material.emission_enabled = true
+	material.emission = color
+	material.emission_energy_multiplier = 2.2
+	ring.material = material
+	burst.mesh = ring
+	burst.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	burst.position = Vector3(0.0, -global_position.y + 0.10, 0.04)
+	add_child(burst)
+
+	var tween := create_tween()
+	tween.tween_property(burst, "scale", Vector3(3.6, 1.0, 3.6), 0.24).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tween.parallel().tween_property(burst, "position:y", burst.position.y + 0.08, 0.24)
+	tween.parallel().tween_property(burst, "modulate:a", 0.0, 0.24)
+	tween.tween_callback(burst.queue_free)
 
 
 func _build_runner_visual() -> Node3D:
