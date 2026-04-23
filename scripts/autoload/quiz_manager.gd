@@ -175,7 +175,7 @@ func _process(_delta: float) -> void:
 		return
 	_capture_upcoming_target()
 	_spawn_first_question_for_active_target()
-	_update_success_progression()
+	_update_scheduled_question_flow()
 	_handle_answer_input()
 
 
@@ -194,20 +194,23 @@ func _check_answer(choice_index: int) -> void:
 		return
 
 	_question_locked = true
+	if _has_active_target():
+		_active_target["state"] = QuizTargetState.ACTION_LOCKED
 	var correct_index: int = current_question.get("correct_index", -1)
 	var is_correct: bool = (choice_index == correct_index)
+	var now_ms: int = _get_now_ms()
+	var feedback_until_ms: int = now_ms + int(VALIDATION_WINDOW_SECONDS * 1000.0)
+	var next_question_at_ms: int = feedback_until_ms + int(POST_FEEDBACK_GAP_SECONDS * 1000.0)
 
 	if is_correct:
 		answer_result.emit(true, choice_index, correct_index)
 		_trigger_player_action()
-		_awaiting_next_question_after_success = true
 	else:
 		answer_result.emit(false, choice_index, correct_index)
-		_awaiting_next_question_after_success = false
-		_current_obstacle_marker = null
-		await get_tree().create_timer(WRONG_ANSWER_DELAY).timeout
-		if _is_active and GameManager.is_quiz_mode():
-			_unlock_and_generate_next_question()
+	if _has_active_target():
+		_active_target["feedback_until_ms"] = feedback_until_ms
+		_active_target["next_question_at_ms"] = next_question_at_ms
+	_awaiting_next_question_after_success = false
 
 
 func _trigger_player_action() -> void:
@@ -600,14 +603,16 @@ func _find_next_obstacle_marker() -> Node3D:
 	return best_marker
 
 
-func _update_success_progression() -> void:
-	if not _awaiting_next_question_after_success:
+func _update_scheduled_question_flow() -> void:
+	if not _question_locked or not _is_active or not GameManager.is_quiz_mode():
 		return
-	if not _is_current_obstacle_marker_cleared():
+	if not _has_active_target():
 		return
 
-	_awaiting_next_question_after_success = false
-	_current_obstacle_marker = null
+	var next_question_at_ms: int = _active_target.get("next_question_at_ms", 0) as int
+	if _get_now_ms() < next_question_at_ms:
+		return
+
 	_unlock_and_generate_next_question()
 
 
@@ -619,6 +624,9 @@ func _is_current_obstacle_marker_cleared() -> bool:
 
 func _unlock_and_generate_next_question() -> void:
 	_question_locked = false
+	if _has_active_target():
+		_active_target["feedback_until_ms"] = 0
+		_active_target["next_question_at_ms"] = 0
 	_generate_question()
 
 
@@ -737,6 +745,10 @@ func _get_row_time_to_impact(row_root: Node3D) -> float:
 	if row_root == null or not is_instance_valid(row_root):
 		return INF
 	return absf(row_root.global_position.z) / maxf(GameManager.current_speed, 0.001)
+
+
+func _get_now_ms() -> int:
+	return Time.get_ticks_msec()
 
 
 ## Returns 0 (before threshold) or 1 (after threshold) based on difficulty.
