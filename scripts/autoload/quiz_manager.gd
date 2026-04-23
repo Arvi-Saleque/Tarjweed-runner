@@ -785,10 +785,29 @@ func _arm_active_target_action() -> void:
 func _update_action_execution() -> void:
 	if not _has_active_target():
 		return
+	if not _active_target.get("action_armed", false):
+		return
+	if _active_target.get("action_fired", false):
+		return
+
+	var action_type: int = _active_target.get("obstacle_type", QuizActionType.JUMP) as int
+	match action_type:
+		QuizActionType.JUMP:
+			if _get_active_target_time_to_impact() <= JUMP_ACTION_TTI_SECONDS:
+				_fire_jump_action()
 
 
 func _get_active_target_time_to_impact() -> float:
 	return _get_row_time_to_impact(_active_target.get("row_root") as Node3D)
+
+
+func _fire_jump_action() -> void:
+	if _player == null:
+		_player = get_tree().get_first_node_in_group("player") as CharacterBody3D
+	if _player and _player.has_method("quiz_jump"):
+		_player.call("quiz_jump")
+	_active_target["action_fired"] = true
+	action_confirmation.emit(QuizActionType.JUMP)
 
 
 ## Returns 0 (before threshold) or 1 (after threshold) based on difficulty.
