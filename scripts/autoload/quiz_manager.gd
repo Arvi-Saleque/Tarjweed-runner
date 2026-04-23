@@ -5,9 +5,12 @@ extends Node
 
 signal question_changed(question: Dictionary)
 signal answer_result(correct: bool, choice_index: int, correct_index: int)
+signal action_confirmation(action_type: int)
 
 # Question types mapped to obstacle types (math only)
 enum QuestionType { ADDITION, SUBTRACTION, MULTIPLICATION, DIVISION }
+enum QuizTargetState { UPCOMING, IN_RANGE, ACTIVE_QUIZ_TARGET, ACTION_LOCKED, CLEARED, FAILED }
+enum QuizActionType { JUMP, SLIDE, BLAST, BRIDGE }
 
 const OBS_TYPE_TO_QUESTION: Dictionary = {
 	0: QuestionType.ADDITION,
@@ -15,6 +18,13 @@ const OBS_TYPE_TO_QUESTION: Dictionary = {
 	2: QuestionType.MULTIPLICATION,
 	3: QuestionType.DIVISION,
 }
+const TARGET_CAPTURE_TTI_MAX: float = 3.0
+const TARGET_CAPTURE_TTI_MIN: float = 2.0
+const VALIDATION_WINDOW_SECONDS: float = 0.45
+const POST_FEEDBACK_GAP_SECONDS: float = 0.20
+const JUMP_ACTION_TTI_SECONDS: float = 0.45
+const SLIDE_ACTION_TTI_SECONDS: float = 0.40
+const QUIZ_PASS_Z: float = 2.0
 
 # --- Arabic Letters (Huroof) — letter shown as question, Bangla name as answer ---
 const ARABIC_HUROOF: Array[Dictionary] = [
@@ -133,6 +143,9 @@ var _player: CharacterBody3D = null
 var _current_obstacle_marker: Node3D = null
 var _awaiting_next_question_after_success: bool = false
 var _question_locked: bool = false
+var _active_target: Dictionary = {}
+var _resolved_row_ids: Dictionary = {}
+var _next_question_id: int = 1
 
 # Answer key mapping (1, 2, 3, 4 keys)
 var _answer_actions: Array[String] = ["quiz_answer_1", "quiz_answer_2", "quiz_answer_3", "quiz_answer_4"]
@@ -601,6 +614,22 @@ func _is_current_obstacle_marker_cleared() -> bool:
 func _unlock_and_generate_next_question() -> void:
 	_question_locked = false
 	_generate_question()
+
+
+func _make_empty_target() -> Dictionary:
+	return {
+		"marker": null,
+		"row_root": null,
+		"quiz_row_id": -1,
+		"obstacle_type": QuizActionType.JUMP,
+		"state": QuizTargetState.UPCOMING,
+		"question_id": -1,
+		"feedback_until_ms": 0,
+		"next_question_at_ms": 0,
+		"action_armed": false,
+		"action_fired": false,
+		"failed": false,
+	}
 
 
 ## Returns 0 (before threshold) or 1 (after threshold) based on difficulty.
