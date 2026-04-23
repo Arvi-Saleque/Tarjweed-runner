@@ -236,11 +236,8 @@ func _trigger_player_action() -> void:
 			if _has_active_target():
 				_active_target["action_armed"] = true
 		3:  # River — bridge
-			var river_target := _find_matching_marker_obstacle("river_crossings")
-			if river_target and _player.has_method("quiz_bridge_target"):
-				_player.call("quiz_bridge_target", river_target)
-			elif _player.has_method("quiz_bridge"):
-				_player.call("quiz_bridge")
+			if _has_active_target():
+				_active_target["action_armed"] = true
 
 
 func _on_game_started() -> void:
@@ -803,6 +800,9 @@ func _update_action_execution() -> void:
 		QuizActionType.BLAST:
 			if _is_active_target_blast_ready():
 				_fire_blast_action()
+		QuizActionType.BRIDGE:
+			if _is_active_target_bridge_ready():
+				_fire_bridge_action()
 
 
 func _get_active_target_time_to_impact() -> float:
@@ -861,6 +861,33 @@ func _is_blast_row_destroyed(row_root: Node) -> bool:
 		return true
 	var rock_state = row_root.get("state")
 	return rock_state != null and int(rock_state) >= 2
+
+
+func _is_active_target_bridge_ready() -> bool:
+	var row_root := _active_target.get("row_root") as Node3D
+	if row_root == null or not is_instance_valid(row_root):
+		return false
+	if not row_root.is_in_group("river_crossings"):
+		return false
+	if _is_bridge_row_built(row_root):
+		return false
+	return absf(row_root.global_position.z) <= PlayerTuning.RIVER_BRIDGE_RANGE
+
+
+func _fire_bridge_action() -> void:
+	if _player == null:
+		_player = get_tree().get_first_node_in_group("player") as CharacterBody3D
+	var river_target := _active_target.get("row_root") as Node
+	if _player and river_target and is_instance_valid(river_target) and _player.has_method("quiz_bridge_target"):
+		_player.call("quiz_bridge_target", river_target)
+		_active_target["action_fired"] = true
+		action_confirmation.emit(QuizActionType.BRIDGE)
+
+
+func _is_bridge_row_built(row_root: Node) -> bool:
+	if row_root == null or not is_instance_valid(row_root):
+		return false
+	return row_root.has_meta("bridge_lane_0")
 
 
 ## Returns 0 (before threshold) or 1 (after threshold) based on difficulty.
