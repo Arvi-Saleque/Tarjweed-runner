@@ -80,8 +80,9 @@ func _on_game_over() -> void:
 # --- Chunk Lifecycle ---
 
 func _spawn_initial_chunks() -> void:
+	var safe_chunk_count: int = 1 if GameManager.is_quiz_mode() else 2
 	for i in INITIAL_CHUNKS:
-		_spawn_next_chunk(i < 2)  # First 2 chunks are safe (no obstacles)
+		_spawn_next_chunk(i < safe_chunk_count)
 
 
 func _spawn_next_chunk(is_safe: bool = false) -> void:
