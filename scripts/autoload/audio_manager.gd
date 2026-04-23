@@ -7,6 +7,8 @@ const BUS_MASTER: StringName = &"Master"
 const BUS_MUSIC: StringName = &"Music"
 const BUS_SFX: StringName = &"SFX"
 const BUS_UI: StringName = &"UI"
+const MENU_MUSIC_TARGET_DB: float = -12.0
+const GAMEPLAY_MUSIC_TARGET_DB: float = -10.0
 
 # --- Base Gameplay SFX ---
 var sfx_jump: AudioStream
@@ -50,6 +52,7 @@ var cyber_ui_release: AudioStream
 var cyber_ui_notice: AudioStream
 
 # --- Music / Ambient ---
+var music_menu: AudioStream
 var music_gameplay: AudioStream
 var cyber_ambient_loop: AudioStream
 var _nature_ambient_loop: AudioStream
@@ -223,14 +226,7 @@ func play_fail_sound() -> void:
 func start_gameplay_music() -> void:
 	if not _music_enabled:
 		return
-	if _music_player.playing:
-		return
-	_music_player.stream = music_gameplay
-	_music_player.volume_db = -20.0
-	_music_player.pitch_scale = 1.0
-	_music_player.play()
-	var tween: Tween = create_tween()
-	tween.tween_property(_music_player, "volume_db", 0.0, 1.5).set_ease(Tween.EASE_OUT)
+	_play_music_track(music_gameplay, GAMEPLAY_MUSIC_TARGET_DB, 1.5, -20.0)
 
 
 func fade_out_music(duration: float = 1.0) -> void:
@@ -242,16 +238,17 @@ func fade_out_music(duration: float = 1.0) -> void:
 
 
 func fade_in_music(duration: float = 1.5) -> void:
+	start_menu_music(duration)
+
+
+func start_menu_music(duration: float = 1.5) -> void:
 	if not _music_enabled:
 		return
-	if not _music_player.stream:
-		_music_player.stream = music_gameplay
-	_music_player.volume_db = -40.0
-	_music_player.pitch_scale = 1.0
-	if not _music_player.playing:
-		_music_player.play()
-	var tween: Tween = create_tween()
-	tween.tween_property(_music_player, "volume_db", 0.0, duration).set_ease(Tween.EASE_OUT)
+	if music_menu == null:
+		stop_music()
+		push_warning("AudioManager: Menu music is missing, so no track will play in the main menu.")
+		return
+	_play_music_track(music_menu, MENU_MUSIC_TARGET_DB, duration, -24.0)
 
 
 # --- Public API: Ambient ---
@@ -417,7 +414,14 @@ func _load_audio_resources() -> void:
 	ui_switch = _try_load("res://assets/Audio/UI/switch1.ogg")
 	ui_release = _try_load("res://assets/Audio/UI/mouserelease1.ogg")
 
-	music_gameplay = _try_load("res://assets/Audio/playing.mpeg")
+	music_menu = _make_looping_stream(_try_load("res://assets/Audio/backgroundmainmenu.mp3"))
+	if music_menu == null:
+		music_menu = _make_looping_stream(_try_load("res://assets/Audio/backgroundmainmenu.wav"))
+	music_gameplay = _make_looping_stream(_try_load("res://assets/Audio/playing.mp3"))
+	if music_gameplay == null:
+		music_gameplay = _make_looping_stream(_try_load("res://assets/Audio/playing.wav"))
+	if music_gameplay == null:
+		music_gameplay = _make_looping_stream(_try_load("res://assets/Audio/playing.mpeg"))
 	_load_cyber_audio_resources()
 
 
@@ -542,6 +546,10 @@ func _make_looping_stream(stream: AudioStream) -> AudioStream:
 	if stream == null:
 		return null
 	var duplicated: Resource = stream.duplicate()
+	if duplicated is AudioStreamMP3:
+		var mp3_stream: AudioStreamMP3 = duplicated as AudioStreamMP3
+		mp3_stream.loop = true
+		return mp3_stream
 	if duplicated is AudioStreamOggVorbis:
 		var ogg_stream: AudioStreamOggVorbis = duplicated as AudioStreamOggVorbis
 		ogg_stream.loop = true
@@ -551,6 +559,26 @@ func _make_looping_stream(stream: AudioStream) -> AudioStream:
 		wav_stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 		return wav_stream
 	return stream
+
+
+func _play_music_track(stream: AudioStream, target_db: float, fade_duration: float, start_db: float) -> void:
+	if stream == null:
+		push_warning("AudioManager: Requested music track is missing.")
+		return
+	var switching_tracks: bool = _music_player.stream != stream
+	if switching_tracks:
+		_music_player.stop()
+		_music_player.stream = stream
+		_music_player.pitch_scale = 1.0
+		_music_player.volume_db = start_db
+		_music_player.play()
+	elif not _music_player.playing:
+		_music_player.pitch_scale = 1.0
+		_music_player.volume_db = start_db
+		_music_player.play()
+
+	var tween: Tween = create_tween()
+	tween.tween_property(_music_player, "volume_db", target_db, fade_duration).set_ease(Tween.EASE_OUT)
 
 
 func _is_cyber_theme() -> bool:

@@ -27,7 +27,6 @@ var _ws: WebSocketPeer
 var _ws_connected: bool = false
 var _ws_url: String = "ws://127.0.0.1:8765"
 var _vosk_available: bool = false
-var _vocabulary_sent: bool = false
 
 # Timing
 const LISTEN_TIMEOUT: float = 4.0   # max seconds to listen per word
@@ -114,17 +113,12 @@ func _connect_vosk() -> void:
 		print("PronunciationManager: Connecting to Vosk server at %s ..." % _ws_url)
 
 
-func _send_vocabulary() -> void:
-	if not _ws_connected or _vocabulary_sent:
+func _send_vocabulary(variants: Array[String] = []) -> void:
+	if not _ws_connected:
 		return
-	var vocab: Array[String] = []
-	for entry in _word_bank:
-		var w: String = entry.get("word", "").to_lower()
-		if w and w not in vocab:
-			vocab.append(w)
+	var vocab: Array[String] = variants if not variants.is_empty() else _get_full_vocabulary()
 	var msg := JSON.stringify({"type": "config", "vocabulary": vocab})
 	_ws.send_text(msg)
-	_vocabulary_sent = true
 	print("PronunciationManager: Sent vocabulary (%d words) to Vosk." % vocab.size())
 
 
@@ -137,6 +131,58 @@ func _send_reset() -> void:
 	## Reset the Vosk recognizer for the next word (clears leftover audio state).
 	if _ws_connected:
 		_ws.send_text(JSON.stringify({"type": "reset"}))
+
+
+func _get_full_vocabulary() -> Array[String]:
+	var vocab: Array[String] = []
+	for entry in _word_bank:
+		for variant in _get_entry_variants(entry):
+			if variant not in vocab:
+				vocab.append(variant)
+	return vocab
+
+
+func _get_entry_variants(entry: Dictionary) -> Array[String]:
+	var variants: Array[String] = []
+	_append_variant(variants, entry.get("word", ""))
+	for alias in entry.get("accepted", []):
+		_append_variant(variants, alias)
+	return variants
+
+
+func _append_variant(variants: Array[String], raw_value: Variant) -> void:
+	var normalized := _normalize_phrase(str(raw_value))
+	if not normalized.is_empty() and normalized not in variants:
+		variants.append(normalized)
+
+
+func _normalize_phrase(text: String) -> String:
+	var lowered := text.to_lower()
+	var cleaned := ""
+	var previous_was_space := false
+	for ch in lowered:
+		var keep_char := (ch >= "a" and ch <= "z") or (ch >= "0" and ch <= "9")
+		if keep_char:
+			cleaned += ch
+			previous_was_space = false
+		elif not previous_was_space:
+			cleaned += " "
+			previous_was_space = true
+	return cleaned.strip_edges()
+
+
+func _heard_matches_current_question(recognized: String) -> bool:
+	if current_question.is_empty():
+		return false
+	var normalized_heard := _normalize_phrase(recognized)
+	if normalized_heard.is_empty():
+		return false
+	var heard_tokens := normalized_heard.split(" ", false)
+	var accepted_variants: Array[String] = current_question.get("accepted_variants", [])
+	for variant in accepted_variants:
+		if normalized_heard == variant or variant in heard_tokens:
+			return true
+	return false
 
 
 # ── Process Loop ─────────────────────────────────────────────────────────────
@@ -212,22 +258,23 @@ func _handle_vosk_message(text: String) -> void:
 	if msg_type == "partial":
 		recognized = data.get("text", "")
 		recognized_text_changed.emit(recognized)
-		# Accept if the target word appears anywhere in the partial result
 		if _is_listening and not current_question.is_empty():
-			var target: String = current_question.get("text", "").to_lower().strip_edges()
-			var heard: String = recognized.to_lower().strip_edges()
-			if target in heard:
-				print("PronunciationManager: PARTIAL MATCH '%s' in '%s'!" % [target, heard])
+			if _heard_matches_current_question(recognized):
+				print("PronunciationManager: PARTIAL MATCH heard='%s' variants=%s" % [
+					recognized,
+					str(current_question.get("accepted_variants", []))
+				])
 				_on_pronunciation_result(true)
 
 	elif msg_type == "result" or msg_type == "final":
 		recognized = data.get("text", "")
 		recognized_text_changed.emit(recognized)
 		if _is_listening and not current_question.is_empty():
-			var target: String = current_question.get("text", "").to_lower().strip_edges()
-			var heard: String = recognized.to_lower().strip_edges()
-			print("PronunciationManager: Vosk heard '%s', target '%s'" % [heard, target])
-			if target in heard:
+			print("PronunciationManager: Vosk heard '%s', accepted=%s" % [
+				recognized,
+				str(current_question.get("accepted_variants", []))
+			])
+			if _heard_matches_current_question(recognized):
 				_on_pronunciation_result(true)
 
 
@@ -321,6 +368,8 @@ func _on_pronunciation_result(correct: bool) -> void:
 
 func _start_listening() -> void:
 	_send_reset()  # Fresh recognizer state for new word
+	if _ws_connected:
+		_send_vocabulary(current_question.get("accepted_variants", []))
 	if _capture_effect:
 		_capture_effect.clear_buffer()
 	else:
@@ -361,7 +410,6 @@ func _on_game_started() -> void:
 		_is_active = true
 		_player = null
 		_cooldown_timer = 0.0
-		_vocabulary_sent = false
 		if _ws_connected:
 			_send_vocabulary()
 		await get_tree().create_timer(0.5).timeout
@@ -388,6 +436,7 @@ func _generate_question() -> void:
 	current_question = {
 		"text": entry.get("word", ""),
 		"hint": entry.get("correct", ""),
+		"accepted_variants": _get_entry_variants(entry),
 	}
 
 	print("PronunciationManager: New word = '%s'" % current_question.get("text", ""))
@@ -413,7 +462,7 @@ func _build_word_bank() -> void:
 		{"word": "Box", "correct": "BOKS"},
 		{"word": "Fish", "correct": "FISH"},
 		{"word": "Milk", "correct": "MILK"},
-		{"word": "Ball", "correct": "BAWL"},
+		{"word": "Ball", "correct": "BAWL", "accepted": ["bawl"]},
 		{"word": "Tree", "correct": "TREE"},
 		{"word": "Book", "correct": "BUUK"},
 		{"word": "Jump", "correct": "JUMP"},
@@ -421,7 +470,7 @@ func _build_word_bank() -> void:
 		{"word": "Go", "correct": "GOH"},
 		{"word": "Play", "correct": "PLAY"},
 		{"word": "Help", "correct": "HELP"},
-		{"word": "Blue", "correct": "BLOO"},
+		{"word": "Blue", "correct": "BLOO", "accepted": ["blew"]},
 		{"word": "Green", "correct": "GREEN"},
 		{"word": "Car", "correct": "KAR"},
 		{"word": "Hand", "correct": "HAND"},
@@ -436,5 +485,5 @@ func _build_word_bank() -> void:
 		{"word": "Pig", "correct": "PIG"},
 		{"word": "Hen", "correct": "HEN"},
 		{"word": "Cow", "correct": "KOW"},
-		{"word": "Bee", "correct": "BEE"},
+		{"word": "Bee", "correct": "BEE", "accepted": ["be"]},
 	]
