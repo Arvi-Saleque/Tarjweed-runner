@@ -1,91 +1,124 @@
 extends Control
 
-const NatureMenuStyle = preload("res://scripts/ui/nature_menu_style.gd")
 const ChooseRunnerScene = preload("res://scenes/ui/ChooseRunner.tscn")
 const LeaderboardScene = preload("res://scenes/ui/Leaderboard.tscn")
 const PlaySetupPopupScene = preload("res://scenes/ui/PlaySetupPopup.tscn")
 const SettingsScript = preload("res://scripts/ui/settings.gd")
-const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
 
-var _summary_preview: TextureRect
-var _summary_runner: Label
-var _summary_player: Label
-var _summary_difficulty: Label
-var _summary_region: Label
-var _summary_wallet: Label
-var _summary_best: Label
-var _wallet_badge_value: Label
+const BASE_SIZE := Vector2(1600.0, 900.0)
+const ASSET_ROOT := "res://assets/UI/mainmenu/"
+
+var _stage: Control
+var _wallet_value: Label
 var _overlay_host: Control
 var _settings_popup: Control
 var _play_popup: Control
 var _voice_loading_overlay: Control
-var _start_in_progress: bool = false
+var _start_in_progress := false
 
 
 func _ready() -> void:
-	NatureMenuStyle.decorate_root(self)
-	_build_layout()
-	_refresh_summary()
+	theme = preload("res://ui/theme/nature_theme.tres")
+	anchors_preset = Control.PRESET_FULL_RECT
+	anchor_right = 1.0
+	anchor_bottom = 1.0
+
+	_build_background()
+	_build_stage()
+	_build_overlay_host()
+	_layout_stage()
+	_refresh_wallet()
 	AudioManager.fade_in_music(2.0)
 
 
-func _build_layout() -> void:
-	var viewport_size := get_viewport_rect().size
-	var ui_scale := clampf(viewport_size.y / 900.0, 0.72, 1.0)
-	var side_margin := int(clampf(120.0 * ui_scale, 52.0, 120.0))
-	var top_margin := int(clampf(12.0 * ui_scale, 6.0, 12.0))
-	var bottom_margin := int(clampf(34.0 * ui_scale, 14.0, 34.0))
-	var heading_width := clampf(viewport_size.x * 0.58, 680.0, 900.0)
-	var heading_height := heading_width * (724.0 / 2172.0)
-	var title_height := int(clampf(heading_height, 140.0, 300.0))
-	var root_spacing := int(clampf(4.0 * ui_scale, 2.0, 4.0))
-	var available_panel_height := int(maxf(480.0, viewport_size.y - top_margin - bottom_margin - title_height - root_spacing * 20))
-	var panel_bottom_gap := int(clampf(10.0 * ui_scale, 6.0, 10.0))
-	available_panel_height -= panel_bottom_gap
-	var panel_height := int(clampf(float(available_panel_height), 500.0, float(available_panel_height)))
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED:
+		_layout_stage()
 
-	var root_margin := MarginContainer.new()
-	root_margin.anchors_preset = Control.PRESET_FULL_RECT
-	root_margin.anchor_right = 1.0
-	root_margin.anchor_bottom = 1.0
-	root_margin.add_theme_constant_override("margin_left", side_margin)
-	root_margin.add_theme_constant_override("margin_right", side_margin)
-	root_margin.add_theme_constant_override("margin_top", top_margin)
-	root_margin.add_theme_constant_override("margin_bottom", bottom_margin)
-	add_child(root_margin)
 
-	var root_vbox := VBoxContainer.new()
-	root_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	root_vbox.add_theme_constant_override("separation", root_spacing)
-	root_margin.add_child(root_vbox)
+func _build_background() -> void:
+	var bg := TextureRect.new()
+	bg.name = "MenuBackground"
+	bg.texture = load(ASSET_ROOT + "menu-bg.png") as Texture2D
+	bg.anchors_preset = Control.PRESET_FULL_RECT
+	bg.anchor_right = 1.0
+	bg.anchor_bottom = 1.0
+	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(bg)
 
-	var title_center := CenterContainer.new()
-	title_center.custom_minimum_size = Vector2(0, title_height)
-	root_vbox.add_child(title_center)
 
-	var title_wrap := VBoxContainer.new()
-	title_wrap.alignment = BoxContainer.ALIGNMENT_CENTER
-	title_wrap.add_theme_constant_override("separation", int(clampf(8.0 * ui_scale, 4.0, 8.0)))
-	title_center.add_child(title_wrap)
+func _build_stage() -> void:
+	_stage = Control.new()
+	_stage.name = "MainMenuStage"
+	_stage.size = BASE_SIZE
+	_stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_stage)
 
-	var title_banner := _make_title_banner("Runner Realms", ui_scale, viewport_size.x)
-	title_wrap.add_child(title_banner)
+	_add_texture(_stage, "WalletBadgeArt", ASSET_ROOT + "coin_card.png", Rect2(36, 34, 292, 69))
+	_wallet_value = _make_label("Wallet: 0", 25, Color("273411"))
+	_wallet_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_wallet_value.position = Vector2(124, 41)
+	_wallet_value.size = Vector2(170, 55)
+	_stage.add_child(_wallet_value)
 
-	var panels_row := HBoxContainer.new()
-	panels_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panels_row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	panels_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	panels_row.add_theme_constant_override("separation", int(clampf(34.0 * ui_scale, 16.0, 34.0)))
-	root_vbox.add_child(panels_row)
+	_add_texture(_stage, "HeadingArt", ASSET_ROOT + "head-part.png", Rect2(384, 24, 836, 173))
+	_add_texture(_stage, "MenuCardArt", ASSET_ROOT + "menu-card.png", Rect2(520, 198, 560, 651))
 
-	var menu_panel := _build_menu_panel(ui_scale, panel_height)
-	panels_row.add_child(menu_panel)
+	_add_menu_button(
+		Rect2(592, 316, 432, 89),
+		"play.png",
+		"green-circle.png",
+		UITheme.icon_play,
+		"Play",
+		Color("FFF5DB"),
+		42,
+		func(): _open_play_setup()
+	)
+	_add_menu_button(
+		Rect2(592, 435, 432, 74),
+		"default.png",
+		"green-circle.png",
+		UITheme.icon_home,
+		"Choose Runner",
+		Color("214E22"),
+		28,
+		func(): _open_choose_runner()
+	)
+	_add_menu_button(
+		Rect2(592, 520, 432, 74),
+		"default.png",
+		"green-circle.png",
+		UITheme.icon_trophy,
+		"Leaderboard",
+		Color("214E22"),
+		28,
+		func(): _open_leaderboard()
+	)
+	_add_menu_button(
+		Rect2(592, 605, 432, 74),
+		"default.png",
+		"green-circle.png",
+		UITheme.icon_gear,
+		"Settings",
+		Color("214E22"),
+		28,
+		func(): _open_settings()
+	)
+	_add_menu_button(
+		Rect2(592, 700, 432, 84),
+		"exit.png",
+		"red-circle.png",
+		load(ASSET_ROOT + "exitic.png") as Texture2D,
+		"Exit",
+		Color("FFF5DB"),
+		32,
+		func(): _exit_game()
+	)
 
-	var bottom_space := Control.new()
-	bottom_space.custom_minimum_size = Vector2(0, panel_bottom_gap)
-	root_vbox.add_child(bottom_space)
 
+func _build_overlay_host() -> void:
 	_overlay_host = Control.new()
 	_overlay_host.name = "OverlayHost"
 	_overlay_host.anchors_preset = Control.PRESET_FULL_RECT
@@ -94,234 +127,140 @@ func _build_layout() -> void:
 	_overlay_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_overlay_host)
 
-	_build_wallet_badge()
+
+func _layout_stage() -> void:
+	if _stage == null:
+		return
+	var viewport_size := get_viewport_rect().size
+	var stage_scale := minf(viewport_size.x / BASE_SIZE.x, viewport_size.y / BASE_SIZE.y)
+	_stage.size = BASE_SIZE
+	_stage.scale = Vector2(stage_scale, stage_scale)
+	_stage.position = (viewport_size - BASE_SIZE * stage_scale) * 0.5
 
 
-func _make_title_banner(text: String, ui_scale: float, viewport_width: float) -> Control:
-	var banner := Control.new()
-	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var heading_width := clampf(viewport_width * 0.58, 680.0, 900.0)
-	var heading_height := heading_width * (724.0 / 2172.0)
-	banner.custom_minimum_size = Vector2(heading_width, heading_height)
-
-	var frame := TextureRect.new()
-	frame.anchors_preset = Control.PRESET_FULL_RECT
-	frame.anchor_right = 1.0
-	frame.anchor_bottom = 1.0
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	frame.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	frame.texture = load("res://assets/UI/mainmenu/heading.png") as Texture2D
-	banner.add_child(frame)
-
-	return banner
+func _add_texture(parent: Control, node_name: String, texture_path: String, rect: Rect2) -> TextureRect:
+	var texture_rect := TextureRect.new()
+	texture_rect.name = node_name
+	texture_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	texture_rect.stretch_mode = TextureRect.STRETCH_SCALE
+	texture_rect.position = rect.position
+	texture_rect.size = rect.size
+	texture_rect.custom_minimum_size = Vector2.ZERO
+	texture_rect.texture = load(texture_path) as Texture2D
+	texture_rect.set_deferred("size", rect.size)
+	texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(texture_rect)
+	return texture_rect
 
 
-func _build_summary_panel(ui_scale: float, panel_height: int) -> PanelContainer:
-	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(clampf(560.0 * ui_scale, 420.0, 560.0), panel_height)
-	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.add_theme_stylebox_override("panel", _make_parchment_panel_style())
+func _add_menu_button(
+	rect: Rect2,
+	button_art: String,
+	_circle_art: String,
+	icon_texture: Texture2D,
+	text: String,
+	text_color: Color,
+	font_size: int,
+	pressed_callback: Callable
+) -> void:
+	var button := Button.new()
+	button.name = text.replace(" ", "") + "Button"
+	button.text = ""
+	button.position = rect.position
+	button.size = rect.size
+	button.pivot_offset = rect.size * 0.5
+	button.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	button.add_theme_stylebox_override("normal", _transparent_style())
+	button.add_theme_stylebox_override("hover", _transparent_style())
+	button.add_theme_stylebox_override("pressed", _transparent_style())
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	_stage.add_child(button)
 
-	var compact_ratio := clampf((620.0 - float(panel_height)) / 180.0, 0.0, 1.0)
-	var compact_scale := lerpf(1.0, 0.72, compact_ratio)
+	var art := _add_texture(button, "Art", ASSET_ROOT + button_art, Rect2(Vector2.ZERO, rect.size))
+	art.stretch_mode = TextureRect.STRETCH_SCALE
 
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", int(clampf(26.0 * ui_scale * compact_scale, 10.0, 26.0)))
-	margin.add_theme_constant_override("margin_right", int(clampf(26.0 * ui_scale * compact_scale, 10.0, 26.0)))
-	margin.add_theme_constant_override("margin_top", int(clampf(22.0 * ui_scale * compact_scale, 8.0, 22.0)))
-	margin.add_theme_constant_override("margin_bottom", int(clampf(22.0 * ui_scale * compact_scale, 8.0, 22.0)))
-	panel.add_child(margin)
+	var circle_size := rect.size.y * (0.78 if text == "Play" else 0.70)
+	var circle_center_x := rect.size.y * (0.70 if text == "Play" else 0.66)
+	var circle := Panel.new()
+	circle.name = "IconBadge"
+	circle.position = Vector2(circle_center_x - circle_size * 0.5, (rect.size.y - circle_size) * 0.5)
+	circle.size = Vector2(circle_size, circle_size)
+	circle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	circle.add_theme_stylebox_override("panel", _circle_style(text == "Exit", circle_size))
+	button.add_child(circle)
 
-	var body := VBoxContainer.new()
-	body.add_theme_constant_override("separation", int(clampf(10.0 * ui_scale * compact_scale, 3.0, 10.0)))
-	margin.add_child(body)
+	var icon_size := rect.size.y * (0.43 if text == "Play" else 0.45)
+	var icon := TextureRect.new()
+	icon.name = "Icon"
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.position = Vector2(circle_center_x - icon_size * 0.5, (rect.size.y - icon_size) * 0.5)
+	icon.size = Vector2(icon_size, icon_size)
+	icon.custom_minimum_size = Vector2.ZERO
+	icon.texture = icon_texture
+	icon.modulate = Color("FFF5DB")
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	button.add_child(icon)
 
-	var title := UITheme.make_label("Adventure Summary", int(clampf((UITheme.FONT_HEADING + 4) * ui_scale * compact_scale, UITheme.FONT_SMALL, UITheme.FONT_HEADING + 4)), Color("234126"), NatureMenuStyle.SKIN)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	body.add_child(title)
+	var label := _make_label(text, font_size, text_color)
+	label.position = Vector2(0, 0)
+	label.size = rect.size
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_color_override("font_shadow_color", Color(0.12, 0.06, 0.01, 0.42))
+	label.add_theme_constant_override("shadow_offset_x", 2)
+	label.add_theme_constant_override("shadow_offset_y", 2)
+	button.add_child(label)
 
-	var preview_frame := PanelContainer.new()
-	var preview_h := clampf(float(panel_height) * (0.27 - compact_ratio * 0.08), 90.0, 230.0)
-	preview_frame.custom_minimum_size = Vector2(0, preview_h)
-	preview_frame.add_theme_stylebox_override("panel", _make_preview_frame_style())
-	body.add_child(preview_frame)
-
-	var preview_margin := MarginContainer.new()
-	preview_margin.add_theme_constant_override("margin_left", int(clampf(10.0 * ui_scale * compact_scale, 4.0, 10.0)))
-	preview_margin.add_theme_constant_override("margin_right", int(clampf(10.0 * ui_scale * compact_scale, 4.0, 10.0)))
-	preview_margin.add_theme_constant_override("margin_top", int(clampf(10.0 * ui_scale * compact_scale, 4.0, 10.0)))
-	preview_margin.add_theme_constant_override("margin_bottom", int(clampf(10.0 * ui_scale * compact_scale, 4.0, 10.0)))
-	preview_frame.add_child(preview_margin)
-
-	_summary_preview = NatureMenuStyle.make_preview("", Vector2(clampf(470.0 * ui_scale * compact_scale, 210.0, 470.0), clampf(preview_h - 12.0, 78.0, 220.0)))
-	_summary_preview.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_summary_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	preview_margin.add_child(_summary_preview)
-
-	var stat_font_size := int(clampf((UITheme.FONT_BODY + 1) * ui_scale * compact_scale, UITheme.FONT_SMALL - 2, UITheme.FONT_BODY + 1))
-	_summary_runner = _build_stat_line(body, UITheme.icon_trophy, "Runner: -", stat_font_size)
-	_summary_player = _build_stat_line(body, UITheme.icon_home, "Player: -", stat_font_size)
-	_summary_difficulty = _build_stat_line(body, UITheme.icon_warning, "Difficulty: -", stat_font_size)
-	_summary_region = _build_stat_line(body, UITheme.icon_star, "Region: Forest Trail", stat_font_size, false)
-
-	var spacer := Control.new()
-	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	body.add_child(spacer)
-
-	return panel
-
-
-func _build_menu_panel(ui_scale: float, panel_height: int) -> Control:
-	var panel := Control.new()
-	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-
-	var card_tex := load("res://assets/UI/mainmenu/main_menu_card.png") as Texture2D
-	var card_ratio := 1.625
-	if card_tex and card_tex.get_width() > 0:
-		card_ratio = float(card_tex.get_height()) / float(card_tex.get_width())
-
-	var target_width := clampf(740.0 * ui_scale, 580.0, 740.0)
-	var target_height := target_width * card_ratio
-	if target_height > panel_height:
-		target_height = float(panel_height)
-		target_width = target_height / card_ratio
-	panel.custom_minimum_size = Vector2(target_width, target_height)
-
-	var card_bg := TextureRect.new()
-	card_bg.anchors_preset = Control.PRESET_FULL_RECT
-	card_bg.anchor_right = 1.0
-	card_bg.anchor_bottom = 1.0
-	card_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	card_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	card_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	card_bg.texture = card_tex
-	panel.add_child(card_bg)
-
-	var title_wrap := CenterContainer.new()
-	title_wrap.anchors_preset = Control.PRESET_FULL_RECT
-	title_wrap.anchor_right = 1.0
-	title_wrap.anchor_bottom = 1.0
-	title_wrap.offset_top = target_height * 0.066
-	title_wrap.offset_bottom = -target_height * 0.802
-	title_wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.add_child(title_wrap)
-
-	var title := UITheme.make_label("Main Menu", int(clampf(target_height * 0.046, UITheme.FONT_HEADING + 2, UITheme.FONT_TITLE)), Color("1C4A1F"), NatureMenuStyle.SKIN)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_wrap.add_child(title)
-
-	var button_font_size := int(clampf(target_height * 0.034, UITheme.FONT_BODY + 1, UITheme.FONT_HEADING + 2))
-	var slot_specs := [
-		{"top": 0.222, "bottom": 0.325, "text": "Play", "icon": UITheme.icon_play, "variant": "primary", "callback": func(): _open_play_setup()},
-		{"top": 0.359, "bottom": 0.462, "text": "Choose Runner", "icon": UITheme.icon_home, "variant": "secondary", "callback": func(): _open_choose_runner()},
-		{"top": 0.492, "bottom": 0.594, "text": "Leaderboard", "icon": UITheme.icon_trophy, "variant": "secondary", "callback": func(): _open_leaderboard()},
-		{"top": 0.624, "bottom": 0.727, "text": "Settings", "icon": UITheme.icon_gear, "variant": "secondary", "callback": func(): _open_settings()},
-		{"top": 0.756, "bottom": 0.859, "text": "Exit", "icon": UITheme.icon_cross, "variant": "danger", "callback": func(): _exit_game()},
-	]
-
-	for spec in slot_specs:
-		var btn_height := int(clampf(target_height * (float(spec["bottom"]) - float(spec["top"])), 78.0, 132.0))
-		var btn := _make_menu_button(str(spec["text"]), spec["icon"] as Texture2D, str(spec["variant"]), btn_height, button_font_size, spec["callback"] as Callable)
-		btn.anchor_left = 0.0
-		btn.anchor_right = 1.0
-		btn.anchor_top = 0.0
-		btn.anchor_bottom = 0.0
-		btn.offset_left = target_width * 0.182
-		btn.offset_right = -target_width * 0.182
-		btn.offset_top = target_height * float(spec["top"])
-		btn.offset_bottom = target_height * float(spec["bottom"])
-		panel.add_child(btn)
-
-	return panel
+	button.pressed.connect(pressed_callback)
+	button.mouse_entered.connect(func():
+		AudioManager.play_ui_sound(AudioManager.ui_hover)
+		var tween := button.create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tween.tween_property(button, "scale", Vector2(1.025, 1.025), 0.10)
+	)
+	button.mouse_exited.connect(func():
+		var tween := button.create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		tween.tween_property(button, "scale", Vector2.ONE, 0.10)
+	)
 
 
-func _make_menu_button(text: String, icon: Texture2D, variant: String, button_height: int, button_font_size: int, pressed_callback: Callable) -> Button:
-	var btn := Button.new()
-	btn.text = ""
-	btn.icon = null
-	btn.custom_minimum_size = Vector2(0, button_height)
-	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-
-	btn.add_theme_stylebox_override("normal", _make_menu_button_overlay_style(Color(1, 1, 1, 0.0), button_height))
-	btn.add_theme_stylebox_override("hover", _make_menu_button_overlay_style(Color(1, 1, 1, 0.16), button_height))
-	btn.add_theme_stylebox_override("pressed", _make_menu_button_overlay_style(Color(0.18, 0.10, 0.02, 0.16), button_height))
-	btn.add_theme_stylebox_override("focus", _make_menu_button_overlay_style(Color("F7C542", 0.12), button_height))
-
-	var text_color := Color("214E22")
-	if variant == "primary" or variant == "danger":
-		text_color = Color("FFF5DB")
-
-	_add_menu_button_content(btn, text, icon, text_color, button_height, button_font_size)
-
-	if pressed_callback.is_valid():
-		btn.pressed.connect(pressed_callback)
-	return btn
+func _make_label(text: String, font_size: int, color: Color) -> Label:
+	var label := UITheme.make_label(text, font_size, color, "nature")
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if UITheme.font_display:
+		label.add_theme_font_override("font", UITheme.font_display)
+	return label
 
 
-func _make_menu_button_overlay_style(color: Color, button_height: int) -> StyleBoxFlat:
+func _transparent_style() -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
-	style.bg_color = color
-	var radius := int(clampf(float(button_height) * 0.26, 18.0, 28.0))
+	style.bg_color = Color(1, 1, 1, 0)
+	return style
+
+
+func _circle_style(is_danger: bool, diameter: float) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color("B9542C") if is_danger else Color("6AAE2F")
+	style.border_color = Color("6B2A18") if is_danger else Color("2D651C")
+	style.border_width_left = 3
+	style.border_width_right = 3
+	style.border_width_top = 3
+	style.border_width_bottom = 3
+	var radius := int(diameter * 0.5)
 	style.corner_radius_top_left = radius
 	style.corner_radius_top_right = radius
 	style.corner_radius_bottom_left = radius
 	style.corner_radius_bottom_right = radius
-	style.content_margin_left = 0
-	style.content_margin_right = 0
-	style.content_margin_top = 0
-	style.content_margin_bottom = 0
+	style.shadow_color = Color(0.16, 0.09, 0.02, 0.28)
+	style.shadow_size = 4
+	style.shadow_offset = Vector2(1, 2)
 	return style
 
 
-func _add_menu_button_content(btn: Button, text: String, icon: Texture2D, text_color: Color, button_height: int, button_font_size: int) -> void:
-	var content := Control.new()
-	content.anchors_preset = Control.PRESET_FULL_RECT
-	content.anchor_right = 1.0
-	content.anchor_bottom = 1.0
-	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	btn.add_child(content)
-
-	if icon:
-		var icon_size := int(clampf(float(button_height) * 0.56, 32.0, 44.0))
-		if text == "Play":
-			icon_size = int(clampf(float(button_height) * 0.46, 28.0, 36.0))
-		# x-center aligns icon to the circular decoration on the left
-		var icon_cx := int(clampf(float(button_height) * 0.64, 38.0, 48.0))
-		var icon_rect := TextureRect.new()
-		icon_rect.texture = icon
-		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon_rect.modulate = text_color
-		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		icon_rect.anchor_left = 0.0
-		icon_rect.anchor_right = 0.0
-		icon_rect.anchor_top = 0.5
-		icon_rect.anchor_bottom = 0.5
-		icon_rect.offset_left = icon_cx - icon_size / 2
-		icon_rect.offset_right = icon_cx + icon_size / 2
-		icon_rect.offset_top = -icon_size / 2
-		icon_rect.offset_bottom = icon_size / 2
-		content.add_child(icon_rect)
-
-	var label := UITheme.make_label(text, button_font_size, text_color, NatureMenuStyle.SKIN)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.anchor_left = 0.0
-	label.anchor_right = 1.0
-	label.anchor_top = 0.0
-	label.anchor_bottom = 1.0
-	label.offset_left = 0
-	label.offset_right = 0
-	label.offset_top = 0
-	label.offset_bottom = 0
-	content.add_child(label)
-
-	btn.mouse_entered.connect(func(): content.modulate = Color(1.12, 1.12, 1.12, 1.0))
-	btn.mouse_exited.connect(func(): content.modulate = Color.WHITE)
+func _refresh_wallet() -> void:
+	if _wallet_value:
+		_wallet_value.text = "Wallet: %d" % SaveManager.get_wallet_coins()
 
 
 func _exit_game() -> void:
@@ -329,185 +268,12 @@ func _exit_game() -> void:
 	get_tree().quit()
 
 
-func _build_stat_line(parent: VBoxContainer, icon: Texture2D, text: String, font_size: int = UITheme.FONT_BODY + 2, with_separator: bool = true) -> Label:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
-	parent.add_child(row)
-
-	var icon_rect := TextureRect.new()
-	var icon_size := int(clampf(float(font_size) + 6.0, 16.0, 26.0))
-	icon_rect.custom_minimum_size = Vector2(icon_size, icon_size)
-	icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon_rect.texture = icon if icon else UITheme.icon_star
-	icon_rect.modulate = Color("2F6B3B")
-	row.add_child(icon_rect)
-
-	var label := UITheme.make_label(text, font_size, Color("234126"), NatureMenuStyle.SKIN)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	row.add_child(label)
-
-	if with_separator:
-		var separator := HSeparator.new()
-		separator.add_theme_stylebox_override("separator", _make_line_style())
-		parent.add_child(separator)
-	return label
-
-
-func _make_parchment_panel_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("F8EFD8")
-	style.border_color = Color("6C5B2B")
-	style.border_width_left = 5
-	style.border_width_top = 5
-	style.border_width_right = 5
-	style.border_width_bottom = 5
-	style.corner_radius_top_left = 26
-	style.corner_radius_top_right = 26
-	style.corner_radius_bottom_left = 26
-	style.corner_radius_bottom_right = 26
-	style.shadow_size = 12
-	style.shadow_offset = Vector2(0, 6)
-	style.shadow_color = Color(0.21, 0.17, 0.08, 0.18)
-	return style
-
-
-func _make_preview_frame_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("EFE5C8")
-	style.border_color = Color("7A6734")
-	style.border_width_left = 4
-	style.border_width_top = 4
-	style.border_width_right = 4
-	style.border_width_bottom = 4
-	style.corner_radius_top_left = 16
-	style.corner_radius_top_right = 16
-	style.corner_radius_bottom_left = 16
-	style.corner_radius_bottom_right = 16
-	return style
-
-
-func _make_saved_progress_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("F1E7CB")
-	style.border_color = Color("7D6933")
-	style.border_width_left = 3
-	style.border_width_top = 3
-	style.border_width_right = 3
-	style.border_width_bottom = 3
-	style.corner_radius_top_left = 16
-	style.corner_radius_top_right = 16
-	style.corner_radius_bottom_left = 16
-	style.corner_radius_bottom_right = 16
-	return style
-
-
-func _make_subtitle_pill_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("2F6B3B")
-	style.border_color = Color("6DBE57")
-	style.border_width_left = 3
-	style.border_width_top = 3
-	style.border_width_right = 3
-	style.border_width_bottom = 3
-	style.corner_radius_top_left = 21
-	style.corner_radius_top_right = 21
-	style.corner_radius_bottom_left = 21
-	style.corner_radius_bottom_right = 21
-	return style
-
-
-func _make_line_style() -> StyleBoxFlat:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.39, 0.33, 0.20, 0.28)
-	style.content_margin_left = 1
-	style.content_margin_right = 1
-	style.content_margin_top = 1
-	style.content_margin_bottom = 1
-	return style
-
-
-func _build_wallet_badge() -> void:
-	var wallet_badge := Control.new()
-	wallet_badge.name = "WalletBadge"
-	wallet_badge.anchor_left = 0.0
-	wallet_badge.anchor_top = 0.0
-	wallet_badge.anchor_right = 0.0
-	wallet_badge.anchor_bottom = 0.0
-	wallet_badge.offset_left = 24.0
-	wallet_badge.offset_top = 20.0
-	wallet_badge.offset_right = 294.0
-	wallet_badge.offset_bottom = 92.0
-	wallet_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	wallet_badge.z_index = 100
-	add_child(wallet_badge)
-
-	var card_bg := TextureRect.new()
-	card_bg.anchors_preset = Control.PRESET_FULL_RECT
-	card_bg.anchor_right = 1.0
-	card_bg.anchor_bottom = 1.0
-	card_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	card_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	card_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	card_bg.texture = load("res://assets/UI/mainmenu/coin_card.png") as Texture2D
-	wallet_badge.add_child(card_bg)
-
-	var badge_margin := MarginContainer.new()
-	badge_margin.anchors_preset = Control.PRESET_FULL_RECT
-	badge_margin.anchor_right = 1.0
-	badge_margin.anchor_bottom = 1.0
-	badge_margin.add_theme_constant_override("margin_left", 20)
-	badge_margin.add_theme_constant_override("margin_top", 9)
-	badge_margin.add_theme_constant_override("margin_right", 20)
-	badge_margin.add_theme_constant_override("margin_bottom", 9)
-	badge_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	wallet_badge.add_child(badge_margin)
-
-	var badge_row := HBoxContainer.new()
-	badge_row.add_theme_constant_override("separation", 12)
-	badge_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	badge_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	badge_margin.add_child(badge_row)
-
-	var badge_icon := TextureRect.new()
-	badge_icon.texture = UITheme.icon_coin if UITheme.icon_coin else UITheme.icon_trophy
-	badge_icon.custom_minimum_size = Vector2(27, 27)
-	badge_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	badge_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	badge_row.add_child(badge_icon)
-
-	_wallet_badge_value = UITheme.make_label("Wallet: 0", UITheme.FONT_BODY, Color("33280E"), NatureMenuStyle.SKIN)
-	_wallet_badge_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	badge_row.add_child(_wallet_badge_value)
-
-
-func _refresh_summary() -> void:
-	var runner_id: String = str(GameManager.current_player_variant)
-	if runner_id.is_empty() or runner_id == "nature_default":
-		runner_id = "elf"
-	var runner: Dictionary = ThemeRegistryScript.get_player_profile("nature", runner_id)
-	var preview_path: String = str(runner.get("preview_image_path", ""))
-	if _summary_preview:
-		_summary_preview.texture = load(preview_path) as Texture2D if ResourceLoader.exists(preview_path) else null
-	if _summary_runner:
-		_summary_runner.text = "Runner: %s" % runner.get("title", "Runner")
-	if _summary_player:
-		_summary_player.text = "Player: %s" % (GameManager.current_player_name if not GameManager.current_player_name.is_empty() else SaveManager.get_player_name())
-	if _summary_difficulty:
-		_summary_difficulty.text = "Difficulty: %s" % GameManager.current_difficulty_id.capitalize()
-	if _summary_region:
-		_summary_region.text = "Region: Forest Trail"
-	var wallet_coins: int = SaveManager.get_wallet_coins()
-	if _wallet_badge_value:
-		_wallet_badge_value.text = "Wallet: %d" % wallet_coins
-
-
 func _open_play_setup() -> void:
 	AudioManager.play_ui_sound(AudioManager.ui_click)
 	if _play_popup and is_instance_valid(_play_popup):
 		return
 	_play_popup = PlaySetupPopupScene.instantiate()
-	_play_popup.closed.connect(_on_overlay_closed)
+	_play_popup.closed.connect(_on_play_popup_closed)
 	_play_popup.choose_runner_requested.connect(func():
 		if _play_popup and is_instance_valid(_play_popup):
 			_open_choose_runner()
@@ -521,17 +287,10 @@ func _open_choose_runner() -> void:
 	var screen := ChooseRunnerScene.instantiate()
 	screen.back_pressed.connect(func():
 		screen.queue_free()
-		_refresh_summary()
-		if _play_popup and is_instance_valid(_play_popup) and _play_popup.has_method("refresh_selected_runner"):
-			_play_popup.call("refresh_selected_runner")
+		_refresh_after_overlay_change()
 	)
 	screen.runner_changed.connect(func(_runner_id: String):
-		_refresh_summary()
-		if _play_popup and is_instance_valid(_play_popup):
-			if _play_popup.has_method("refresh_selected_runner"):
-				_play_popup.call("refresh_selected_runner")
-			elif _play_popup.has_method("refresh_summary"):
-				_play_popup.call("refresh_summary")
+		_refresh_after_overlay_change()
 	)
 	_overlay_host.add_child(screen)
 
@@ -552,6 +311,20 @@ func _open_settings() -> void:
 	_overlay_host.add_child(_settings_popup)
 
 
+func _refresh_after_overlay_change() -> void:
+	_refresh_wallet()
+	if _play_popup and is_instance_valid(_play_popup):
+		if _play_popup.has_method("refresh_selected_runner"):
+			_play_popup.call("refresh_selected_runner")
+		elif _play_popup.has_method("refresh_summary"):
+			_play_popup.call("refresh_summary")
+
+
+func _on_play_popup_closed() -> void:
+	_play_popup = null
+	_refresh_wallet()
+
+
 func _start_game_from_setup(player_name: String, difficulty_id: String, mode_id: String, quiz_style_id: String) -> void:
 	if _start_in_progress:
 		return
@@ -560,7 +333,7 @@ func _start_game_from_setup(player_name: String, difficulty_id: String, mode_id:
 	GameManager.current_quiz_style = quiz_style_id
 	GameManager.current_visual_theme = "nature"
 	GameManager.apply_menu_setup(player_name, difficulty_id, GameManager.current_player_variant)
-	_refresh_summary()
+	_refresh_wallet()
 	if _play_popup and is_instance_valid(_play_popup):
 		_play_popup.queue_free()
 		_play_popup = null
@@ -568,18 +341,12 @@ func _start_game_from_setup(player_name: String, difficulty_id: String, mode_id:
 		_show_voice_loading_overlay()
 		var reached := await PronunciationManager.warmup_backend_before_gameplay(1.5)
 		_hide_voice_loading_overlay()
-		if not reached:
-			if OS.get_name() == "Android":
-				_start_in_progress = false
-				_show_server_error_popup()
-				return
+		if not reached and OS.get_name() == "Android":
+			_start_in_progress = false
+			_show_server_error_popup()
+			return
 		PronunciationManager.startup_warning_message = ""
 	SceneManager.change_scene("res://scenes/game.tscn")
-
-
-func _on_overlay_closed() -> void:
-	_play_popup = null
-	_refresh_summary()
 
 
 func _show_server_error_popup() -> void:
@@ -617,21 +384,18 @@ func _show_server_error_popup() -> void:
 	vbox.add_theme_constant_override("separation", 16)
 	card.add_child(vbox)
 
-	var title := UITheme.make_label("Cannot Reach Server", UITheme.FONT_HEADING, Color("FF8A80"), NatureMenuStyle.SKIN)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var title := _make_label("Cannot Reach Server", UITheme.FONT_HEADING, Color("FF8A80"))
 	vbox.add_child(title)
 
-	var body := UITheme.make_label(
+	var body := _make_label(
 		"The pronunciation server is not reachable.\n\nMake sure your backend is running, then set your PC's IP address in Settings.",
-		UITheme.FONT_BODY, Color("FFFAE8"), NatureMenuStyle.SKIN)
-	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		UITheme.FONT_BODY,
+		Color("FFFAE8")
+	)
 	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(body)
 
-	var ip_note := UITheme.make_label(
-		"Current server: %s" % PronunciationManager.ws_url,
-		UITheme.FONT_SMALL, Color("A0A0A0"), NatureMenuStyle.SKIN)
-	ip_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var ip_note := _make_label("Current server: %s" % PronunciationManager.ws_url, UITheme.FONT_SMALL, Color("A0A0A0"))
 	ip_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(ip_note)
 
@@ -640,7 +404,7 @@ func _show_server_error_popup() -> void:
 	btn_row.add_theme_constant_override("separation", 16)
 	vbox.add_child(btn_row)
 
-	var settings_btn := UITheme.make_button("Open Settings", null, UITheme.FONT_BODY, "primary", NatureMenuStyle.SKIN)
+	var settings_btn := UITheme.make_button("Open Settings", null, UITheme.FONT_BODY, "primary", "nature")
 	settings_btn.custom_minimum_size = Vector2(180, 56)
 	settings_btn.pressed.connect(func():
 		overlay.queue_free()
@@ -648,7 +412,7 @@ func _show_server_error_popup() -> void:
 	)
 	btn_row.add_child(settings_btn)
 
-	var cancel_btn := UITheme.make_button("Cancel", null, UITheme.FONT_BODY, "secondary", NatureMenuStyle.SKIN)
+	var cancel_btn := UITheme.make_button("Cancel", null, UITheme.FONT_BODY, "secondary", "nature")
 	cancel_btn.custom_minimum_size = Vector2(120, 56)
 	cancel_btn.pressed.connect(func(): overlay.queue_free())
 	btn_row.add_child(cancel_btn)
@@ -683,8 +447,8 @@ func _show_voice_loading_overlay() -> void:
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(560, 220)
 	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = NatureMenuStyle.CREAM_SURFACE
-	panel_style.border_color = NatureMenuStyle.PANEL_BORDER
+	panel_style.bg_color = Color("F7F2E7")
+	panel_style.border_color = Color("8A5A35")
 	panel_style.border_width_left = 4
 	panel_style.border_width_right = 4
 	panel_style.border_width_top = 4
@@ -710,16 +474,13 @@ func _show_voice_loading_overlay() -> void:
 	box.add_theme_constant_override("separation", 14)
 	margin.add_child(box)
 
-	var title := UITheme.make_label("Preparing voice mode...", UITheme.FONT_HEADING, UITheme.get_color("text_ink", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var title := _make_label("Preparing voice mode...", UITheme.FONT_HEADING, Color("234126"))
 	box.add_child(title)
 
-	var subtitle := UITheme.make_label("Connecting to pronunciation server...", UITheme.FONT_BODY, UITheme.get_color("text_ink_soft", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
-	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var subtitle := _make_label("Connecting to pronunciation server...", UITheme.FONT_BODY, Color("364E36"))
 	box.add_child(subtitle)
 
-	var note := UITheme.make_label("This may take a few seconds on first launch.", UITheme.FONT_SMALL, UITheme.get_color("text_dim", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
-	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var note := _make_label("This may take a few seconds on first launch.", UITheme.FONT_SMALL, Color("695F4A"))
 	box.add_child(note)
 
 
