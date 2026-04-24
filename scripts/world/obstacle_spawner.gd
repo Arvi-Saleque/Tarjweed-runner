@@ -39,7 +39,7 @@ const QUIZ_TYPE_BLAST: int = 2
 const QUIZ_TYPE_RIVER: int = 3
 const QUIZ_ROW_SEQ_KEY: String = "_quiz_row_seq_id"
 const PRONUN_ROW_SEQ_KEY: String = "_pronun_row_seq_id"
-const PRONUN_FIRST_ROW_CHUNK_INDEX: int = 1
+const PRONUN_FIRST_ROW_CHUNK_INDEX: int = 2
 
 # Scale ranges for different obstacle models
 const OBSTACLE_SCALES: Dictionary = {
@@ -157,75 +157,284 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 
 
 # =============================================================================
-# PRONUNCIATION MODE — simple jump blocks spaced 100m apart
+# PRONUNCIATION MODE — quiz-style 4 action obstacles spaced 38m apart
 # =============================================================================
 
-const PRONUN_ROW_GAP: float = 35
+const PRONUN_ROW_GAP: float = 38.0
+const PRONUN_LAST_OBS_Z_KEY: String = "_pronun_last_obs_z"
+const PRONUN_OBSTACLE_SEQ_KEY: String = "_pronun_obstacle_seq"
+
 
 static func _spawn_pronunciation_obstacles(chunk: Node3D, chunk_length: float, generator: Node3D) -> void:
 	var chunk_index: int = int(chunk.get("chunk_index"))
-	var chunk_interval: int = maxi(1, int(round(PRONUN_ROW_GAP / maxf(chunk_length, 1.0))))
 	if chunk_index < PRONUN_FIRST_ROW_CHUNK_INDEX:
 		return
-	if (chunk_index - PRONUN_FIRST_ROW_CHUNK_INDEX) % chunk_interval != 0:
-		return
 
-	_create_pronunciation_jump_row(chunk, -chunk_length * 0.5)
+	var carry_over: float = 0.0
+	if GameManager.has_meta(PRONUN_LAST_OBS_Z_KEY):
+		carry_over = GameManager.get_meta(PRONUN_LAST_OBS_Z_KEY)
+
+	var z: float = -carry_over if carry_over > 0.0 else -PRONUN_ROW_GAP
+
+	var seq_idx: int = GameManager.get_meta(PRONUN_OBSTACLE_SEQ_KEY, 0) as int
+
+	while z >= -(chunk_length - 2.0):
+		var obs_type: int = seq_idx % 4
+		if seq_idx < 4:
+			# First four pronunciation obstacles guarantee all 4 actions:
+			# jump, slide, blast, bridge
+			obs_type = seq_idx
+		else:
+			obs_type = randi() % 4
+
+		_create_pronunciation_row_typed(chunk, z, generator, obs_type)
+
+		seq_idx += 1
+		z -= PRONUN_ROW_GAP
+
+	GameManager.set_meta(PRONUN_OBSTACLE_SEQ_KEY, seq_idx)
+
+	var remaining: float = absf(z) - chunk_length
+	if remaining > 0.0:
+		GameManager.set_meta(PRONUN_LAST_OBS_Z_KEY, remaining)
+	else:
+		GameManager.set_meta(PRONUN_LAST_OBS_Z_KEY, 0.0)
 
 
-static func _create_pronunciation_jump_row(parent: Node3D, z_pos: float) -> void:
+static func _create_pronunciation_row_typed(parent: Node3D, z_pos: float, generator: Node3D, obs_type: int) -> void:
 	var row_id: int = _next_pronunciation_row_id()
 	var word_data: Dictionary = PronunciationManager.get_random_target_word_data()
 	var expected_word := str(word_data.get("word", "Cat"))
+	var required_action := _get_pronunciation_action_for_type(obs_type)
 
 	var marker := Node3D.new()
 	marker.name = "PronunciationObstacleMarker"
 	marker.position = Vector3(0.0, 0.0, z_pos)
+	marker.set_meta("pronunciation_obstacle_type", obs_type)
 	marker.set_meta("pronunciation_row_id", row_id)
-	marker.set_meta("pronunciation_required_action", "jump")
+	marker.set_meta("pronunciation_required_action", required_action)
 	marker.set_meta("pronunciation_expected_word", expected_word)
 	marker.add_to_group("pronunciation_obstacles")
 	parent.add_child(marker)
 
+	var target_node: Node3D = null
+
+	match obs_type:
+		QUIZ_TYPE_JUMP:
+			target_node = _create_pronunciation_jump_row(parent, z_pos, row_id, expected_word, required_action)
+
+		QUIZ_TYPE_SLIDE:
+			target_node = _create_pronunciation_slide_row(parent, z_pos, row_id, expected_word, required_action)
+
+		QUIZ_TYPE_BLAST:
+			target_node = _create_pronunciation_blast_row(parent, z_pos, generator, row_id, expected_word, required_action)
+
+		QUIZ_TYPE_RIVER:
+			target_node = _create_pronunciation_river_row(parent, z_pos, row_id, expected_word, required_action)
+
+	if target_node == null:
+		return
+
+	PronunciationManager.register_target(target_node, {
+		"row_id": row_id,
+		"required_action": required_action,
+		"expected_word": expected_word,
+	})
+
+	print("PronunciationSpawner: Pronunciation row spawned: action=%s, word=%s, z=%.2f, row=%d" % [
+		required_action,
+		expected_word,
+		target_node.global_position.z,
+		row_id,
+	])
+
+
+static func _get_pronunciation_action_for_type(obs_type: int) -> String:
+	match obs_type:
+		QUIZ_TYPE_JUMP:
+			return "jump"
+		QUIZ_TYPE_SLIDE:
+			return "slide"
+		QUIZ_TYPE_BLAST:
+			return "blast"
+		QUIZ_TYPE_RIVER:
+			return "bridge"
+		_:
+			return "jump"
+
+
+static func _apply_pronunciation_meta(node: Node, row_id: int, obs_type: int, expected_word: String, required_action: String) -> void:
+	node.set_meta("pronunciation_obstacle_type", obs_type)
+	node.set_meta("pronunciation_row_id", row_id)
+	node.set_meta("pronunciation_required_action", required_action)
+	node.set_meta("pronunciation_expected_word", expected_word)
+
+
+static func _create_pronunciation_jump_row(
+	parent: Node3D,
+	z_pos: float,
+	row_id: int,
+	expected_word: String,
+	required_action: String
+) -> Node3D:
 	var jump_row := Node3D.new()
 	jump_row.name = "PronunciationJumpRow"
 	jump_row.position = Vector3(0.0, 0.0, z_pos)
-	jump_row.set_meta("pronunciation_row_id", row_id)
-	jump_row.set_meta("pronunciation_required_action", "jump")
-	jump_row.set_meta("pronunciation_expected_word", expected_word)
+	_apply_pronunciation_meta(jump_row, row_id, QUIZ_TYPE_JUMP, expected_word, required_action)
 	jump_row.add_to_group("pronunciation_target_rows")
 	parent.add_child(jump_row)
 
 	for lane_idx in 3:
 		var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
 		var pos := Vector3(lane_x, 0.0, 0.0)
+
 		var obs_script: GDScript = load(OBSTACLE_SCRIPT) as GDScript
 		if not obs_script:
-			return
+			return jump_row
+
 		var obstacle := Area3D.new()
 		obstacle.set_script(obs_script)
 		obstacle.position = pos
-		obstacle.name = "PronunJumpBlock"
-		obstacle.set_meta("pronunciation_row_id", row_id)
-		obstacle.set_meta("pronunciation_required_action", "jump")
-		obstacle.set_meta("pronunciation_expected_word", expected_word)
+		obstacle.name = "PronunciationJumpBlock"
+		_apply_pronunciation_meta(obstacle, row_id, QUIZ_TYPE_JUMP, expected_word, required_action)
 		jump_row.add_child(obstacle)
-		var block_mat := StandardMaterial3D.new()
-		block_mat.albedo_color = Color(0.3, 0.5, 0.9)
-		obstacle.call("setup_placeholder",
-			Vector3(QUIZ_BLOCK_WIDTH * 2.2, QUIZ_BLOCK_HEIGHT, 0.6),
-			block_mat)
 
-	PronunciationManager.register_target(jump_row, {
-		"row_id": row_id,
-		"required_action": "jump",
-		"expected_word": expected_word,
-	})
-	print("PronunciationSpawner: Pronunciation row spawned: action=jump, word=%s, z=%.2f, row=%d" % [
-		expected_word,
-		jump_row.global_position.z,
+		var block_mat := StandardMaterial3D.new()
+		block_mat.albedo_color = Color(0.2, 0.7, 0.3)
+
+		obstacle.call(
+			"setup_placeholder",
+			Vector3(QUIZ_BLOCK_WIDTH * 2.2, QUIZ_BLOCK_HEIGHT, 0.6),
+			block_mat
+		)
+
+	return jump_row
+
+
+static func _create_pronunciation_slide_row(
+	parent: Node3D,
+	z_pos: float,
+	row_id: int,
+	expected_word: String,
+	required_action: String
+) -> Node3D:
+	var slide_row := Node3D.new()
+	slide_row.name = "PronunciationSlideRow"
+	slide_row.position = Vector3(0.0, 0.0, z_pos)
+	_apply_pronunciation_meta(slide_row, row_id, QUIZ_TYPE_SLIDE, expected_word, required_action)
+	slide_row.add_to_group("pronunciation_target_rows")
+	parent.add_child(slide_row)
+
+	for lane_idx in 3:
+		var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
+		var pos := Vector3(lane_x, 0.9, 0.0)
+
+		var obs_script: GDScript = load(OBSTACLE_SCRIPT) as GDScript
+		if not obs_script:
+			return slide_row
+
+		var obstacle := Area3D.new()
+		obstacle.set_script(obs_script)
+		obstacle.position = pos
+		obstacle.name = "PronunciationSlideBlock"
+		_apply_pronunciation_meta(obstacle, row_id, QUIZ_TYPE_SLIDE, expected_word, required_action)
+		slide_row.add_child(obstacle)
+
+		var block_mat := StandardMaterial3D.new()
+		block_mat.albedo_color = Color(0.85, 0.55, 0.1)
+
+		obstacle.call(
+			"setup_placeholder",
+			Vector3(QUIZ_BLOCK_WIDTH * 2.2, 0.5, 0.6),
+			block_mat
+		)
+
+	return slide_row
+
+
+static func _create_pronunciation_blast_row(
+	parent: Node3D,
+	z_pos: float,
+	generator: Node3D,
+	row_id: int,
+	expected_word: String,
+	required_action: String
+) -> Node3D:
+	var rock_script: GDScript = load(GIANT_ROCK_SCRIPT) as GDScript
+	if not rock_script:
+		return null
+
+	var rock := Area3D.new()
+	rock.set_script(rock_script)
+	rock.position = Vector3(0.0, 0.0, z_pos)
+	rock.name = "PronunciationGiantRock"
+
+	_apply_pronunciation_meta(
+		rock,
 		row_id,
-	])
+		QUIZ_TYPE_BLAST,
+		expected_word,
+		required_action
+	)
+
+	rock.add_to_group("pronunciation_target_rows")
+	rock.add_to_group("pronunciation_blast_rocks")
+	rock.add_to_group("quiz_blast_rocks")
+	rock.add_to_group("giant_rocks")
+
+	parent.add_child(rock)
+
+	var model_scene: PackedScene = null
+	if generator and generator.has_method("get_random_giant_rock_scene"):
+		model_scene = generator.get_random_giant_rock_scene()
+
+	rock.call("setup", model_scene)
+
+	return rock
+
+
+static func _create_pronunciation_river_row(
+	parent: Node3D,
+	z_pos: float,
+	row_id: int,
+	expected_word: String,
+	required_action: String
+) -> Node3D:
+	var river := Node3D.new()
+	river.name = "PronunciationRiverCrossing"
+	river.position = Vector3(0.0, 0.0, z_pos)
+	_apply_pronunciation_meta(river, row_id, QUIZ_TYPE_RIVER, expected_word, required_action)
+
+	river.add_to_group("river_crossings")
+	river.add_to_group("pronunciation_rivers")
+	river.add_to_group("pronunciation_target_rows")
+
+	_add_river_visuals(river)
+
+	for lane_idx in 3:
+		var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
+
+		var kill_zone := Area3D.new()
+		kill_zone.name = "PronunciationRiverKillZone_Lane%d" % lane_idx
+		kill_zone.position = Vector3(lane_x, 1.6, 0.0)
+		kill_zone.collision_layer = 4
+		kill_zone.collision_mask = 0
+		kill_zone.add_to_group("obstacles")
+		kill_zone.add_to_group("river_kill_zones")
+		kill_zone.set_meta("lane_index", lane_idx)
+		_apply_pronunciation_meta(kill_zone, row_id, QUIZ_TYPE_RIVER, expected_word, required_action)
+
+		var col := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = Vector3(GameManager.LANE_WIDTH, RIVER_KILL_HEIGHT, RIVER_KILL_DEPTH)
+		col.shape = box
+		kill_zone.add_child(col)
+
+		river.add_child(kill_zone)
+
+	parent.add_child(river)
+
+	return river
 
 
 static func _next_pronunciation_row_id() -> int:
