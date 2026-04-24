@@ -4,6 +4,8 @@ const UISkinIds = preload("res://scripts/ui/ui_skin_ids.gd")
 
 const THEME: Theme = preload("res://ui/theme/nature_theme.tres")
 const SKIN: String = UISkinIds.NATURE
+const BACKGROUND_IMAGE_META := "nature_menu_background_image"
+const MENU_BACKGROUND_IMAGE := "res://assets/UI/background/main_menu_bg.png"
 
 const BACKDROP_SKY := Color(0.49, 0.78, 0.89, 1.0)  # Sky blue #7EC8E3
 const BACKDROP_SUN := Color(0.98, 0.94, 0.78, 0.24)
@@ -17,7 +19,7 @@ const COIN_GLOW := Color("533A00")
 const LOCKED_WASH := Color(0.22, 0.19, 0.14, 0.78)
 
 
-static func decorate_root(root: Control) -> void:
+static func decorate_root(root: Control, background_image: String = MENU_BACKGROUND_IMAGE) -> void:
 	root.theme = THEME
 	root.anchors_preset = Control.PRESET_FULL_RECT
 	root.anchor_right = 1.0
@@ -25,6 +27,7 @@ static func decorate_root(root: Control) -> void:
 
 	if root.has_node("NatureBackdrop"):
 		return
+	root.set_meta(BACKGROUND_IMAGE_META, background_image)
 
 	var backdrop := Control.new()
 	backdrop.name = "NatureBackdrop"
@@ -34,6 +37,27 @@ static func decorate_root(root: Control) -> void:
 	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(backdrop)
 	root.move_child(backdrop, 0)
+
+	if ResourceLoader.exists(background_image):
+		var bg_image := TextureRect.new()
+		bg_image.name = "MenuBackgroundImage"
+		bg_image.texture = load(background_image) as Texture2D
+		bg_image.anchors_preset = Control.PRESET_FULL_RECT
+		bg_image.anchor_right = 1.0
+		bg_image.anchor_bottom = 1.0
+		bg_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		bg_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		bg_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		backdrop.add_child(bg_image)
+
+		var readability_wash := ColorRect.new()
+		readability_wash.anchors_preset = Control.PRESET_FULL_RECT
+		readability_wash.anchor_right = 1.0
+		readability_wash.anchor_bottom = 1.0
+		readability_wash.color = Color(0.07, 0.11, 0.04, 0.18)
+		readability_wash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		backdrop.add_child(readability_wash)
+		return
 
 	var base := ColorRect.new()
 	base.anchors_preset = Control.PRESET_FULL_RECT
@@ -116,10 +140,20 @@ static func make_shell(root: Control, title: String, subtitle: String = "", widt
 	center.add_child(frame)
 
 	var frame_style := frame.get_theme_stylebox("panel", "PanelContainer")
+	var frame_tint := UITheme.get_color("panel_bg", SKIN)
+	var active_background_image := MENU_BACKGROUND_IMAGE
+	if root.has_meta(BACKGROUND_IMAGE_META):
+		active_background_image = str(root.get_meta(BACKGROUND_IMAGE_META))
+	if ResourceLoader.exists(active_background_image):
+		frame_tint.a = 0.74
 	if frame_style is StyleBoxTexture:
-		var stylebox := frame_style.duplicate() as StyleBoxTexture
-		stylebox.modulate_color = UITheme.get_color("panel_bg", SKIN)
-		frame.add_theme_stylebox_override("panel", stylebox)
+		var texture_stylebox := frame_style.duplicate() as StyleBoxTexture
+		texture_stylebox.modulate_color = frame_tint
+		frame.add_theme_stylebox_override("panel", texture_stylebox)
+	elif frame_style is StyleBoxFlat:
+		var flat_stylebox := frame_style.duplicate() as StyleBoxFlat
+		flat_stylebox.bg_color = frame_tint
+		frame.add_theme_stylebox_override("panel", flat_stylebox)
 
 	var shadow := ColorRect.new()
 	shadow.anchors_preset = Control.PRESET_FULL_RECT
