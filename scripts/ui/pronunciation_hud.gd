@@ -36,6 +36,7 @@ func _ready() -> void:
 	PronunciationManager.mic_status_changed.connect(_on_mic_status_changed)
 	PronunciationManager.volume_updated.connect(_on_volume_updated)
 	PronunciationManager.recognized_text_changed.connect(_on_recognized_text_changed)
+	PronunciationManager.status_changed.connect(_on_status_changed)
 	GameManager.game_paused.connect(_on_game_paused)
 	GameManager.game_resumed.connect(_on_game_resumed)
 
@@ -245,14 +246,18 @@ func _create_ui() -> void:
 
 func _on_question_changed(question: Dictionary) -> void:
 	if question.is_empty():
+		_panel.visible = false
 		_word_label.text = ""
 		_hint_label.text = ""
-		_status_label.text = ""
+		if _status_label.text.is_empty():
+			_status_label.text = "Get ready..."
 		_volume_bar.value = 0.0
 		return
 
+	_panel.visible = true
 	_word_label.text = question.get("text", "?")
 	_hint_label.text = "(%s)" % question.get("hint", "")
+	print("PronunciationHUD: HUD word shown: %s" % _word_label.text)
 
 	_panel.scale = Vector2(0.95, 0.95)
 	_listen_panel.scale = Vector2(0.97, 0.97)
@@ -278,9 +283,12 @@ func _on_mic_status_changed(listening: bool) -> void:
 		_status_label.text = "Listening..."
 		_mic_icon_label.add_theme_color_override("font_color", _COL_MID_GREEN)
 	else:
-		_status_label.text = ""
 		_mic_icon_label.add_theme_color_override("font_color", _COL_DARK_GREEN)
 		_volume_bar.value = 0.0
+
+
+func _on_status_changed(text: String) -> void:
+	_status_label.text = text
 
 
 func _on_recognized_text_changed(text: String) -> void:

@@ -354,7 +354,7 @@ func _get_obstacle_z_positions() -> Array[float]:
 	## Collect the local Z positions of all obstacles and quiz obstacles on this chunk.
 	var positions: Array[float] = []
 	for child in get_children():
-		if child.is_in_group("obstacles") or child.is_in_group("quiz_obstacles") or child.is_in_group("giant_rocks") or child.is_in_group("river_crossings"):
+		if child.is_in_group("obstacles") or child.is_in_group("quiz_obstacles") or child.is_in_group("pronunciation_target_rows") or child.is_in_group("giant_rocks") or child.is_in_group("river_crossings"):
 			positions.append(child.position.z)
 	return positions
 

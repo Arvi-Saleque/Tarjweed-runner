@@ -16,6 +16,8 @@ var _wallet_badge_value: Label
 var _overlay_host: Control
 var _settings_popup: Control
 var _play_popup: Control
+var _voice_loading_overlay: Control
+var _start_in_progress: bool = false
 
 
 func _ready() -> void:
@@ -230,6 +232,9 @@ func _open_settings() -> void:
 
 
 func _start_game_from_setup(player_name: String, difficulty_id: String, mode_id: String, quiz_style_id: String) -> void:
+	if _start_in_progress:
+		return
+	_start_in_progress = true
 	GameManager.current_mode = mode_id
 	GameManager.current_quiz_style = quiz_style_id
 	GameManager.current_visual_theme = "nature"
@@ -238,9 +243,89 @@ func _start_game_from_setup(player_name: String, difficulty_id: String, mode_id:
 	if _play_popup and is_instance_valid(_play_popup):
 		_play_popup.queue_free()
 		_play_popup = null
+	if mode_id == "pronunciation":
+		_show_voice_loading_overlay()
+		var warmup_ok: bool = await PronunciationManager.warmup_backend_before_gameplay(10.0)
+		PronunciationManager.startup_warning_message = "" if warmup_ok else "Voice server may be slow. First answer may take a moment."
+		_hide_voice_loading_overlay()
 	SceneManager.change_scene("res://scenes/game.tscn")
 
 
 func _on_overlay_closed() -> void:
 	_play_popup = null
 	_refresh_summary()
+
+
+func _show_voice_loading_overlay() -> void:
+	_hide_voice_loading_overlay()
+	_voice_loading_overlay = Control.new()
+	_voice_loading_overlay.name = "VoiceLoadingOverlay"
+	_voice_loading_overlay.anchors_preset = Control.PRESET_FULL_RECT
+	_voice_loading_overlay.anchor_right = 1.0
+	_voice_loading_overlay.anchor_bottom = 1.0
+	_voice_loading_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_voice_loading_overlay.z_index = 200
+	add_child(_voice_loading_overlay)
+
+	var shade := ColorRect.new()
+	shade.anchors_preset = Control.PRESET_FULL_RECT
+	shade.anchor_right = 1.0
+	shade.anchor_bottom = 1.0
+	shade.color = Color(0.06, 0.08, 0.06, 0.72)
+	shade.mouse_filter = Control.MOUSE_FILTER_STOP
+	_voice_loading_overlay.add_child(shade)
+
+	var center := CenterContainer.new()
+	center.anchors_preset = Control.PRESET_FULL_RECT
+	center.anchor_right = 1.0
+	center.anchor_bottom = 1.0
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_voice_loading_overlay.add_child(center)
+
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(560, 220)
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = NatureMenuStyle.CREAM_SURFACE
+	panel_style.border_color = NatureMenuStyle.PANEL_BORDER
+	panel_style.border_width_left = 4
+	panel_style.border_width_right = 4
+	panel_style.border_width_top = 4
+	panel_style.border_width_bottom = 4
+	panel_style.corner_radius_top_left = 18
+	panel_style.corner_radius_top_right = 18
+	panel_style.corner_radius_bottom_left = 18
+	panel_style.corner_radius_bottom_right = 18
+	panel_style.shadow_color = Color(0, 0, 0, 0.18)
+	panel_style.shadow_size = 10
+	panel.add_theme_stylebox_override("panel", panel_style)
+	center.add_child(panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 34)
+	margin.add_theme_constant_override("margin_right", 34)
+	margin.add_theme_constant_override("margin_top", 28)
+	margin.add_theme_constant_override("margin_bottom", 28)
+	panel.add_child(margin)
+
+	var box := VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 14)
+	margin.add_child(box)
+
+	var title := UITheme.make_label("Preparing voice mode...", UITheme.FONT_HEADING, UITheme.get_color("text_ink", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(title)
+
+	var subtitle := UITheme.make_label("Connecting to pronunciation server...", UITheme.FONT_BODY, UITheme.get_color("text_ink_soft", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(subtitle)
+
+	var note := UITheme.make_label("This may take a few seconds on first launch.", UITheme.FONT_SMALL, UITheme.get_color("text_dim", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
+	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(note)
+
+
+func _hide_voice_loading_overlay() -> void:
+	if _voice_loading_overlay and is_instance_valid(_voice_loading_overlay):
+		_voice_loading_overlay.queue_free()
+	_voice_loading_overlay = null

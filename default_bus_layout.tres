@@ -14,6 +14,9 @@ wet = 0.15
 [sub_resource type="AudioEffectCapture" id="AudioEffectCapture_mic"]
 buffer_length = 0.5
 
+[sub_resource type="AudioEffectRecord" id="AudioEffectRecord_j3pel"]
+resource_name = "Record"
+
 [resource]
 bus/0/effect/0/effect = SubResource("AudioEffectLimiter_master")
 bus/0/effect/0/enabled = true
@@ -45,3 +48,11 @@ bus/4/volume_db = -80.0
 bus/4/send = &"Master"
 bus/4/effect/0/effect = SubResource("AudioEffectCapture_mic")
 bus/4/effect/0/enabled = true
+bus/5/name = &"Record"
+bus/5/solo = false
+bus/5/mute = false
+bus/5/bypass_fx = false
+bus/5/volume_db = -80.0
+bus/5/send = &"Master"
+bus/5/effect/0/effect = SubResource("AudioEffectRecord_j3pel")
+bus/5/effect/0/enabled = true

@@ -38,6 +38,8 @@ const QUIZ_TYPE_SLIDE: int = 1
 const QUIZ_TYPE_BLAST: int = 2
 const QUIZ_TYPE_RIVER: int = 3
 const QUIZ_ROW_SEQ_KEY: String = "_quiz_row_seq_id"
+const PRONUN_ROW_SEQ_KEY: String = "_pronun_row_seq_id"
+const PRONUN_FIRST_ROW_CHUNK_INDEX: int = 4
 
 # Scale ranges for different obstacle models
 const OBSTACLE_SCALES: Dictionary = {
@@ -161,39 +163,75 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 const PRONUN_ROW_GAP: float = 100.0
 
 static func _spawn_pronunciation_obstacles(chunk: Node3D, chunk_length: float, generator: Node3D) -> void:
-	var last_z_key := "_pronun_last_obs_z"
-	var carry_over: float = 0.0
-	if GameManager.has_meta(last_z_key):
-		carry_over = GameManager.get_meta(last_z_key)
+	var chunk_index: int = int(chunk.get("chunk_index"))
+	var chunk_interval: int = maxi(1, int(round(PRONUN_ROW_GAP / maxf(chunk_length, 1.0))))
+	if chunk_index < PRONUN_FIRST_ROW_CHUNK_INDEX:
+		return
+	if (chunk_index - PRONUN_FIRST_ROW_CHUNK_INDEX) % chunk_interval != 0:
+		return
 
-	var z: float = -carry_over if carry_over > 0.0 else -PRONUN_ROW_GAP
+	_create_pronunciation_jump_row(chunk, -chunk_length * 0.5)
 
-	while z > -(chunk_length - 2.0):
-		# Place jump blocks across all 3 lanes
-		for lane_idx in 3:
-			var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
-			var pos := Vector3(lane_x, 0.0, z)
-			var obs_script: GDScript = load(OBSTACLE_SCRIPT) as GDScript
-			if not obs_script:
-				return
-			var obstacle := Area3D.new()
-			obstacle.set_script(obs_script)
-			obstacle.position = pos
-			obstacle.name = "PronunJumpBlock"
-			chunk.add_child(obstacle)
-			var block_mat := StandardMaterial3D.new()
-			block_mat.albedo_color = Color(0.3, 0.5, 0.9)  # Blue for pronunciation
-			obstacle.call("setup_placeholder",
-				Vector3(QUIZ_BLOCK_WIDTH * 2.2, QUIZ_BLOCK_HEIGHT, 0.6),
-				block_mat)
 
-		z -= PRONUN_ROW_GAP
+static func _create_pronunciation_jump_row(parent: Node3D, z_pos: float) -> void:
+	var row_id: int = _next_pronunciation_row_id()
+	var word_data: Dictionary = PronunciationManager.get_random_target_word_data()
+	var expected_word := str(word_data.get("word", "Cat"))
 
-	var remaining: float = -(chunk_length) - z
-	if remaining > 0:
-		GameManager.set_meta(last_z_key, remaining)
-	else:
-		GameManager.set_meta(last_z_key, 0.0)
+	var marker := Node3D.new()
+	marker.name = "PronunciationObstacleMarker"
+	marker.position = Vector3(0.0, 0.0, z_pos)
+	marker.set_meta("pronunciation_row_id", row_id)
+	marker.set_meta("pronunciation_required_action", "jump")
+	marker.set_meta("pronunciation_expected_word", expected_word)
+	marker.add_to_group("pronunciation_obstacles")
+	parent.add_child(marker)
+
+	var jump_row := Node3D.new()
+	jump_row.name = "PronunciationJumpRow"
+	jump_row.position = Vector3(0.0, 0.0, z_pos)
+	jump_row.set_meta("pronunciation_row_id", row_id)
+	jump_row.set_meta("pronunciation_required_action", "jump")
+	jump_row.set_meta("pronunciation_expected_word", expected_word)
+	jump_row.add_to_group("pronunciation_target_rows")
+	parent.add_child(jump_row)
+
+	for lane_idx in 3:
+		var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
+		var pos := Vector3(lane_x, 0.0, 0.0)
+		var obs_script: GDScript = load(OBSTACLE_SCRIPT) as GDScript
+		if not obs_script:
+			return
+		var obstacle := Area3D.new()
+		obstacle.set_script(obs_script)
+		obstacle.position = pos
+		obstacle.name = "PronunJumpBlock"
+		obstacle.set_meta("pronunciation_row_id", row_id)
+		obstacle.set_meta("pronunciation_required_action", "jump")
+		obstacle.set_meta("pronunciation_expected_word", expected_word)
+		jump_row.add_child(obstacle)
+		var block_mat := StandardMaterial3D.new()
+		block_mat.albedo_color = Color(0.3, 0.5, 0.9)
+		obstacle.call("setup_placeholder",
+			Vector3(QUIZ_BLOCK_WIDTH * 2.2, QUIZ_BLOCK_HEIGHT, 0.6),
+			block_mat)
+
+	PronunciationManager.register_target(jump_row, {
+		"row_id": row_id,
+		"required_action": "jump",
+		"expected_word": expected_word,
+	})
+	print("PronunciationSpawner: Pronunciation row spawned: action=jump, word=%s, z=%.2f, row=%d" % [
+		expected_word,
+		jump_row.global_position.z,
+		row_id,
+	])
+
+
+static func _next_pronunciation_row_id() -> int:
+	var next_row_id: int = GameManager.get_meta(PRONUN_ROW_SEQ_KEY, 0) as int
+	GameManager.set_meta(PRONUN_ROW_SEQ_KEY, next_row_id + 1)
+	return next_row_id
 
 
 # =============================================================================

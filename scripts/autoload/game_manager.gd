@@ -173,6 +173,8 @@ func start_game() -> void:
 		remove_meta("_quiz_row_seq_id")
 	if has_meta("_pronun_last_obs_z"):
 		remove_meta("_pronun_last_obs_z")
+	if has_meta("_pronun_row_seq_id"):
+		remove_meta("_pronun_row_seq_id")
 	# Reset giant rock tracking
 	if has_meta("_last_giant_rock_dist"):
 		remove_meta("_last_giant_rock_dist")
