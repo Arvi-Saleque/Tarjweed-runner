@@ -141,11 +141,21 @@ func _process(delta: float) -> void:
 	distance_updated.emit(distance)
 
 	# Speed ramp
-	var ramp_scale: float = float(profile.get("speed_ramp_scale", 1.0))
-	var new_speed: float = clampf(effective_base_speed + play_time * SPEED_INCREMENT * ramp_scale, effective_base_speed, effective_max_speed)
-	if new_speed != current_speed:
-		current_speed = new_speed
-		speed_changed.emit(current_speed)
+	# Pronunciation mode must keep constant start speed for stable voice timing.
+	if is_pronunciation_mode():
+		if not is_equal_approx(current_speed, effective_base_speed):
+			current_speed = effective_base_speed
+			speed_changed.emit(current_speed)
+	else:
+		var ramp_scale: float = float(profile.get("speed_ramp_scale", 1.0))
+		var new_speed: float = clampf(
+			effective_base_speed + play_time * SPEED_INCREMENT * ramp_scale,
+			effective_base_speed,
+			effective_max_speed
+		)
+		if not is_equal_approx(new_speed, current_speed):
+			current_speed = new_speed
+			speed_changed.emit(current_speed)
 
 	# Difficulty scaling
 	var diff_min: float = float(profile.get("difficulty_min", 1.0))

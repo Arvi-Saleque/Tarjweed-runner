@@ -245,8 +245,10 @@ func _start_game_from_setup(player_name: String, difficulty_id: String, mode_id:
 		_play_popup = null
 	if mode_id == "pronunciation":
 		_show_voice_loading_overlay()
-		var warmup_ok: bool = await PronunciationManager.warmup_backend_before_gameplay(10.0)
-		PronunciationManager.startup_warning_message = "" if warmup_ok else "Voice server may be slow. First answer may take a moment."
+		# Local WebSocket backend should not block the player with a long loading screen.
+		# Warmup is only a quick reachability check; gameplay starts even if it times out.
+		await PronunciationManager.warmup_backend_before_gameplay(1.5)
+		PronunciationManager.startup_warning_message = ""
 		_hide_voice_loading_overlay()
 	SceneManager.change_scene("res://scenes/game.tscn")
 

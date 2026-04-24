@@ -39,7 +39,7 @@ const QUIZ_TYPE_BLAST: int = 2
 const QUIZ_TYPE_RIVER: int = 3
 const QUIZ_ROW_SEQ_KEY: String = "_quiz_row_seq_id"
 const PRONUN_ROW_SEQ_KEY: String = "_pronun_row_seq_id"
-const PRONUN_FIRST_ROW_CHUNK_INDEX: int = 4
+const PRONUN_FIRST_ROW_CHUNK_INDEX: int = 1
 
 # Scale ranges for different obstacle models
 const OBSTACLE_SCALES: Dictionary = {
@@ -160,7 +160,7 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 # PRONUNCIATION MODE — simple jump blocks spaced 100m apart
 # =============================================================================
 
-const PRONUN_ROW_GAP: float = 100.0
+const PRONUN_ROW_GAP: float = 35
 
 static func _spawn_pronunciation_obstacles(chunk: Node3D, chunk_length: float, generator: Node3D) -> void:
 	var chunk_index: int = int(chunk.get("chunk_index"))

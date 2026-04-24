@@ -8,22 +8,26 @@ signal volume_updated(level: float)
 signal recognized_text_changed(text: String)
 signal status_changed(text: String)
 
-@export var backend_url: String = "https://tajweed-pronunciation-backend.onrender.com/assess"
+@export var backend_url: String = "http://127.0.0.1:8000/assess"
+@export var ws_url: String = "ws://127.0.0.1:8000/ws/pronunciation"
+
 @export var language: String = "en-US"
-@export var record_duration: float = 1.25
-@export var record_bus_name: String = "Record"
-@export var recording_path: String = "user://pronunciation_input.wav"
+@export var max_record_duration: float = 1.25
+@export var audio_chunk_interval: float = 0.03
+@export var pronunciation_threshold: float = 65.0
+@export var valid_action_window_before: float = 0.4
+@export var valid_action_window_after: float = 0.3
+@export var capture_bus_name: String = "MicCapture"
 @export var preferred_input_device: String = ""
 @export var request_timeout: float = 90.0
 @export var record_monitor_volume_db: float = -80.0
 @export var warmup_timeout: float = 10.0
-@export var preparation_distance_max: float = 80.0
+@export var preparation_distance_max: float = 115.0
 @export var preparation_distance_min: float = 45.0
-@export var preparation_tti_max: float = 6.5
-@export var preparation_tti_min: float = 5.0
+@export var preparation_tti_max: float = 8.0
+@export var preparation_tti_min: float = 6.0
 
 const QUESTION_START_DELAY: float = 0.25
-const JUMP_ACTION_TTI_SECONDS: float = 0.45
 const PRONUNCIATION_PASS_Z: float = 2.0
 
 var pronunciation_state := "idle"
@@ -39,13 +43,18 @@ var _word_bank: Array[Dictionary] = []
 var current_question: Dictionary = {}
 var _is_active: bool = false
 var _player: CharacterBody3D = null
-var _record_effect: AudioEffectRecord = null
+var _capture_effect: AudioEffectCapture = null
 var _mic_player: AudioStreamPlayer = null
-var _http_request: HTTPRequest = null
 var _warmup_request: HTTPRequest = null
+var _websocket: WebSocketPeer = null
 var _is_recording: bool = false
 var _question_token: int = 0
 var _request_started_msec: int = 0
+var _recording_started_msec: int = 0
+var _audio_chunk_elapsed: float = 0.0
+var _last_audio_chunk_log_msec: int = 0
+var _last_ws_state: int = -1
+var _ws_session_started: bool = false
 var _active_target: Dictionary = {}
 var _registered_targets: Array[Dictionary] = []
 var _resolved_row_ids: Dictionary = {}
@@ -67,6 +76,8 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if not _is_active or not GameManager.is_pronunciation_mode():
 		return
+	_poll_websocket()
+	_stream_audio_if_recording(_delta)
 	_capture_upcoming_target()
 	_start_challenge_for_active_target()
 	_update_action_execution()
@@ -116,41 +127,36 @@ func register_target(row_node: Node3D, data: Dictionary) -> void:
 func _setup_recording_backend() -> void:
 	_select_input_device()
 
-	var bus_idx := AudioServer.get_bus_index(record_bus_name)
+	var bus_idx := AudioServer.get_bus_index(capture_bus_name)
 	if bus_idx == -1:
-		_fail_setup("Audio bus '%s' not found." % record_bus_name)
+		_fail_setup("Audio bus '%s' not found." % capture_bus_name)
 		return
 	AudioServer.set_bus_volume_db(bus_idx, record_monitor_volume_db)
 
 	for effect_idx in AudioServer.get_bus_effect_count(bus_idx):
 		var effect := AudioServer.get_bus_effect(bus_idx, effect_idx)
-		if effect is AudioEffectRecord:
-			_record_effect = effect as AudioEffectRecord
+		if effect is AudioEffectCapture:
+			_capture_effect = effect as AudioEffectCapture
 			break
 
-	if _record_effect == null:
-		_fail_setup("AudioEffectRecord not found on '%s' bus." % record_bus_name)
+	if _capture_effect == null:
+		_fail_setup("AudioEffectCapture not found on '%s' bus." % capture_bus_name)
 		return
 
 	_mic_player = AudioStreamPlayer.new()
 	_mic_player.name = "PronunciationMicPlayer"
 	_mic_player.stream = AudioStreamMicrophone.new()
-	_mic_player.bus = record_bus_name
+	_mic_player.bus = capture_bus_name
 	add_child(_mic_player)
 	_mic_player.play()
-
-	_http_request = HTTPRequest.new()
-	_http_request.name = "PronunciationHTTPRequest"
-	_http_request.timeout = request_timeout
-	_http_request.use_threads = true
-	add_child(_http_request)
-	_http_request.request_completed.connect(_on_http_request_completed)
 
 	_warmup_request = HTTPRequest.new()
 	_warmup_request.name = "PronunciationWarmupHTTPRequest"
 	_warmup_request.timeout = request_timeout
 	_warmup_request.use_threads = true
 	add_child(_warmup_request)
+
+	_websocket = WebSocketPeer.new()
 
 
 func _select_input_device() -> void:
@@ -209,8 +215,7 @@ func _on_game_over() -> void:
 	_is_active = false
 	_question_token += 1
 	_stop_recording_if_needed()
-	if _http_request and pronunciation_request_pending:
-		_http_request.cancel_request()
+	_close_websocket()
 	_reset_pronunciation_runtime_state()
 	_reset_hud_state()
 	question_changed.emit({})
@@ -282,6 +287,7 @@ func _generate_question_for_active_target() -> void:
 	volume_updated.emit(0.0)
 	status_changed.emit("Get ready...")
 	mic_status_changed.emit(false)
+	_ensure_websocket_connected()
 	print("PronunciationManager: Prepared '%s' for %s row %d." % [
 		current_expected_word,
 		current_required_action,
@@ -295,8 +301,8 @@ func _generate_question_for_active_target() -> void:
 
 
 func _start_recording_for_current_question(token: int) -> void:
-	if _record_effect == null:
-		_mark_pronunciation_failed("Recorder is not ready.")
+	if _capture_effect == null:
+		_mark_pronunciation_failed("Audio capture is not ready.")
 		return
 	if pronunciation_request_pending:
 		return
@@ -305,106 +311,126 @@ func _start_recording_for_current_question(token: int) -> void:
 	if _mic_player and not _mic_player.playing:
 		_mic_player.play()
 
-	_record_effect.set_recording_active(true)
+	var connected := await _wait_for_websocket_open(0.75)
+	if not connected:
+		_mark_pronunciation_failed("Voice server is not connected.")
+		return
+
+	_capture_effect.clear_buffer()
+	_send_start_message()
 	_is_recording = true
+	_ws_session_started = true
+	pronunciation_request_pending = true
+	_request_row_id = int(_active_target.get("row_id", -1))
+	_request_started_msec = Time.get_ticks_msec()
+	_recording_started_msec = Time.get_ticks_msec()
+	_audio_chunk_elapsed = 0.0
 	pronunciation_state = "recording"
 	mic_status_changed.emit(true)
 	volume_updated.emit(0.8)
-	status_changed.emit("Recording...")
+	status_changed.emit("Listening...")
 	print("PronunciationManager: Recording started for '%s'." % current_expected_word)
 
-	await get_tree().create_timer(record_duration).timeout
+	await get_tree().create_timer(max_record_duration).timeout
 	if _is_active and token == _question_token and _has_active_target():
-		_stop_recording_and_send()
+		_stop_recording_and_wait_for_result()
 
 
-func _stop_recording_and_send() -> void:
-	if _record_effect == null:
-		_mark_pronunciation_failed("Recorder is not ready.")
+func _stop_recording_and_wait_for_result() -> void:
+	if not _is_recording:
 		return
-
-	if _is_recording:
-		_record_effect.set_recording_active(false)
+	_send_pending_audio_chunk()
 	_is_recording = false
+	_ws_session_started = false
 	mic_status_changed.emit(false)
 	volume_updated.emit(0.0)
 	pronunciation_state = "checking"
 	status_changed.emit("Checking pronunciation...")
 	print("PronunciationManager: Recording stopped.")
+	_send_text_message({"type": "stop"})
+	print("PronunciationManager: Stop message sent")
 
-	var recording := _record_effect.get_recording()
-	if recording == null:
-		_mark_pronunciation_failed("No recording found.")
+
+func _ensure_websocket_connected() -> void:
+	if _websocket == null:
+		_websocket = WebSocketPeer.new()
+	var state := _websocket.get_ready_state()
+	if state == WebSocketPeer.STATE_OPEN or state == WebSocketPeer.STATE_CONNECTING:
+		return
+	if state == WebSocketPeer.STATE_CLOSING:
 		return
 
-	var io_start_msec := Time.get_ticks_msec()
-	var save_error := recording.save_to_wav(recording_path)
-	if save_error != OK:
-		_mark_pronunciation_failed("Failed to save recording.")
-		return
-
-	var audio_bytes := FileAccess.get_file_as_bytes(recording_path)
-	if audio_bytes.is_empty():
-		_mark_pronunciation_failed("Recorded audio file is empty.")
-		return
-
-	var peak := _get_recording_peak_16bit(recording)
-	print("PronunciationManager: recording_io_elapsed_ms = %d" % (Time.get_ticks_msec() - io_start_msec))
-	_print_recording_debug(recording, audio_bytes.size(), peak)
-	_send_audio_to_backend(audio_bytes)
-
-
-func _send_audio_to_backend(audio_bytes: PackedByteArray) -> void:
-	if _http_request == null:
-		_mark_pronunciation_failed("HTTP client is not ready.")
-		return
-	if current_expected_word.is_empty():
-		_mark_pronunciation_failed("No pronunciation word is active.")
-		return
-
-	var url := backend_url + "?expected_text=" + current_expected_word.uri_encode() + "&language=" + language.uri_encode()
-	var headers := PackedStringArray(["Content-Type: audio/wav"])
-	var error := _http_request.request_raw(url, headers, HTTPClient.METHOD_POST, audio_bytes)
+	_websocket = WebSocketPeer.new()
+	var error := _websocket.connect_to_url(ws_url)
 	if error != OK:
-		_mark_pronunciation_failed("Failed to send audio to backend.")
+		push_error("PronunciationManager: WebSocket connect failed: %s" % error_string(error))
 		return
-
-	pronunciation_request_pending = true
-	_request_row_id = int(_active_target.get("row_id", -1))
-	_request_started_msec = Time.get_ticks_msec()
-	print("PronunciationManager: Sent recording to backend: %s" % url)
+	_last_ws_state = WebSocketPeer.STATE_CONNECTING
+	print("PronunciationManager: WebSocket connecting: %s" % ws_url)
 
 
-func _on_http_request_completed(
-	result: int,
-	response_code: int,
-	_headers: PackedStringArray,
-	body: PackedByteArray
-) -> void:
+func _wait_for_websocket_open(timeout_seconds: float) -> bool:
+	_ensure_websocket_connected()
+	var start_msec := Time.get_ticks_msec()
+	while Time.get_ticks_msec() - start_msec < int(timeout_seconds * 1000.0):
+		_poll_websocket()
+		if _is_websocket_open():
+			return true
+		await get_tree().process_frame
+	return _is_websocket_open()
+
+
+func _poll_websocket() -> void:
+	if _websocket == null:
+		return
+	_websocket.poll()
+	var state := _websocket.get_ready_state()
+	if state != _last_ws_state:
+		_last_ws_state = state
+		match state:
+			WebSocketPeer.STATE_OPEN:
+				print("PronunciationManager: WebSocket connected")
+			WebSocketPeer.STATE_CLOSED:
+				print("PronunciationManager: WebSocket closed")
+			WebSocketPeer.STATE_CLOSING:
+				print("PronunciationManager: WebSocket closing")
+
+	while _websocket.get_available_packet_count() > 0:
+		var packet := _websocket.get_packet()
+		if _websocket.was_string_packet():
+			var text := packet.get_string_from_utf8()
+			var data: Variant = JSON.parse_string(text)
+			if data is Dictionary:
+				_handle_websocket_message(data as Dictionary)
+			else:
+				print("PronunciationManager: Invalid WebSocket JSON: %s" % text)
+
+
+func _handle_websocket_message(message: Dictionary) -> void:
+	var message_type := str(message.get("type", ""))
+	match message_type:
+		"started":
+			print("PronunciationManager: WebSocket backend started stream")
+		"result":
+			_handle_streaming_result(message)
+		"error":
+			pronunciation_request_pending = false
+			_mark_pronunciation_failed(str(message.get("message", "Voice server error")))
+		_:
+			print("PronunciationManager: WebSocket message: %s" % JSON.stringify(message))
+
+
+func _handle_streaming_result(response: Dictionary) -> void:
 	pronunciation_request_pending = false
 	var elapsed_ms := Time.get_ticks_msec() - _request_started_msec
+	print("PronunciationManager: Result received")
 	print("PronunciationManager: backend_elapsed_ms = %d" % elapsed_ms)
 
 	if not _is_active or not GameManager.is_pronunciation_mode():
 		return
 
-	if result != HTTPRequest.RESULT_SUCCESS:
-		_mark_pronunciation_failed("Backend request failed.")
-		return
-
-	if response_code < 200 or response_code >= 300:
-		_mark_pronunciation_failed("Backend error: %d" % response_code)
-		return
-
-	var response_text := body.get_string_from_utf8()
-	var data: Variant = JSON.parse_string(response_text)
-	if not (data is Dictionary):
-		_mark_pronunciation_failed("Invalid JSON response from backend.")
-		return
-
-	var response := data as Dictionary
 	if not bool(response.get("success", false)):
-		_mark_pronunciation_failed(str(response.get("message", response.get("error", "Pronunciation check failed."))))
+		_mark_pronunciation_failed(str(response.get("message", "Pronunciation check failed.")))
 		return
 
 	var recognized_text := str(response.get("recognized_text", ""))
@@ -415,22 +441,16 @@ func _on_http_request_completed(
 	last_pronunciation_result = response
 	recognized_text_changed.emit(recognized_text)
 	_print_debug_result(expected_text, recognized_text, correct, scores)
+	print("PronunciationManager: correct=%s" % str(correct))
 
 	if not _has_active_target() or int(_active_target.get("row_id", -1)) != _request_row_id:
 		print("PronunciationManager: Ignoring late result for row %d." % _request_row_id)
 		_clear_current_challenge()
 		return
 
-	if bool(_active_target.get("action_window_missed", false)):
-		pronunciation_state = "wrong"
-		status_changed.emit("Too late")
-		answer_result.emit(false)
-		print("PronunciationManager: Cloud result arrived after action window.")
-		return
-
 	if correct:
 		pronunciation_state = "correct_ready"
-		validated_action = current_required_action
+		validated_action = str(response.get("required_action", current_required_action))
 		pronunciation_action_ready = true
 		status_changed.emit(str(response.get("message", "Ready!")))
 		answer_result.emit(true)
@@ -438,8 +458,92 @@ func _on_http_request_completed(
 			validated_action,
 			_active_target.get("row_id", -1),
 		])
+		if _is_inside_valid_action_window():
+			_fire_validated_action()
+		elif _is_action_window_late():
+			_active_target["action_window_missed"] = true
+			pronunciation_action_ready = false
+			answer_result.emit(false)
+			print("PronunciationManager: action missed")
 	else:
 		_mark_pronunciation_failed(str(response.get("message", "Try again")))
+
+
+func _send_start_message() -> void:
+	var sample_rate := AudioServer.get_mix_rate()
+	_send_text_message({
+		"type": "start",
+		"expected_text": current_expected_word,
+		"language": language,
+		"required_action": current_required_action,
+		"sample_rate": sample_rate,
+		"threshold": pronunciation_threshold,
+	})
+	print("PronunciationManager: Start message sent")
+
+
+func _send_text_message(message: Dictionary) -> void:
+	if not _is_websocket_open():
+		push_error("PronunciationManager: Cannot send WebSocket text while disconnected.")
+		return
+	var error := _websocket.send_text(JSON.stringify(message))
+	if error != OK:
+		push_error("PronunciationManager: WebSocket text send failed: %s" % error_string(error))
+
+
+func _stream_audio_if_recording(delta: float) -> void:
+	if not _is_recording or not _ws_session_started:
+		return
+	_audio_chunk_elapsed += delta
+	if _audio_chunk_elapsed < audio_chunk_interval:
+		return
+	_audio_chunk_elapsed = 0.0
+	_send_pending_audio_chunk()
+
+
+func _send_pending_audio_chunk() -> void:
+	if _capture_effect == null or not _is_websocket_open():
+		return
+	var frames_available := _capture_effect.get_frames_available()
+	if frames_available <= 0:
+		return
+	var frames := _capture_effect.get_buffer(frames_available)
+	var audio_bytes := _frames_to_pcm16_mono(frames)
+	if audio_bytes.is_empty():
+		return
+	var error := _websocket.put_packet(audio_bytes)
+	if error != OK:
+		push_error("PronunciationManager: WebSocket audio send failed: %s" % error_string(error))
+		return
+	var now := Time.get_ticks_msec()
+	if now - _last_audio_chunk_log_msec > 250:
+		_last_audio_chunk_log_msec = now
+		print("PronunciationManager: Audio chunk sent size=%d" % audio_bytes.size())
+
+
+func _frames_to_pcm16_mono(frames: PackedVector2Array) -> PackedByteArray:
+	var audio_bytes := PackedByteArray()
+	audio_bytes.resize(frames.size() * 2)
+	var byte_index := 0
+	for frame in frames:
+		var mono := clampf((frame.x + frame.y) * 0.5, -1.0, 1.0)
+		var sample := int(mono * 32767.0)
+		if sample < 0:
+			sample += 65536
+		audio_bytes[byte_index] = sample & 0xff
+		audio_bytes[byte_index + 1] = (sample >> 8) & 0xff
+		byte_index += 2
+	return audio_bytes
+
+
+func _is_websocket_open() -> bool:
+	return _websocket != null and _websocket.get_ready_state() == WebSocketPeer.STATE_OPEN
+
+
+func _close_websocket() -> void:
+	if _websocket:
+		_websocket.close()
+	_ws_session_started = false
 
 
 func _update_action_execution() -> void:
@@ -449,21 +553,22 @@ func _update_action_execution() -> void:
 		return
 	if bool(_active_target.get("action_window_missed", false)):
 		return
-	if _get_active_target_time_to_impact() > JUMP_ACTION_TTI_SECONDS:
+	if _is_action_window_late():
+		_active_target["action_window_missed"] = true
+		if pronunciation_state == "checking":
+			pronunciation_state = "pending"
+			status_changed.emit("Voice result not ready")
+		else:
+			pronunciation_state = "wrong"
+		answer_result.emit(false)
+		print("PronunciationManager: No validated pronunciation ready at obstacle row %d." % _active_target.get("row_id", -1))
+		print("PronunciationManager: action missed")
 		return
 
 	if pronunciation_action_ready and validated_action == str(_active_target.get("required_action", "jump")):
-		_fire_validated_action()
+		if _is_inside_valid_action_window():
+			_fire_validated_action()
 		return
-
-	_active_target["action_window_missed"] = true
-	if pronunciation_state == "checking":
-		pronunciation_state = "pending"
-		status_changed.emit("Voice result not ready")
-	else:
-		pronunciation_state = "wrong"
-	answer_result.emit(false)
-	print("PronunciationManager: No validated pronunciation ready at obstacle row %d." % _active_target.get("row_id", -1))
 
 
 func _fire_validated_action() -> void:
@@ -479,6 +584,22 @@ func _fire_validated_action() -> void:
 		validated_action,
 		_active_target.get("row_id", -1),
 	])
+
+
+func _is_inside_valid_action_window() -> bool:
+	var row_root := _get_active_target_row()
+	if row_root == null:
+		return false
+	var speed := maxf(GameManager.current_speed, 0.001)
+	var z := row_root.global_position.z
+	return z >= -valid_action_window_before * speed and z <= valid_action_window_after * speed
+
+
+func _is_action_window_late() -> bool:
+	var row_root := _get_active_target_row()
+	if row_root == null:
+		return true
+	return row_root.global_position.z > valid_action_window_after * maxf(GameManager.current_speed, 0.001)
 
 
 func _mark_pronunciation_failed(message: String) -> void:
@@ -566,8 +687,7 @@ func _set_active_target_from_row(row_data: Dictionary) -> void:
 func _release_target_after_pass() -> void:
 	if not _has_active_target():
 		return
-	var row_root := _get_active_target_row()
-	if row_root != null and is_instance_valid(row_root) and row_root.global_position.z <= PRONUNCIATION_PASS_Z:
+	if not _is_action_window_late():
 		return
 
 	var row_id := int(_active_target.get("row_id", -1))
@@ -657,6 +777,10 @@ func _reset_pronunciation_runtime_state() -> void:
 	pronunciation_action_ready = false
 	pronunciation_request_pending = false
 	last_pronunciation_result = {}
+	_is_recording = false
+	_ws_session_started = false
+	_audio_chunk_elapsed = 0.0
+	_last_audio_chunk_log_msec = 0
 	current_question = {}
 	_active_target = _make_empty_target()
 	_registered_targets.clear()
@@ -762,14 +886,21 @@ func warmup_backend_before_gameplay(timeout_seconds: float = -1.0) -> bool:
 
 
 func _get_backend_origin_url() -> String:
+	if not ws_url.is_empty():
+		var http_url := ws_url.replace("ws://", "http://").replace("wss://", "https://")
+		return _get_origin_from_url(http_url)
+	return _get_origin_from_url(backend_url)
+
+
+func _get_origin_from_url(url: String) -> String:
 	var marker := "://"
-	var marker_idx := backend_url.find(marker)
+	var marker_idx := url.find(marker)
 	if marker_idx == -1:
 		return ""
-	var path_start := backend_url.find("/", marker_idx + marker.length())
+	var path_start := url.find("/", marker_idx + marker.length())
 	if path_start == -1:
-		return backend_url
-	return backend_url.substr(0, path_start + 1)
+		return url
+	return url.substr(0, path_start + 1)
 
 
 func _print_debug_result(expected_text: String, recognized_text: String, correct: bool, scores: Dictionary) -> void:
@@ -782,34 +913,13 @@ func _print_debug_result(expected_text: String, recognized_text: String, correct
 	print("PronunciationManager: pronunciation = %s" % str(scores.get("pronunciation", "")))
 
 
-func _get_recording_peak_16bit(recording: AudioStreamWAV) -> int:
-	var data_size := recording.data.size()
-	var peak := 0
-	if recording.format == AudioStreamWAV.FORMAT_16_BITS:
-		var i := 0
-		while i + 1 < data_size:
-			var sample := int(recording.data[i]) | (int(recording.data[i + 1]) << 8)
-			if sample >= 32768:
-				sample -= 65536
-			peak = maxi(peak, absi(sample))
-			i += 2
-	return peak
-
-
-func _print_recording_debug(recording: AudioStreamWAV, wav_file_size: int, peak: int) -> void:
-	var data_size := recording.data.size()
-	print("PronunciationManager: wav_file_size = %d bytes" % wav_file_size)
-	print("PronunciationManager: wav_data_size = %d bytes" % data_size)
-	print("PronunciationManager: wav_mix_rate = %d" % recording.mix_rate)
-	print("PronunciationManager: wav_stereo = %s" % str(recording.stereo))
-	print("PronunciationManager: wav_format = %d" % recording.format)
-	print("PronunciationManager: wav_peak_16bit = %d" % peak)
-
-
 func _stop_recording_if_needed() -> void:
-	if _record_effect and _is_recording:
-		_record_effect.set_recording_active(false)
+	if _is_recording:
+		_send_pending_audio_chunk()
+		if _is_websocket_open():
+			_send_text_message({"type": "stop"})
 	_is_recording = false
+	_ws_session_started = false
 
 
 func _reset_hud_state() -> void:
@@ -820,45 +930,25 @@ func _reset_hud_state() -> void:
 
 
 func _build_word_bank() -> void:
+	# Stable demo words only. Very short/noisy words like Go, Cup, Bag, Eat
+	# caused occasional empty/low-score Azure results in local tests.
+	# Keep this list clean for classroom/campus demo reliability.
 	_word_bank = [
-		{"word": "Cat", "correct": "KAT"},
-		{"word": "Dog", "correct": "DOG"},
-		{"word": "Bus", "correct": "BUS"},
-		{"word": "Eat", "correct": "EET"},
-		{"word": "Run", "correct": "RUN"},
-		{"word": "Hat", "correct": "HAT"},
-		{"word": "Sun", "correct": "SUN"},
-		{"word": "Cup", "correct": "KUP"},
-		{"word": "Red", "correct": "RED"},
 		{"word": "Big", "correct": "BIG"},
-		{"word": "Sit", "correct": "SIT"},
-		{"word": "Top", "correct": "TOP"},
-		{"word": "Bed", "correct": "BED"},
-		{"word": "Box", "correct": "BOKS"},
-		{"word": "Fish", "correct": "FISH"},
-		{"word": "Milk", "correct": "MILK"},
-		{"word": "Ball", "correct": "BAWL", "accepted": ["bawl"]},
-		{"word": "Tree", "correct": "TREE"},
-		{"word": "Book", "correct": "BUUK"},
-		{"word": "Jump", "correct": "JUMP"},
-		{"word": "Stop", "correct": "STOP"},
-		{"word": "Go", "correct": "GOH"},
-		{"word": "Play", "correct": "PLAY"},
-		{"word": "Help", "correct": "HELP"},
-		{"word": "Blue", "correct": "BLOO", "accepted": ["blew"]},
-		{"word": "Green", "correct": "GREEN"},
-		{"word": "Car", "correct": "KAR"},
-		{"word": "Hand", "correct": "HAND"},
-		{"word": "Leg", "correct": "LEG"},
-		{"word": "Egg", "correct": "EG"},
-		{"word": "Bag", "correct": "BAG"},
-		{"word": "Pen", "correct": "PEN"},
-		{"word": "Map", "correct": "MAP"},
-		{"word": "Fox", "correct": "FOKS"},
+		{"word": "Sun", "correct": "SUN"},
+		{"word": "Dog", "correct": "DOG"},
 		{"word": "Frog", "correct": "FROG"},
 		{"word": "Duck", "correct": "DUK"},
-		{"word": "Pig", "correct": "PIG"},
-		{"word": "Hen", "correct": "HEN"},
-		{"word": "Cow", "correct": "KOW"},
-		{"word": "Bee", "correct": "BEE", "accepted": ["be"]},
+		{"word": "Hat", "correct": "HAT"},
+		{"word": "Ball", "correct": "BAWL", "accepted": ["bawl"]},
+		{"word": "Play", "correct": "PLAY"},
+		{"word": "Pen", "correct": "PEN"},
+		{"word": "Car", "correct": "KAR"},
+		{"word": "Blue", "correct": "BLOO", "accepted": ["blew"]},
+		{"word": "Box", "correct": "BOKS"},
+		{"word": "Jump", "correct": "JUMP"},
+		{"word": "Leg", "correct": "LEG"},
+		{"word": "Hand", "correct": "HAND"},
+		{"word": "Book", "correct": "BUUK"},
+		{"word": "Egg", "correct": "EG"},
 	]
