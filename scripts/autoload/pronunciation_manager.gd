@@ -1,429 +1,55 @@
 extends Node
-## PronunciationManager — Vosk-based speech recognition for pronunciation mode.
-## Connects to a local Vosk WebSocket server for real-time word recognition.
-## Falls back to VAD-only if the server is unavailable.
+## PronunciationManager - placeholder for the next pronunciation assessment backend.
 
 signal question_changed(question: Dictionary)
 signal answer_result(correct: bool)
 signal mic_status_changed(listening: bool)
-signal volume_updated(level: float)  # 0.0-1.0 normalized for HUD meter
-signal recognized_text_changed(text: String)  # partial/final recognized text
+signal volume_updated(level: float)
+signal recognized_text_changed(text: String)
 
-# Word bank
 var _word_bank: Array[Dictionary] = []
-
-# Current state
 var current_question: Dictionary = {}
 var _is_active: bool = false
 var _player: CharacterBody3D = null
 
-# Microphone
-var _mic_player: AudioStreamPlayer
-var _capture_effect: AudioEffectCapture
-var _is_listening: bool = false
-
-# Vosk WebSocket
-var _ws: WebSocketPeer
-var _ws_connected: bool = false
-var _ws_url: String = "ws://127.0.0.1:8765"
-var _vosk_available: bool = false
-
-# Timing
-const LISTEN_TIMEOUT: float = 4.0   # max seconds to listen per word
-const COOLDOWN_TIME: float = 0.5    # delay between words
-var _listen_timer: float = 0.0
-var _cooldown_timer: float = 0.0
-
-# VAD fallback (used when Vosk server is unavailable)
-# Accept the word when the user sustains audio above threshold long enough.
-const VAD_THRESHOLD: float = 0.12   # normalized 0-1 volume level to count as speech
-const VAD_SUSTAIN: float = 0.7      # seconds of sustained speech to accept
-var _vad_timer: float = 0.0
-
-# Audio conversion
-var _mix_rate: float = 44100.0
-const TARGET_RATE: float = 16000.0
-const MIC_BUS := &"MicCapture"
-
-# Send audio every N frames to avoid flooding WebSocket
-const SEND_INTERVAL: float = 0.02  # 20ms chunks for faster response
-var _send_timer: float = 0.0
-var _diag_timer: float = 0.0  # diagnostic print interval
-
-
 
 func _ready() -> void:
-	_mix_rate = AudioServer.get_mix_rate()
 	_build_word_bank()
-	_setup_mic()
-	_connect_vosk()
 	GameManager.game_started.connect(_on_game_started)
 	GameManager.game_over_triggered.connect(_on_game_over)
 
 
-# ── Mic Setup ────────────────────────────────────────────────────────────────
-
-func _setup_mic() -> void:
-	var input_devices := AudioServer.get_input_device_list()
-	print("PronunciationManager: Input devices: ", input_devices)
-
-	# Prefer a real physical device — skip known virtual/software devices.
-	# Fall back to "Default" only if nothing better is found.
-	var skip_keywords := ["virtual", "droidcam", "audiorelay", "vb-audio", "cable"]
-	var chosen_device: String = "Default"
-	for dev in input_devices:
-		var dev_lower: String = dev.to_lower()
-		var is_virtual := false
-		for kw in skip_keywords:
-			if kw in dev_lower:
-				is_virtual = true
-				break
-		if not is_virtual and dev != "Default":
-			chosen_device = dev
-			break  # take the first real device found
-
-	AudioServer.input_device = chosen_device
-	print("PronunciationManager: Using input device: ", chosen_device)
-
-	var bus_idx := AudioServer.get_bus_index(MIC_BUS)
-	if bus_idx == -1:
-		push_error("PronunciationManager: MicCapture bus not found!")
-		return
-	_capture_effect = AudioServer.get_bus_effect(bus_idx, 0) as AudioEffectCapture
-	if not _capture_effect:
-		push_error("PronunciationManager: Capture effect not found!")
-		return
-
-	_mic_player = AudioStreamPlayer.new()
-	_mic_player.stream = AudioStreamMicrophone.new()
-	_mic_player.bus = MIC_BUS
-	add_child(_mic_player)
-	print("PronunciationManager: Mic setup complete. Bus index: %d" % bus_idx)
-
-
-# ── Vosk WebSocket ───────────────────────────────────────────────────────────
-
-func _connect_vosk() -> void:
-	_ws = WebSocketPeer.new()
-	var err := _ws.connect_to_url(_ws_url)
-	if err != OK:
-		print("PronunciationManager: Could not initiate WebSocket connection (error %d)" % err)
-		_vosk_available = false
-	else:
-		print("PronunciationManager: Connecting to Vosk server at %s ..." % _ws_url)
-
-
-func _send_vocabulary(variants: Array[String] = []) -> void:
-	if not _ws_connected:
-		return
-	var vocab: Array[String] = variants if not variants.is_empty() else _get_full_vocabulary()
-	var msg := JSON.stringify({"type": "config", "vocabulary": vocab})
-	_ws.send_text(msg)
-	print("PronunciationManager: Sent vocabulary (%d words) to Vosk." % vocab.size())
-
-
-func _send_stop() -> void:
-	if _ws_connected:
-		_ws.send_text(JSON.stringify({"type": "stop"}))
-
-
-func _send_reset() -> void:
-	## Reset the Vosk recognizer for the next word (clears leftover audio state).
-	if _ws_connected:
-		_ws.send_text(JSON.stringify({"type": "reset"}))
-
-
-func _get_full_vocabulary() -> Array[String]:
-	var vocab: Array[String] = []
-	for entry in _word_bank:
-		for variant in _get_entry_variants(entry):
-			if variant not in vocab:
-				vocab.append(variant)
-	return vocab
-
-
-func _get_entry_variants(entry: Dictionary) -> Array[String]:
-	var variants: Array[String] = []
-	_append_variant(variants, entry.get("word", ""))
-	for alias in entry.get("accepted", []):
-		_append_variant(variants, alias)
-	return variants
-
-
-func _append_variant(variants: Array[String], raw_value: Variant) -> void:
-	var normalized := _normalize_phrase(str(raw_value))
-	if not normalized.is_empty() and normalized not in variants:
-		variants.append(normalized)
-
-
-func _normalize_phrase(text: String) -> String:
-	var lowered := text.to_lower()
-	var cleaned := ""
-	var previous_was_space := false
-	for ch in lowered:
-		var keep_char := (ch >= "a" and ch <= "z") or (ch >= "0" and ch <= "9")
-		if keep_char:
-			cleaned += ch
-			previous_was_space = false
-		elif not previous_was_space:
-			cleaned += " "
-			previous_was_space = true
-	return cleaned.strip_edges()
-
-
-func _heard_matches_current_question(recognized: String) -> bool:
-	if current_question.is_empty():
-		return false
-	var normalized_heard := _normalize_phrase(recognized)
-	if normalized_heard.is_empty():
-		return false
-	var heard_tokens := normalized_heard.split(" ", false)
-	var accepted_variants: Array[String] = current_question.get("accepted_variants", [])
-	for variant in accepted_variants:
-		if normalized_heard == variant or variant in heard_tokens:
-			return true
-	return false
-
-
-# ── Process Loop ─────────────────────────────────────────────────────────────
-
-func _process(delta: float) -> void:
-	_poll_websocket()
-
+func submit_assessment_result(correct: bool, recognized_text: String = "") -> void:
 	if not _is_active or not GameManager.is_pronunciation_mode():
 		return
 
-	# Diagnostic: print mic state every second while active
-	_diag_timer += delta
-	if _diag_timer >= 1.0:
-		_diag_timer = 0.0
-		var frames := _capture_effect.get_frames_available() if _capture_effect else -1
-		var playing := _mic_player.playing if _mic_player else false
-		print("MIC DIAG | listening=%s  frames_avail=%d  mic_playing=%s  vosk=%s" % [
-			str(_is_listening), frames, str(playing), str(_ws_connected)])
-
-	if _cooldown_timer > 0.0:
-		_cooldown_timer -= delta
-		return
-
-	if not _is_listening:
-		return
-
-	_listen_timer += delta
-	if _listen_timer >= LISTEN_TIMEOUT:
-		print("PronunciationManager: Listen timeout — wrong/no answer.")
-		_on_pronunciation_result(false)
-		return
-
-	_poll_mic_and_send(delta)
-
-
-func _poll_websocket() -> void:
-	if _ws == null:
-		return
-	_ws.poll()
-	var state := _ws.get_ready_state()
-
-	if state == WebSocketPeer.STATE_OPEN:
-		if not _ws_connected:
-			_ws_connected = true
-			_vosk_available = true
-			print("PronunciationManager: Connected to Vosk server!")
-			_send_vocabulary()
-		while _ws.get_available_packet_count() > 0:
-			var packet := _ws.get_packet()
-			var text := packet.get_string_from_utf8()
-			_handle_vosk_message(text)
-
-	elif state == WebSocketPeer.STATE_CLOSED:
-		if _ws_connected:
-			print("PronunciationManager: Vosk server disconnected.")
-			_ws_connected = false
-			_vosk_available = false
-		if Engine.get_frames_drawn() % 300 == 0:
-			_connect_vosk()
-
-	elif state == WebSocketPeer.STATE_CLOSING:
-		pass
-
-
-func _handle_vosk_message(text: String) -> void:
-	var data: Dictionary = JSON.parse_string(text)
-	if data == null:
-		return
-
-	var msg_type: String = data.get("type", "")
-	var recognized: String = ""
-
-	if msg_type == "partial":
-		recognized = data.get("text", "")
-		recognized_text_changed.emit(recognized)
-		if _is_listening and not current_question.is_empty():
-			if _heard_matches_current_question(recognized):
-				print("PronunciationManager: PARTIAL MATCH heard='%s' variants=%s" % [
-					recognized,
-					str(current_question.get("accepted_variants", []))
-				])
-				_on_pronunciation_result(true)
-
-	elif msg_type == "result" or msg_type == "final":
-		recognized = data.get("text", "")
-		recognized_text_changed.emit(recognized)
-		if _is_listening and not current_question.is_empty():
-			print("PronunciationManager: Vosk heard '%s', accepted=%s" % [
-				recognized,
-				str(current_question.get("accepted_variants", []))
-			])
-			if _heard_matches_current_question(recognized):
-				_on_pronunciation_result(true)
-
-
-# ── Mic Capture & Audio Streaming ────────────────────────────────────────────
-
-func _poll_mic_and_send(delta: float) -> void:
-	if _capture_effect == null:
-		return
-
-	var frames_available := _capture_effect.get_frames_available()
-
-	# Always update volume display every tick (not gated by send timer)
-	if frames_available > 0:
-		var peek_buffer: PackedVector2Array = _capture_effect.get_buffer(frames_available)
-		if not peek_buffer.is_empty():
-			var sum_sq: float = 0.0
-			for frame in peek_buffer:
-				var mono: float = (frame.x + frame.y) * 0.5
-				sum_sq += mono * mono
-			var rms: float = sqrt(sum_sq / peek_buffer.size())
-			var db: float = -80.0
-			if rms > 0.0:
-				db = 20.0 * log(rms) / log(10.0)
-			var normalized: float = clampf((db + 60.0) / 60.0, 0.0, 1.0)
-			volume_updated.emit(normalized)
-
-			# VAD fallback: no Vosk → accept after sustained speech above threshold
-			if not _vosk_available and _is_listening:
-				if normalized >= VAD_THRESHOLD:
-					_vad_timer += delta
-					if _vad_timer >= VAD_SUSTAIN:
-						print("PronunciationManager: VAD accepted (no Vosk server)")
-						_on_pronunciation_result(true)
-						return
-				else:
-					_vad_timer = 0.0
-
-			# Also send the PCM chunk to Vosk if interval elapsed
-			_send_timer += delta
-			if _send_timer >= SEND_INTERVAL and _ws_connected:
-				_send_timer = 0.0
-				var pcm := _convert_to_pcm16(peek_buffer)
-				if pcm.size() > 0:
-					_ws.send(pcm, WebSocketPeer.WRITE_MODE_BINARY)
-	else:
-		volume_updated.emit(0.0)
-		_send_timer += delta
-
-
-func _convert_to_pcm16(buffer: PackedVector2Array) -> PackedByteArray:
-	var ratio: float = _mix_rate / TARGET_RATE
-	var out := PackedByteArray()
-	var estimated_size: int = int(buffer.size() / ratio) * 2
-	out.resize(estimated_size)
-
-	var write_idx: int = 0
-	var i: float = 0.0
-	while int(i) < buffer.size():
-		var idx := int(i)
-		var frame := buffer[idx]
-		var mono: float = clampf((frame.x + frame.y) * 0.5, -1.0, 1.0)
-		var sample: int = int(mono * 32767.0)
-		if write_idx + 1 < out.size():
-			out[write_idx] = sample & 0xFF
-			out[write_idx + 1] = (sample >> 8) & 0xFF
-			write_idx += 2
-		i += ratio
-
-	out.resize(write_idx)
-	return out
-
-
-# ── Recognition Result ───────────────────────────────────────────────────────
-
-func _on_pronunciation_result(correct: bool) -> void:
-	_stop_listening()
-	_send_stop()
+	recognized_text_changed.emit(recognized_text)
 	answer_result.emit(correct)
 
 	if correct:
-		print("PronunciationManager: CORRECT! Jump!")
 		_do_player_jump()
-	else:
-		print("PronunciationManager: Wrong or timeout.")
 
-	_cooldown_timer = COOLDOWN_TIME
-	await get_tree().create_timer(COOLDOWN_TIME).timeout
+	await get_tree().create_timer(0.5).timeout
 	if _is_active:
 		_generate_question()
 
 
-func _start_listening() -> void:
-	_send_reset()  # Fresh recognizer state for new word
-	if _ws_connected:
-		_send_vocabulary(current_question.get("accepted_variants", []))
-	if _capture_effect:
-		_capture_effect.clear_buffer()
-	else:
-		push_error("PronunciationManager: _start_listening — capture_effect is null!")
-	if _mic_player:
-		_mic_player.play()
-		print("PronunciationManager: mic_player playing = ", _mic_player.playing)
-	else:
-		push_error("PronunciationManager: _start_listening — mic_player is null!")
-	_is_listening = true
-	_listen_timer = 0.0
-	_send_timer = 0.0
-	_vad_timer = 0.0
-	recognized_text_changed.emit("")
-	mic_status_changed.emit(true)
-	print("PronunciationManager: Listening for '%s'..." % current_question.get("text", ""))
-
-
-func _stop_listening() -> void:
-	if _mic_player:
-		_mic_player.stop()
-	_is_listening = false
-	mic_status_changed.emit(false)
-
-
-# ── Player Action ────────────────────────────────────────────────────────────
-
-func _do_player_jump() -> void:
-	if not _player:
-		_player = get_tree().get_first_node_in_group("player") as CharacterBody3D
-	if _player and _player.has_method("quiz_jump"):
-		_player.call("quiz_jump")
-
-
 func _on_game_started() -> void:
-	print("PronunciationManager: game_started, mode = ", GameManager.current_mode, ", visual_theme = ", GameManager.current_visual_theme)
 	if GameManager.is_pronunciation_mode():
 		_is_active = true
 		_player = null
-		_cooldown_timer = 0.0
-		if _ws_connected:
-			_send_vocabulary()
 		await get_tree().create_timer(0.5).timeout
 		_generate_question()
 	else:
 		_is_active = false
 		current_question = {}
+		_reset_hud_state()
 
 
 func _on_game_over() -> void:
 	_is_active = false
-	_stop_listening()
-	_send_stop()
 	current_question = {}
+	_reset_hud_state()
 	question_changed.emit({})
 
 
@@ -436,12 +62,26 @@ func _generate_question() -> void:
 	current_question = {
 		"text": entry.get("word", ""),
 		"hint": entry.get("correct", ""),
-		"accepted_variants": _get_entry_variants(entry),
+		"accepted": entry.get("accepted", []),
 	}
 
-	print("PronunciationManager: New word = '%s'" % current_question.get("text", ""))
 	question_changed.emit(current_question)
-	_start_listening()
+	mic_status_changed.emit(false)
+	volume_updated.emit(0.0)
+	recognized_text_changed.emit("")
+
+
+func _reset_hud_state() -> void:
+	mic_status_changed.emit(false)
+	volume_updated.emit(0.0)
+	recognized_text_changed.emit("")
+
+
+func _do_player_jump() -> void:
+	if not _player:
+		_player = get_tree().get_first_node_in_group("player") as CharacterBody3D
+	if _player and _player.has_method("quiz_jump"):
+		_player.call("quiz_jump")
 
 
 func _build_word_bank() -> void:

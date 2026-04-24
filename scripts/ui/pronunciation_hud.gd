@@ -275,10 +275,7 @@ func _on_answer_result(correct: bool) -> void:
 
 func _on_mic_status_changed(listening: bool) -> void:
 	if listening:
-		if PronunciationManager._vosk_available:
-			_status_label.text = "Listening..."
-		else:
-			_status_label.text = "Listening... (speak to accept)"
+		_status_label.text = "Listening..."
 		_mic_icon_label.add_theme_color_override("font_color", _COL_MID_GREEN)
 	else:
 		_status_label.text = ""
