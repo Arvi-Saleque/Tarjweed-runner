@@ -211,13 +211,17 @@ func trigger_game_over() -> void:
 
 	# Save total coins
 	SaveManager.add_coins(coins)
-	SaveManager.add_leaderboard_entry({
+	var _entry := {
 		"name": current_player_name if not current_player_name.is_empty() else SaveManager.get_player_name(),
 		"distance": int(distance),
 		"coins": coins,
+		"mode": current_mode,
 		"difficulty": current_difficulty_id,
 		"runner_id": current_player_variant,
-	})
+		"timestamp": int(Time.get_unix_time_from_system()),
+	}
+	SaveManager.add_leaderboard_entry(_entry)
+	LeaderboardService.submit_entry(_entry)
 
 	game_over_triggered.emit()
 

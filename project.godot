@@ -35,6 +35,7 @@ SceneManager="*res://scripts/autoload/scene_manager.gd"
 UITheme="*res://scripts/ui/ui_theme.gd"
 QuizManager="*res://scripts/autoload/quiz_manager.gd"
 PronunciationManager="*res://scripts/autoload/pronunciation_manager.gd"
+LeaderboardService="*res://scripts/autoload/leaderboard_service.gd"
 
 [display]
 

@@ -117,6 +117,22 @@ func get_leaderboard_entries() -> Array[Dictionary]:
 	return entries
 
 
+func get_leaderboard_entries_filtered(mode_filter: String, diff_filter: String) -> Array[Dictionary]:
+	var all := get_leaderboard_entries()
+	if mode_filter.is_empty() and diff_filter.is_empty():
+		return all
+	var out: Array[Dictionary] = []
+	for e in all:
+		var m: String = str(e.get("mode", "normal"))
+		var d: String = str(e.get("difficulty", "medium"))
+		if not mode_filter.is_empty() and m != mode_filter:
+			continue
+		if not diff_filter.is_empty() and d != diff_filter:
+			continue
+		out.append(e)
+	return out
+
+
 func add_leaderboard_entry(entry: Dictionary) -> void:
 	var entries := get_leaderboard_entries()
 	entries.append(entry.duplicate(true))
