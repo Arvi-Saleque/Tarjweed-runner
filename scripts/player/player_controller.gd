@@ -273,7 +273,9 @@ func _handle_input() -> void:
 	# In Quiz/Pronunciation mode, spacebar jump is disabled — use quiz_jump() from manager
 	if GameManager.is_normal_mode():
 		if Input.is_action_just_pressed("jump"):
-			if is_grounded or not coyote_timer.is_stopped():
+			if _near_river_no_jump:
+				pass  # Jump blocked near river — must hold bridge action to cross
+			elif is_grounded or not coyote_timer.is_stopped():
 				_jump()
 			else:
 				_input_buffer_jump = true
