@@ -19,6 +19,7 @@ var _difficulty_row: HBoxContainer
 var _preview: TextureRect
 var _runner_title: Label
 var _runner_subtitle: Label
+var _summary_wallet: Label
 var _summary_mode: Label
 var _summary_difficulty: Label
 var _selected_mode: String = "normal"
@@ -188,7 +189,8 @@ func _build_popup() -> void:
 	var summary_card := NatureMenuStyle.make_card("Current Summary", "", Vector2(0, 220), true)
 	actions_body.add_child(summary_card)
 	var summary_body := summary_card.get_meta("body") as VBoxContainer
-	summary_body.add_child(NatureMenuStyle.make_coin_label("Wallet coins: %d" % SaveManager.get_wallet_coins()))
+	_summary_wallet = NatureMenuStyle.make_coin_label("")
+	summary_body.add_child(_summary_wallet)
 	_summary_mode = UITheme.make_label("", UITheme.FONT_SMALL, UITheme.get_color("text_ink", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
 	_summary_mode.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	summary_body.add_child(_summary_mode)
@@ -275,6 +277,8 @@ func _refresh_quiz_style_buttons() -> void:
 
 
 func _refresh_summary() -> void:
+	if _summary_wallet:
+		_summary_wallet.text = "Wallet coins: %d" % SaveManager.get_wallet_coins()
 	if _summary_mode:
 		var mode_text := "Mode: %s" % _selected_mode.capitalize()
 		if _selected_mode == "quiz":
@@ -299,6 +303,11 @@ func _refresh_runner_preview() -> void:
 
 func refresh_selected_runner() -> void:
 	_refresh_runner_preview()
+	_refresh_summary()
+
+
+func refresh_summary() -> void:
+	_refresh_summary()
 
 
 func _on_start_pressed() -> void:

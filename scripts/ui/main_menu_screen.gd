@@ -12,6 +12,7 @@ var _summary_runner: Label
 var _summary_details: Label
 var _summary_wallet: Label
 var _summary_best: Label
+var _wallet_badge_value: Label
 var _overlay_host: Control
 var _settings_popup: Control
 var _play_popup: Control
@@ -107,6 +108,57 @@ func _build_layout() -> void:
 	_overlay_host.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_overlay_host)
 
+	_build_wallet_badge()
+
+
+func _build_wallet_badge() -> void:
+	var wallet_badge := UITheme.make_panel("light", NatureMenuStyle.SKIN)
+	wallet_badge.name = "WalletBadge"
+	wallet_badge.anchor_left = 0.0
+	wallet_badge.anchor_top = 0.0
+	wallet_badge.anchor_right = 0.0
+	wallet_badge.anchor_bottom = 0.0
+	wallet_badge.offset_left = 24.0
+	wallet_badge.offset_top = 20.0
+	wallet_badge.offset_right = 246.0
+	wallet_badge.offset_bottom = 92.0
+	wallet_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wallet_badge.z_index = 100
+	add_child(wallet_badge)
+
+	var badge_margin := MarginContainer.new()
+	badge_margin.add_theme_constant_override("margin_left", 14)
+	badge_margin.add_theme_constant_override("margin_top", 12)
+	badge_margin.add_theme_constant_override("margin_right", 14)
+	badge_margin.add_theme_constant_override("margin_bottom", 12)
+	badge_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wallet_badge.add_child(badge_margin)
+
+	var badge_row := HBoxContainer.new()
+	badge_row.add_theme_constant_override("separation", 12)
+	badge_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge_margin.add_child(badge_row)
+
+	var badge_icon := TextureRect.new()
+	badge_icon.texture = UITheme.icon_coin if UITheme.icon_coin else UITheme.icon_trophy
+	badge_icon.custom_minimum_size = Vector2(38, 38)
+	badge_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	badge_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge_row.add_child(badge_icon)
+
+	var badge_text := VBoxContainer.new()
+	badge_text.add_theme_constant_override("separation", 2)
+	badge_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge_row.add_child(badge_text)
+
+	var badge_caption := UITheme.make_label("Wallet coins", UITheme.FONT_SMALL - 4, UITheme.get_color("text_dim", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
+	badge_caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	badge_text.add_child(badge_caption)
+
+	_wallet_badge_value = UITheme.make_label("0", UITheme.FONT_HEADING, NatureMenuStyle.COIN_GLOW, NatureMenuStyle.SKIN)
+	_wallet_badge_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	badge_text.add_child(_wallet_badge_value)
+
 
 func _refresh_summary() -> void:
 	var runner_id: String = str(GameManager.current_player_variant)
@@ -121,7 +173,9 @@ func _refresh_summary() -> void:
 		"%s | %s" % [GameManager.current_mode.capitalize(), GameManager.current_difficulty_id.capitalize()],
 		runner.get("subtitle", ""),
 	]
-	_summary_wallet.text = "Wallet coins: %d" % SaveManager.get_wallet_coins()
+	var wallet_coins: int = SaveManager.get_wallet_coins()
+	_summary_wallet.text = "Wallet coins: %d" % wallet_coins
+	_wallet_badge_value.text = str(wallet_coins)
 	_summary_best.text = "Best score: %d" % SaveManager.get_high_score()
 
 
@@ -150,8 +204,11 @@ func _open_choose_runner() -> void:
 	)
 	screen.runner_changed.connect(func(_runner_id: String):
 		_refresh_summary()
-		if _play_popup and is_instance_valid(_play_popup) and _play_popup.has_method("refresh_selected_runner"):
-			_play_popup.call("refresh_selected_runner")
+		if _play_popup and is_instance_valid(_play_popup):
+			if _play_popup.has_method("refresh_selected_runner"):
+				_play_popup.call("refresh_selected_runner")
+			elif _play_popup.has_method("refresh_summary"):
+				_play_popup.call("refresh_summary")
 	)
 	_overlay_host.add_child(screen)
 
