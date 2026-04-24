@@ -163,6 +163,14 @@ func set_setting(key: String, value: Variant) -> void:
 	_mark_dirty()
 
 
+func get_pronun_server_ip() -> String:
+	return str(get_setting("pronun_server_ip", ""))
+
+
+func set_pronun_server_ip(ip: String) -> void:
+	set_setting("pronun_server_ip", ip.strip_edges())
+
+
 # --- Disk I/O ---
 
 func save_now() -> void:

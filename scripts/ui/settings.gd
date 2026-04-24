@@ -103,6 +103,7 @@ func _create_popup() -> void:
 	)
 
 	_create_controls_section(vbox)
+	_create_server_section(vbox)
 
 
 func _create_audio_row(parent: VBoxContainer, label_text: String, icon: Texture2D,
@@ -217,6 +218,65 @@ func _create_controls_section(parent: VBoxContainer) -> void:
 	reset_btn.custom_minimum_size = Vector2(240, 58)
 	reset_btn.pressed.connect(_on_reset_controls_pressed)
 	parent.add_child(reset_btn)
+
+
+func _create_server_section(parent: VBoxContainer) -> void:
+	var sep := HSeparator.new()
+	var sep_style := StyleBoxFlat.new()
+	sep_style.bg_color = UITheme.get_color("panel_line", SETTINGS_SKIN)
+	sep_style.content_margin_top = 1.0
+	sep_style.content_margin_bottom = 6.0
+	sep.add_theme_stylebox_override("separator", sep_style)
+	parent.add_child(sep)
+
+	var title := UITheme.make_label("PRONUNCIATION SERVER", UITheme.FONT_BODY, UITheme.get_color("text", SETTINGS_SKIN), SETTINGS_SKIN)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	parent.add_child(title)
+
+	var hint := UITheme.make_label("Enter your PC's IP (e.g. 192.168.1.10). Leave blank for local.", UITheme.FONT_SMALL, UITheme.get_color("text_dim", SETTINGS_SKIN), SETTINGS_SKIN)
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	parent.add_child(hint)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	parent.add_child(row)
+
+	var field := LineEdit.new()
+	field.placeholder_text = "192.168.x.x"
+	field.text = SaveManager.get_pronun_server_ip()
+	field.expand_to_text_length = false
+	field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	field.custom_minimum_size = Vector2(0, 48)
+
+	var field_style := StyleBoxFlat.new()
+	field_style.bg_color = Color(0.18, 0.13, 0.09, 0.96)
+	field_style.border_color = UITheme.get_color("primary", SETTINGS_SKIN)
+	field_style.border_width_bottom = 2
+	field_style.corner_radius_top_left = 8
+	field_style.corner_radius_top_right = 8
+	field_style.corner_radius_bottom_left = 8
+	field_style.corner_radius_bottom_right = 8
+	field_style.content_margin_left = 12.0
+	field_style.content_margin_right = 12.0
+	field_style.content_margin_top = 8.0
+	field_style.content_margin_bottom = 8.0
+	field.add_theme_stylebox_override("normal", field_style)
+	field.add_theme_stylebox_override("focus", field_style)
+	field.add_theme_color_override("font_color", UITheme.get_color("text", SETTINGS_SKIN))
+	field.add_theme_color_override("font_placeholder_color", UITheme.get_color("text_dim", SETTINGS_SKIN))
+	row.add_child(field)
+
+	var apply_btn := UITheme.make_button("APPLY", null, UITheme.FONT_SMALL, "primary", SETTINGS_SKIN)
+	apply_btn.custom_minimum_size = Vector2(90, 48)
+	apply_btn.pressed.connect(func(): _on_server_ip_applied(field.text))
+	row.add_child(apply_btn)
+
+
+func _on_server_ip_applied(ip: String) -> void:
+	SaveManager.set_pronun_server_ip(ip.strip_edges())
+	PronunciationManager.apply_saved_server_ip()
+	AudioManager.play_ui_sound(AudioManager.ui_click)
 
 
 func _create_binding_row(parent: VBoxContainer, action_info: Dictionary) -> void:

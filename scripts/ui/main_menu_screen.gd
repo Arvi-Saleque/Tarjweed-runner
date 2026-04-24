@@ -33,13 +33,13 @@ func _build_layout() -> void:
 	var viewport_size := get_viewport_rect().size
 	var ui_scale := clampf(viewport_size.y / 900.0, 0.72, 1.0)
 	var side_margin := int(clampf(120.0 * ui_scale, 52.0, 120.0))
-	var top_margin := int(clampf(36.0 * ui_scale, 14.0, 36.0))
+	var top_margin := int(clampf(12.0 * ui_scale, 6.0, 12.0))
 	var bottom_margin := int(clampf(34.0 * ui_scale, 14.0, 34.0))
 	var heading_width := clampf(viewport_size.x * 0.58, 680.0, 900.0)
 	var heading_height := heading_width * (724.0 / 2172.0)
-	var title_height := int(clampf(heading_height, 170.0, 300.0))
-	var root_spacing := int(clampf(10.0 * ui_scale, 6.0, 10.0))
-	var available_panel_height := int(maxf(480.0, viewport_size.y - top_margin - bottom_margin - title_height - root_spacing))
+	var title_height := int(clampf(heading_height, 140.0, 300.0))
+	var root_spacing := int(clampf(4.0 * ui_scale, 2.0, 4.0))
+	var available_panel_height := int(maxf(480.0, viewport_size.y - top_margin - bottom_margin - title_height - root_spacing * 20))
 	var panel_bottom_gap := int(clampf(10.0 * ui_scale, 6.0, 10.0))
 	available_panel_height -= panel_bottom_gap
 	var panel_height := int(clampf(float(available_panel_height), 500.0, float(available_panel_height)))
@@ -285,14 +285,12 @@ func _add_menu_button_content(btn: Button, text: String, icon: Texture2D, text_c
 	btn.add_child(content)
 
 	if icon:
-		var icon_rect := TextureRect.new()
-		var icon_size := int(clampf(float(button_height) * 0.42, 24.0, 34.0))
-		var icon_center := int(clampf(float(button_height) * 0.64, 38.0, 47.0))
-		var icon_y_shift := 0
+		var icon_size := int(clampf(float(button_height) * 0.56, 32.0, 44.0))
 		if text == "Play":
-			icon_size = int(clampf(float(button_height) * 0.34, 22.0, 28.0))
-			icon_center = int(clampf(float(button_height) * 0.63, 37.0, 45.0))
-			icon_y_shift = -1
+			icon_size = int(clampf(float(button_height) * 0.46, 28.0, 36.0))
+		# x-center aligns icon to the circular decoration on the left
+		var icon_cx := int(clampf(float(button_height) * 0.64, 38.0, 48.0))
+		var icon_rect := TextureRect.new()
 		icon_rect.texture = icon
 		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -302,22 +300,22 @@ func _add_menu_button_content(btn: Button, text: String, icon: Texture2D, text_c
 		icon_rect.anchor_right = 0.0
 		icon_rect.anchor_top = 0.5
 		icon_rect.anchor_bottom = 0.5
-		icon_rect.offset_left = icon_center - icon_size / 2
-		icon_rect.offset_right = icon_center + icon_size / 2
-		icon_rect.offset_top = -icon_size / 2 + icon_y_shift
-		icon_rect.offset_bottom = icon_size / 2 + icon_y_shift
+		icon_rect.offset_left = icon_cx - icon_size / 2
+		icon_rect.offset_right = icon_cx + icon_size / 2
+		icon_rect.offset_top = -icon_size / 2
+		icon_rect.offset_bottom = icon_size / 2
 		content.add_child(icon_rect)
 
 	var label := UITheme.make_label(text, button_font_size, text_color, NatureMenuStyle.SKIN)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.anchor_left = 0.0
 	label.anchor_right = 1.0
 	label.anchor_top = 0.0
 	label.anchor_bottom = 1.0
-	label.offset_left = int(clampf(float(button_height) * 1.08, 70.0, 86.0))
-	label.offset_right = -int(clampf(float(button_height) * 0.28, 18.0, 26.0))
+	label.offset_left = 0
+	label.offset_right = 0
 	label.offset_top = 0
 	label.offset_bottom = 0
 	content.add_child(label)
@@ -568,17 +566,92 @@ func _start_game_from_setup(player_name: String, difficulty_id: String, mode_id:
 		_play_popup = null
 	if mode_id == "pronunciation":
 		_show_voice_loading_overlay()
-		# Local WebSocket backend should not block the player with a long loading screen.
-		# Warmup is only a quick reachability check; gameplay starts even if it times out.
-		await PronunciationManager.warmup_backend_before_gameplay(1.5)
-		PronunciationManager.startup_warning_message = ""
+		var reached := await PronunciationManager.warmup_backend_before_gameplay(1.5)
 		_hide_voice_loading_overlay()
+		if not reached:
+			if OS.get_name() == "Android":
+				_start_in_progress = false
+				_show_server_error_popup()
+				return
+		PronunciationManager.startup_warning_message = ""
 	SceneManager.change_scene("res://scenes/game.tscn")
 
 
 func _on_overlay_closed() -> void:
 	_play_popup = null
 	_refresh_summary()
+
+
+func _show_server_error_popup() -> void:
+	var overlay := ColorRect.new()
+	overlay.anchors_preset = Control.PRESET_FULL_RECT
+	overlay.anchor_right = 1.0
+	overlay.anchor_bottom = 1.0
+	overlay.color = Color(0, 0, 0, 0.55)
+	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	overlay.z_index = 300
+	add_child(overlay)
+
+	var center := CenterContainer.new()
+	center.anchors_preset = Control.PRESET_FULL_RECT
+	center.anchor_right = 1.0
+	center.anchor_bottom = 1.0
+	overlay.add_child(center)
+
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(540, 0)
+	var card_style := StyleBoxFlat.new()
+	card_style.bg_color = Color("2A1F14")
+	card_style.corner_radius_top_left = 20
+	card_style.corner_radius_top_right = 20
+	card_style.corner_radius_bottom_left = 20
+	card_style.corner_radius_bottom_right = 20
+	card_style.content_margin_left = 32.0
+	card_style.content_margin_right = 32.0
+	card_style.content_margin_top = 28.0
+	card_style.content_margin_bottom = 28.0
+	card.add_theme_stylebox_override("panel", card_style)
+	center.add_child(card)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 16)
+	card.add_child(vbox)
+
+	var title := UITheme.make_label("Cannot Reach Server", UITheme.FONT_HEADING, Color("FF8A80"), NatureMenuStyle.SKIN)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(title)
+
+	var body := UITheme.make_label(
+		"The pronunciation server is not reachable.\n\nMake sure your backend is running, then set your PC's IP address in Settings.",
+		UITheme.FONT_BODY, Color("FFFAE8"), NatureMenuStyle.SKIN)
+	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(body)
+
+	var ip_note := UITheme.make_label(
+		"Current server: %s" % PronunciationManager.ws_url,
+		UITheme.FONT_SMALL, Color("A0A0A0"), NatureMenuStyle.SKIN)
+	ip_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ip_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(ip_note)
+
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 16)
+	vbox.add_child(btn_row)
+
+	var settings_btn := UITheme.make_button("Open Settings", null, UITheme.FONT_BODY, "primary", NatureMenuStyle.SKIN)
+	settings_btn.custom_minimum_size = Vector2(180, 56)
+	settings_btn.pressed.connect(func():
+		overlay.queue_free()
+		_open_settings()
+	)
+	btn_row.add_child(settings_btn)
+
+	var cancel_btn := UITheme.make_button("Cancel", null, UITheme.FONT_BODY, "secondary", NatureMenuStyle.SKIN)
+	cancel_btn.custom_minimum_size = Vector2(120, 56)
+	cancel_btn.pressed.connect(func(): overlay.queue_free())
+	btn_row.add_child(cancel_btn)
 
 
 func _show_voice_loading_overlay() -> void:

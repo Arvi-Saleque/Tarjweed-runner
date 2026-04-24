@@ -1,4 +1,4 @@
-extends Node
+﻿extends Node
 ## PronunciationManager - local WebSocket validated pronunciation flow for pronunciation mode.
 ##
 ## Professional flow:
@@ -17,6 +17,8 @@ signal volume_updated(level: float)
 signal recognized_text_changed(text: String)
 signal status_changed(text: String)
 
+## Set these to your backend server IP/URL before exporting for Android.
+## Example: "http://192.168.1.10:8000/assess" (your PC's LAN IP when on the same WiFi)
 @export var backend_url: String = "http://127.0.0.1:8000/assess"
 @export var ws_url: String = "ws://127.0.0.1:8000/ws/pronunciation"
 
@@ -106,10 +108,28 @@ var _no_challenge_error_printed: bool = false
 
 
 func _ready() -> void:
-	_build_word_bank()
 	_setup_recording_backend()
+	apply_saved_server_ip()
 	GameManager.game_started.connect(_on_game_started)
 	GameManager.game_over_triggered.connect(_on_game_over)
+
+
+## Reads the server IP from SaveManager and applies it to backend_url and ws_url.
+## Call this after changing the IP in Settings.
+func apply_saved_server_ip() -> void:
+	var saved_ip := SaveManager.get_pronun_server_ip()
+	if saved_ip.is_empty():
+		return
+	# Ensure it has no trailing slash
+	saved_ip = saved_ip.rstrip("/")
+	# Determine port from current ws_url or use default 8000
+	var port_str := "8000"
+	var port_match := ws_url.split(":")
+	if port_match.size() >= 3:
+		port_str = port_match[2].split("/")[0]
+	backend_url = "http://%s:%s/assess" % [saved_ip, port_str]
+	ws_url      = "ws://%s:%s/ws/pronunciation" % [saved_ip, port_str]
+	print("PronunciationManager: Server set to %s (port %s)" % [saved_ip, port_str])
 
 
 func _process(delta: float) -> void:
@@ -264,6 +284,7 @@ func _fail_setup(message: String) -> void:
 
 func _on_game_started() -> void:
 	if GameManager.is_pronunciation_mode():
+		_build_word_bank()
 		_is_active = true
 		_player = null
 		_reset_pronunciation_runtime_state()
@@ -1311,17 +1332,47 @@ func _reset_hud_state() -> void:
 
 
 func _build_word_bank() -> void:
-	# Stable demo words. Longer/simple words are more reliable for Azure
-	# than very short one-syllable words like Egg, Car, Blue, Ball.
-	_word_bank = [
-		{"word": "Apple", "correct": "APPLE"},
-		{"word": "Tiger", "correct": "TIGER"},
-		{"word": "Monkey", "correct": "MONKEY"},
-		{"word": "Water", "correct": "WATER"},
-		{"word": "Happy", "correct": "HAPPY"},
-		{"word": "Yellow", "correct": "YELLOW"},
-		{"word": "Garden", "correct": "GARDEN"},
-		{"word": "Rocket", "correct": "ROCKET"},
-		{"word": "River", "correct": "RIVER"},
-		{"word": "School", "correct": "SCHOOL"},
-	]
+	language = "en-US"
+	var difficulty := GameManager.current_difficulty_id
+	if difficulty == "hard":
+		# Hard: longer / less common English words
+		_word_bank = [
+			{"word": "Elephant", "correct": "ELEPHANT"},
+			{"word": "Chocolate", "correct": "CHOCOLATE"},
+			{"word": "Umbrella", "correct": "UMBRELLA"},
+			{"word": "Butterfly", "correct": "BUTTERFLY"},
+			{"word": "Astronaut", "correct": "ASTRONAUT"},
+			{"word": "Thunderstorm", "correct": "THUNDERSTORM"},
+			{"word": "Incredible", "correct": "INCREDIBLE"},
+			{"word": "Waterfall", "correct": "WATERFALL"},
+			{"word": "Crocodile", "correct": "CROCODILE"},
+			{"word": "Vocabulary", "correct": "VOCABULARY"},
+		]
+	elif difficulty == "medium":
+		# Medium: two-syllable common words
+		_word_bank = [
+			{"word": "Monkey", "correct": "MONKEY"},
+			{"word": "Yellow", "correct": "YELLOW"},
+			{"word": "Garden", "correct": "GARDEN"},
+			{"word": "Rocket", "correct": "ROCKET"},
+			{"word": "River", "correct": "RIVER"},
+			{"word": "School", "correct": "SCHOOL"},
+			{"word": "Basket", "correct": "BASKET"},
+			{"word": "Purple", "correct": "PURPLE"},
+			{"word": "Candle", "correct": "CANDLE"},
+			{"word": "Jungle", "correct": "JUNGLE"},
+		]
+	else:
+		# Easy (default): short simple words
+		_word_bank = [
+			{"word": "Apple", "correct": "APPLE"},
+			{"word": "Tiger", "correct": "TIGER"},
+			{"word": "Water", "correct": "WATER"},
+			{"word": "Happy", "correct": "HAPPY"},
+			{"word": "Tree", "correct": "TREE"},
+			{"word": "Ball", "correct": "BALL"},
+			{"word": "Sun", "correct": "SUN"},
+			{"word": "Cat", "correct": "CAT"},
+			{"word": "Dog", "correct": "DOG"},
+			{"word": "Book", "correct": "BOOK"},
+		]

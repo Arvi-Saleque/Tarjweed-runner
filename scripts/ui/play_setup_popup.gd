@@ -133,12 +133,12 @@ func _build_popup() -> void:
 
 	_difficulty_label = UITheme.make_label("Difficulty", UITheme.FONT_SMALL, UITheme.get_color("text_ink_soft", NatureMenuStyle.SKIN), NatureMenuStyle.SKIN)
 	_difficulty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_difficulty_label.visible = (_selected_mode != "pronunciation")
+	_difficulty_label.visible = true
 	setup_body.add_child(_difficulty_label)
 
 	_difficulty_row = HBoxContainer.new()
 	_difficulty_row.add_theme_constant_override("separation", 12)
-	_difficulty_row.visible = (_selected_mode != "pronunciation")
+	_difficulty_row.visible = true
 	setup_body.add_child(_difficulty_row)
 
 	for difficulty in MenuFlowCatalog.DIFFICULTIES:
@@ -239,12 +239,10 @@ func _set_mode(mode_id: String) -> void:
 		_quiz_style_label.visible = (mode_id == "quiz")
 	if _quiz_style_row:
 		_quiz_style_row.visible = (mode_id == "quiz")
-	# Hide difficulty row for pronunciation mode
-	var show_diff: bool = (mode_id != "pronunciation")
 	if _difficulty_label:
-		_difficulty_label.visible = show_diff
+		_difficulty_label.visible = true
 	if _difficulty_row:
-		_difficulty_row.visible = show_diff
+		_difficulty_row.visible = true
 
 
 func _refresh_mode_buttons() -> void:
@@ -285,9 +283,8 @@ func _refresh_summary() -> void:
 			mode_text += " (%s)" % _selected_quiz_style.capitalize().replace("_", " ")
 		_summary_mode.text = mode_text
 	if _summary_difficulty:
-		_summary_difficulty.visible = (_selected_mode != "pronunciation")
-		if _selected_mode != "pronunciation":
-			_summary_difficulty.text = "Difficulty: %s" % _selected_difficulty.capitalize()
+		_summary_difficulty.visible = true
+		_summary_difficulty.text = "Difficulty: %s" % _selected_difficulty.capitalize()
 
 
 func _refresh_runner_preview() -> void:

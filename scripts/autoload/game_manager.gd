@@ -282,8 +282,8 @@ func get_speed_ratio() -> float:
 
 
 func get_difficulty_profile() -> Dictionary:
-	# Quiz and pronunciation modes run at Easy speed/obstacle profile.
-	if is_quiz_mode() or is_pronunciation_mode():
+	# Quiz mode runs at Easy speed/obstacle profile.
+	if is_quiz_mode():
 		return DIFFICULTY_PROFILES["easy"] as Dictionary
 	return DIFFICULTY_PROFILES.get(current_difficulty_id, DIFFICULTY_PROFILES[MenuFlowCatalog.DEFAULT_DIFFICULTY]) as Dictionary
 
