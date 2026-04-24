@@ -507,7 +507,7 @@ func make_line_edit(placeholder: String = "", text: String = "", skin_override: 
 	return line
 
 
-func make_banner(text: String, size: int = FONT_HEADING, color: Color = COLOR_TEXT, skin_override: String = "") -> Control:
+func make_banner(text: String, size: int = FONT_HEADING, color: Color = COLOR_TEXT, skin_override: String = "", texture_override: String = "") -> Control:
 	if _resolve_skin(skin_override) != "cyberprank":
 		var banner_root := Control.new()
 		banner_root.custom_minimum_size = Vector2(420, 112)
@@ -599,7 +599,10 @@ func make_banner(text: String, size: int = FONT_HEADING, color: Color = COLOR_TE
 	texture_rect.anchor_bottom = 1.0
 	texture_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	texture_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	texture_rect.texture = cyber_banner_texture if _resolve_skin(skin_override) == "cyberprank" else banner_texture
+	var banner_texture_to_use := cyber_banner_texture if _resolve_skin(skin_override) == "cyberprank" else banner_texture
+	if not texture_override.is_empty() and ResourceLoader.exists(texture_override):
+		banner_texture_to_use = load(texture_override) as Texture2D
+	texture_rect.texture = banner_texture_to_use
 	banner.add_child(texture_rect)
 
 	var label := make_label(text, size, color, skin_override)
