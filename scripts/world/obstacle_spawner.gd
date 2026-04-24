@@ -157,10 +157,11 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 
 
 # =============================================================================
-# PRONUNCIATION MODE — quiz-style 4 action obstacles spaced 38m apart
+# PRONUNCIATION MODE — voice action rows spaced about 2-2.5 seconds apart
 # =============================================================================
 
-const PRONUN_ROW_GAP: float = 38.0
+const PRONUN_MIN_ROW_GAP: float = 30.0
+const PRONUN_MAX_ROW_GAP: float = 37.5
 const PRONUN_LAST_OBS_Z_KEY: String = "_pronun_last_obs_z"
 const PRONUN_OBSTACLE_SEQ_KEY: String = "_pronun_obstacle_seq"
 
@@ -174,7 +175,7 @@ static func _spawn_pronunciation_obstacles(chunk: Node3D, chunk_length: float, g
 	if GameManager.has_meta(PRONUN_LAST_OBS_Z_KEY):
 		carry_over = GameManager.get_meta(PRONUN_LAST_OBS_Z_KEY)
 
-	var z: float = -carry_over if carry_over > 0.0 else -PRONUN_ROW_GAP
+	var z: float = -carry_over if carry_over > 0.0 else -randf_range(PRONUN_MIN_ROW_GAP, PRONUN_MAX_ROW_GAP)
 
 	var seq_idx: int = GameManager.get_meta(PRONUN_OBSTACLE_SEQ_KEY, 0) as int
 
@@ -190,7 +191,7 @@ static func _spawn_pronunciation_obstacles(chunk: Node3D, chunk_length: float, g
 		_create_pronunciation_row_typed(chunk, z, generator, obs_type)
 
 		seq_idx += 1
-		z -= PRONUN_ROW_GAP
+		z -= randf_range(PRONUN_MIN_ROW_GAP, PRONUN_MAX_ROW_GAP)
 
 	GameManager.set_meta(PRONUN_OBSTACLE_SEQ_KEY, seq_idx)
 

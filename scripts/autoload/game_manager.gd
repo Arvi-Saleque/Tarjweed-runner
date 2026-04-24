@@ -23,6 +23,7 @@ enum GameState { MENU, PLAYING, PAUSED, GAME_OVER }
 # --- Constants ---
 const BASE_SPEED: float = 12.0
 const MAX_SPEED: float = 28.0
+const PRONUNCIATION_SPEED: float = 15.0
 const SPEED_INCREMENT: float = 0.15        # Speed increase per second of play
 const MAX_LIVES: int = 3
 const LANE_WIDTH: float = 2.0
@@ -183,6 +184,8 @@ func start_game() -> void:
 		remove_meta("_quiz_row_seq_id")
 	if has_meta("_pronun_last_obs_z"):
 		remove_meta("_pronun_last_obs_z")
+	if has_meta("_pronun_obstacle_seq"):
+		remove_meta("_pronun_obstacle_seq")
 	if has_meta("_pronun_row_seq_id"):
 		remove_meta("_pronun_row_seq_id")
 	# Reset giant rock tracking
@@ -294,6 +297,8 @@ func get_effective_max_speed() -> float:
 
 
 func get_effective_base_speed() -> float:
+	if is_pronunciation_mode():
+		return PRONUNCIATION_SPEED
 	var profile: Dictionary = get_difficulty_profile()
 	return BASE_SPEED * float(profile.get("base_speed_scale", 1.0))
 

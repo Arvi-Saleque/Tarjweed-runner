@@ -44,9 +44,10 @@ signal status_changed(text: String)
 # This is only for pre-game warmup. Do not block gameplay for long.
 @export var warmup_timeout: float = 1.5
 
-# This should be larger than the pronunciation row gap so the next word is prepared early.
-@export var preparation_distance_max: float = 115.0
-@export var preparation_distance_min: float = 20.0
+# A pronunciation prompt is revealed only when its obstacle is close enough to
+# feel like a real runner reaction cue.
+@export var question_reveal_distance: float = 48.0
+@export var question_reveal_min_distance: float = 8.0
 
 @export var websocket_open_timeout: float = 0.75
 
@@ -334,11 +335,13 @@ func _capture_upcoming_target() -> void:
 	var time_to_impact_s := _get_row_time_to_impact(row_root)
 	_debug_nearest_target(distance_to_target, time_to_impact_s)
 
-	if distance_to_target > preparation_distance_max:
+	if distance_to_target > question_reveal_distance:
+		status_changed.emit("")
 		return
 
-	# If a row is already too close, still try only if no other better row exists.
-	# This prevents the system from staying idle.
+	if distance_to_target < question_reveal_min_distance:
+		return
+
 	_set_active_target_from_row(next_row)
 	pronunciation_state = "idle"
 	status_changed.emit("Get ready...")
@@ -1213,7 +1216,12 @@ func _run_watchdogs() -> void:
 			push_error("PronunciationManager: ERROR: No pronunciation targets registered. Check obstacle spawning/metadata.")
 
 	if elapsed_sec >= 10.0 and not _no_challenge_error_printed:
-		if current_question.is_empty() and _ready_actions.is_empty():
+		var next_target := _find_nearest_registered_target()
+		var waiting_for_reveal := false
+		if not next_target.is_empty():
+			var row_root := next_target.get("row_root") as Node3D
+			waiting_for_reveal = _get_row_distance(row_root) > question_reveal_distance
+		if current_question.is_empty() and _ready_actions.is_empty() and not waiting_for_reveal:
 			_no_challenge_error_printed = true
 			push_error("PronunciationManager: ERROR: No pronunciation challenge prepared. Check distance/TTI window.")
 

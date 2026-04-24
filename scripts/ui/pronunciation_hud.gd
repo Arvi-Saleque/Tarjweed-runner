@@ -17,6 +17,7 @@ var _recognized_label: Label
 var _panel: PanelContainer
 var _listen_panel: PanelContainer
 var _instructions: Label
+var _mid_area: Control
 
 
 func _ready() -> void:
@@ -61,6 +62,7 @@ func _create_ui() -> void:
 	_panel = PanelContainer.new()
 	_panel.custom_minimum_size = Vector2(720, 120)
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_panel.visible = false
 	_panel.add_theme_stylebox_override("panel", _make_panel_style(_COL_CREAM, _COL_DARK_GREEN, 6, 28, 10))
 	top_center.add_child(_panel)
 
@@ -107,20 +109,21 @@ func _create_ui() -> void:
 	word_vbox.add_child(_hint_label)
 
 	# ── Below: Instruction pill + Mic card ──────────────────────────────────
-	var mid_area := Control.new()
-	mid_area.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	mid_area.anchor_right = 1.0
-	mid_area.offset_top = 160.0
-	mid_area.offset_bottom = 390.0
-	mid_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(mid_area)
+	_mid_area = Control.new()
+	_mid_area.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	_mid_area.anchor_right = 1.0
+	_mid_area.offset_top = 160.0
+	_mid_area.offset_bottom = 390.0
+	_mid_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_mid_area.visible = false
+	add_child(_mid_area)
 
 	var mid_center := CenterContainer.new()
 	mid_center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	mid_center.anchor_right = 1.0
 	mid_center.anchor_bottom = 1.0
 	mid_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	mid_area.add_child(mid_center)
+	_mid_area.add_child(mid_center)
 
 	var vbox := VBoxContainer.new()
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -247,14 +250,16 @@ func _create_ui() -> void:
 func _on_question_changed(question: Dictionary) -> void:
 	if question.is_empty():
 		_panel.visible = false
+		_mid_area.visible = false
 		_word_label.text = ""
 		_hint_label.text = ""
-		if _status_label.text.is_empty():
-			_status_label.text = "Get ready..."
+		_status_label.text = ""
+		_recognized_label.text = ""
 		_volume_bar.value = 0.0
 		return
 
 	_panel.visible = true
+	_mid_area.visible = true
 	_word_label.text = question.get("text", "?")
 	_hint_label.text = "(%s)" % question.get("hint", "")
 	print("PronunciationHUD: HUD word shown: %s" % _word_label.text)
