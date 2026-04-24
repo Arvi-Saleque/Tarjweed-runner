@@ -35,14 +35,14 @@ func _build_layout() -> void:
 	var side_margin := int(clampf(120.0 * ui_scale, 52.0, 120.0))
 	var top_margin := int(clampf(36.0 * ui_scale, 14.0, 36.0))
 	var bottom_margin := int(clampf(34.0 * ui_scale, 14.0, 34.0))
-	var heading_width := clampf(viewport_size.x * 0.62, 700.0, 980.0)
+	var heading_width := clampf(viewport_size.x * 0.58, 680.0, 900.0)
 	var heading_height := heading_width * (724.0 / 2172.0)
-	var title_height := int(clampf(heading_height + 10.0, 170.0, 340.0))
-	var root_spacing := int(clampf(18.0 * ui_scale, 10.0, 18.0))
+	var title_height := int(clampf(heading_height, 170.0, 300.0))
+	var root_spacing := int(clampf(10.0 * ui_scale, 6.0, 10.0))
 	var available_panel_height := int(maxf(480.0, viewport_size.y - top_margin - bottom_margin - title_height - root_spacing))
-	var panel_bottom_gap := int(clampf(34.0 * ui_scale, 16.0, 34.0))
+	var panel_bottom_gap := int(clampf(10.0 * ui_scale, 6.0, 10.0))
 	available_panel_height -= panel_bottom_gap
-	var panel_height := int(clampf(float(available_panel_height) * 0.88, 430.0, float(available_panel_height)))
+	var panel_height := int(clampf(float(available_panel_height), 500.0, float(available_panel_height)))
 
 	var root_margin := MarginContainer.new()
 	root_margin.anchors_preset = Control.PRESET_FULL_RECT
@@ -100,7 +100,7 @@ func _build_layout() -> void:
 func _make_title_banner(text: String, ui_scale: float, viewport_width: float) -> Control:
 	var banner := Control.new()
 	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var heading_width := clampf(viewport_width * 0.62, 700.0, 980.0)
+	var heading_width := clampf(viewport_width * 0.58, 680.0, 900.0)
 	var heading_height := heading_width * (724.0 / 2172.0)
 	banner.custom_minimum_size = Vector2(heading_width, heading_height)
 
@@ -175,13 +175,14 @@ func _build_summary_panel(ui_scale: float, panel_height: int) -> PanelContainer:
 func _build_menu_panel(ui_scale: float, panel_height: int) -> Control:
 	var panel := Control.new()
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
 	var card_tex := load("res://assets/UI/mainmenu/main_menu_card.png") as Texture2D
 	var card_ratio := 1.625
 	if card_tex and card_tex.get_width() > 0:
 		card_ratio = float(card_tex.get_height()) / float(card_tex.get_width())
 
-	var target_width := clampf(620.0 * ui_scale, 500.0, 620.0)
+	var target_width := clampf(740.0 * ui_scale, 580.0, 740.0)
 	var target_height := target_width * card_ratio
 	if target_height > panel_height:
 		target_height = float(panel_height)
@@ -202,22 +203,22 @@ func _build_menu_panel(ui_scale: float, panel_height: int) -> Control:
 	title_wrap.anchors_preset = Control.PRESET_FULL_RECT
 	title_wrap.anchor_right = 1.0
 	title_wrap.anchor_bottom = 1.0
-	title_wrap.offset_top = target_height * 0.042
-	title_wrap.offset_bottom = -target_height * 0.858
+	title_wrap.offset_top = target_height * 0.066
+	title_wrap.offset_bottom = -target_height * 0.802
 	title_wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(title_wrap)
 
-	var title := UITheme.make_label("Main Menu", int(clampf(target_height * 0.056, UITheme.FONT_HEADING + 2, UITheme.FONT_TITLE + 6)), Color("1C4A1F"), NatureMenuStyle.SKIN)
+	var title := UITheme.make_label("Main Menu", int(clampf(target_height * 0.046, UITheme.FONT_HEADING + 2, UITheme.FONT_TITLE)), Color("1C4A1F"), NatureMenuStyle.SKIN)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_wrap.add_child(title)
 
-	var button_font_size := int(clampf(target_height * 0.036, UITheme.FONT_BODY + 1, UITheme.FONT_HEADING + 2))
+	var button_font_size := int(clampf(target_height * 0.034, UITheme.FONT_BODY + 1, UITheme.FONT_HEADING + 2))
 	var slot_specs := [
-		{"top": 0.173, "bottom": 0.269, "text": "Play", "icon": UITheme.icon_play, "variant": "primary", "callback": func(): _open_play_setup()},
-		{"top": 0.313, "bottom": 0.408, "text": "Choose Runner", "icon": UITheme.icon_home, "variant": "secondary", "callback": func(): _open_choose_runner()},
-		{"top": 0.447, "bottom": 0.542, "text": "Leaderboard", "icon": UITheme.icon_trophy, "variant": "secondary", "callback": func(): _open_leaderboard()},
-		{"top": 0.582, "bottom": 0.676, "text": "Settings", "icon": UITheme.icon_gear, "variant": "secondary", "callback": func(): _open_settings()},
-		{"top": 0.716, "bottom": 0.813, "text": "Exit", "icon": UITheme.icon_cross, "variant": "danger", "callback": func(): _exit_game()},
+		{"top": 0.222, "bottom": 0.325, "text": "Play", "icon": UITheme.icon_play, "variant": "primary", "callback": func(): _open_play_setup()},
+		{"top": 0.359, "bottom": 0.462, "text": "Choose Runner", "icon": UITheme.icon_home, "variant": "secondary", "callback": func(): _open_choose_runner()},
+		{"top": 0.492, "bottom": 0.594, "text": "Leaderboard", "icon": UITheme.icon_trophy, "variant": "secondary", "callback": func(): _open_leaderboard()},
+		{"top": 0.624, "bottom": 0.727, "text": "Settings", "icon": UITheme.icon_gear, "variant": "secondary", "callback": func(): _open_settings()},
+		{"top": 0.756, "bottom": 0.859, "text": "Exit", "icon": UITheme.icon_cross, "variant": "danger", "callback": func(): _exit_game()},
 	]
 
 	for spec in slot_specs:
@@ -237,31 +238,92 @@ func _build_menu_panel(ui_scale: float, panel_height: int) -> Control:
 
 
 func _make_menu_button(text: String, icon: Texture2D, variant: String, button_height: int, button_font_size: int, pressed_callback: Callable) -> Button:
-	var btn := UITheme.make_button("  %s" % text, icon, button_font_size, variant, NatureMenuStyle.SKIN)
+	var btn := Button.new()
+	btn.text = ""
+	btn.icon = null
 	btn.custom_minimum_size = Vector2(0, button_height)
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	UITheme.align_text_button_left(btn)
-	btn.add_theme_constant_override("h_separation", 12)
-	btn.add_theme_constant_override("icon_max_width", int(button_height * 0.48))
+	btn.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
-	var empty_style := StyleBoxEmpty.new()
-	btn.add_theme_stylebox_override("normal", empty_style)
-	btn.add_theme_stylebox_override("hover", empty_style)
-	btn.add_theme_stylebox_override("pressed", empty_style)
-	btn.add_theme_stylebox_override("focus", empty_style)
+	btn.add_theme_stylebox_override("normal", _make_menu_button_overlay_style(Color(1, 1, 1, 0.0), button_height))
+	btn.add_theme_stylebox_override("hover", _make_menu_button_overlay_style(Color(1, 1, 1, 0.16), button_height))
+	btn.add_theme_stylebox_override("pressed", _make_menu_button_overlay_style(Color(0.18, 0.10, 0.02, 0.16), button_height))
+	btn.add_theme_stylebox_override("focus", _make_menu_button_overlay_style(Color("F7C542", 0.12), button_height))
 
+	var text_color := Color("214E22")
 	if variant == "primary" or variant == "danger":
-		btn.add_theme_color_override("font_color", Color("FFF5DB"))
-		btn.add_theme_color_override("font_hover_color", Color("FFFBEF"))
-		btn.add_theme_color_override("font_pressed_color", Color("F2E4C5"))
-	else:
-		btn.add_theme_color_override("font_color", Color("214E22"))
-		btn.add_theme_color_override("font_hover_color", Color("2E612D"))
-		btn.add_theme_color_override("font_pressed_color", Color("183E1B"))
+		text_color = Color("FFF5DB")
+
+	_add_menu_button_content(btn, text, icon, text_color, button_height, button_font_size)
 
 	if pressed_callback.is_valid():
 		btn.pressed.connect(pressed_callback)
 	return btn
+
+
+func _make_menu_button_overlay_style(color: Color, button_height: int) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = color
+	var radius := int(clampf(float(button_height) * 0.26, 18.0, 28.0))
+	style.corner_radius_top_left = radius
+	style.corner_radius_top_right = radius
+	style.corner_radius_bottom_left = radius
+	style.corner_radius_bottom_right = radius
+	style.content_margin_left = 0
+	style.content_margin_right = 0
+	style.content_margin_top = 0
+	style.content_margin_bottom = 0
+	return style
+
+
+func _add_menu_button_content(btn: Button, text: String, icon: Texture2D, text_color: Color, button_height: int, button_font_size: int) -> void:
+	var content := Control.new()
+	content.anchors_preset = Control.PRESET_FULL_RECT
+	content.anchor_right = 1.0
+	content.anchor_bottom = 1.0
+	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(content)
+
+	if icon:
+		var icon_rect := TextureRect.new()
+		var icon_size := int(clampf(float(button_height) * 0.42, 24.0, 34.0))
+		var icon_center := int(clampf(float(button_height) * 0.64, 38.0, 47.0))
+		var icon_y_shift := 0
+		if text == "Play":
+			icon_size = int(clampf(float(button_height) * 0.34, 22.0, 28.0))
+			icon_center = int(clampf(float(button_height) * 0.63, 37.0, 45.0))
+			icon_y_shift = -1
+		icon_rect.texture = icon
+		icon_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon_rect.modulate = text_color
+		icon_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		icon_rect.anchor_left = 0.0
+		icon_rect.anchor_right = 0.0
+		icon_rect.anchor_top = 0.5
+		icon_rect.anchor_bottom = 0.5
+		icon_rect.offset_left = icon_center - icon_size / 2
+		icon_rect.offset_right = icon_center + icon_size / 2
+		icon_rect.offset_top = -icon_size / 2 + icon_y_shift
+		icon_rect.offset_bottom = icon_size / 2 + icon_y_shift
+		content.add_child(icon_rect)
+
+	var label := UITheme.make_label(text, button_font_size, text_color, NatureMenuStyle.SKIN)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.anchor_left = 0.0
+	label.anchor_right = 1.0
+	label.anchor_top = 0.0
+	label.anchor_bottom = 1.0
+	label.offset_left = int(clampf(float(button_height) * 1.08, 70.0, 86.0))
+	label.offset_right = -int(clampf(float(button_height) * 0.28, 18.0, 26.0))
+	label.offset_top = 0
+	label.offset_bottom = 0
+	content.add_child(label)
+
+	btn.mouse_entered.connect(func(): content.modulate = Color(1.12, 1.12, 1.12, 1.0))
+	btn.mouse_exited.connect(func(): content.modulate = Color.WHITE)
 
 
 func _exit_game() -> void:
