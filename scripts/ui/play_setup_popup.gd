@@ -25,9 +25,13 @@ var _difficulty_buttons: Dictionary = {}
 var _quiz_style_buttons: Dictionary = {}
 var _quiz_style_label: Label
 var _quiz_style_row: Control
+var _difficulty_field_label: Label
+var _runner_preview_label: Label
+var _runner_panel: TextureRect
 var _runner_avatar: Control
 var _runner_title: Label
 var _runner_subtitle: Label
+var _choose_runner_button: Button
 var _summary_wallet: Label
 var _summary_wallet_value: Label
 var _summary_mode: Label
@@ -146,12 +150,12 @@ func _build_left_panel() -> void:
 	var quiz_x := 0.0
 	for qs in MenuFlowCatalog.QUIZ_STYLES:
 		var qs_id := str(qs.get("id", "math"))
-		var button := _make_selector_button(str(qs.get("title", "")), Rect2(quiz_x, 0, 118, 50), qs_id == _selected_quiz_style, _quiz_style_row)
+		var button := _make_selector_button(_quiz_style_display(qs_id, str(qs.get("title", ""))), Rect2(quiz_x, 0, 118, 50), qs_id == _selected_quiz_style, _quiz_style_row, 16)
 		button.pressed.connect(func(): _set_quiz_style(qs_id))
 		_quiz_style_buttons[qs_id] = button
 		quiz_x += 128.0
 
-	_add_field_label("Difficulty", Vector2(382, 442))
+	_difficulty_field_label = _add_field_label("Difficulty", Vector2(382, 442))
 	var difficulty_x := 356.0
 	for difficulty in MenuFlowCatalog.DIFFICULTIES:
 		var difficulty_id := str(difficulty.get("id", ""))
@@ -160,8 +164,8 @@ func _build_left_panel() -> void:
 		_difficulty_buttons[difficulty_id] = button
 		difficulty_x += 175.0
 
-	_add_field_label("Runner Preview", Vector2(382, 544))
-	_add_texture(_stage, "RunnerPanel", ASSET_ROOT + "runner-panel.png", Rect2(356, 572, 520, 204))
+	_runner_preview_label = _add_field_label("Runner Preview", Vector2(382, 544))
+	_runner_panel = _add_texture(_stage, "RunnerPanel", ASSET_ROOT + "runner-panel.png", Rect2(356, 572, 520, 204))
 
 	_runner_avatar = Control.new()
 	_runner_avatar.position = Vector2(376, 590)
@@ -179,12 +183,13 @@ func _build_left_panel() -> void:
 	_runner_subtitle.size = Vector2(220, 30)
 	_stage.add_child(_runner_subtitle)
 
-	var choose_runner_btn := _make_image_button("ChooseRunnerButton", ASSET_ROOT + "choose-runner-btn.png", Rect2(610, 698, 240, 58))
-	choose_runner_btn.pressed.connect(func():
+	_choose_runner_button = _make_image_button("ChooseRunnerButton", ASSET_ROOT + "choose-runner-btn.png", Rect2(610, 698, 240, 58))
+	_choose_runner_button.pressed.connect(func():
 		AudioManager.play_ui_sound(AudioManager.ui_click)
 		choose_runner_requested.emit()
 	)
-	_add_button_label(choose_runner_btn, "Choose Runner", 22, Color("FFF8DD"), Vector2(22, 0), Vector2(198, 58))
+	_add_button_label(_choose_runner_button, "Choose Runner", 22, Color("FFF8DD"), Vector2(22, 0), Vector2(198, 58))
+	_apply_quiz_style_layout()
 
 
 func _build_right_panel() -> void:
@@ -278,10 +283,7 @@ func _set_mode(mode_id: String) -> void:
 	_selected_mode = mode_id
 	_refresh_mode_buttons()
 	_refresh_summary()
-	if _quiz_style_label:
-		_quiz_style_label.visible = false
-	if _quiz_style_row:
-		_quiz_style_row.visible = false
+	_apply_quiz_style_layout()
 
 
 func _refresh_mode_buttons() -> void:
@@ -314,7 +316,7 @@ func _refresh_summary() -> void:
 	if _summary_mode_value:
 		var mode_text := _selected_mode.capitalize()
 		if _selected_mode == "quiz":
-			mode_text += " (%s)" % _selected_quiz_style.capitalize().replace("_", " ")
+			mode_text = "Quiz: %s" % _quiz_style_display(_selected_quiz_style, _selected_quiz_style)
 		_summary_mode_value.text = mode_text
 	if _summary_difficulty_value:
 		_summary_difficulty_value.text = _selected_difficulty.capitalize()
@@ -350,6 +352,44 @@ func _on_start_pressed() -> void:
 	start_requested.emit(player_name, _selected_difficulty, _selected_mode, quiz_style)
 
 
+func _apply_quiz_style_layout() -> void:
+	var show_quiz_styles := _selected_mode == "quiz"
+	if _quiz_style_label:
+		_quiz_style_label.visible = show_quiz_styles
+	if _quiz_style_row:
+		_quiz_style_row.visible = show_quiz_styles
+
+	var difficulty_label_y := 514.0 if show_quiz_styles else 442.0
+	var difficulty_button_y := 544.0 if show_quiz_styles else 472.0
+	var runner_label_y := 612.0 if show_quiz_styles else 544.0
+	var runner_panel_y := 638.0 if show_quiz_styles else 572.0
+
+	_move_field_label(_difficulty_field_label, "DifficultyLeaf", Vector2(382, difficulty_label_y))
+	for button in _difficulty_buttons.values():
+		if button is Button:
+			(button as Button).position.y = difficulty_button_y
+
+	_move_field_label(_runner_preview_label, "RunnerPreviewLeaf", Vector2(382, runner_label_y))
+	if _runner_panel:
+		_runner_panel.position.y = runner_panel_y
+	if _runner_avatar:
+		_runner_avatar.position.y = runner_panel_y + 18.0
+	if _runner_title:
+		_runner_title.position.y = runner_panel_y + 32.0
+	if _runner_subtitle:
+		_runner_subtitle.position.y = runner_panel_y + 79.0
+	if _choose_runner_button:
+		_choose_runner_button.position.y = runner_panel_y + 126.0
+
+
+func _move_field_label(label: Label, leaf_name: String, pos: Vector2) -> void:
+	if label:
+		label.position = pos
+	var leaf := _stage.get_node_or_null(leaf_name) as TextureRect
+	if leaf:
+		leaf.position = pos + Vector2(-28, 3)
+
+
 func _add_panel(rect: Rect2, radius: int) -> Panel:
 	var panel := Panel.new()
 	panel.position = rect.position
@@ -370,13 +410,14 @@ func _add_ribbon(text: String, pos: Vector2, size: Vector2) -> void:
 	_add_texture(_stage, "%sLeaf" % text.replace(" ", ""), ASSET_ROOT + "leaf.png", Rect2(pos + Vector2(24, 15), Vector2(22, 26)))
 
 
-func _add_field_label(text: String, pos: Vector2) -> void:
+func _add_field_label(text: String, pos: Vector2) -> Label:
 	var label := _make_label(text, 18, TEXT_DARK)
 	label.position = pos
 	label.size = Vector2(180, 26)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_stage.add_child(label)
 	_add_texture(_stage, "%sLeaf" % text.replace(" ", ""), ASSET_ROOT + "leaf.png", Rect2(pos + Vector2(-28, 3), Vector2(18, 22)))
+	return label
 
 
 func _add_summary_line(y: float) -> void:
@@ -388,11 +429,11 @@ func _add_summary_line(y: float) -> void:
 	_stage.add_child(line)
 
 
-func _make_selector_button(text: String, rect: Rect2, selected: bool, parent: Control = null) -> Button:
+func _make_selector_button(text: String, rect: Rect2, selected: bool, parent: Control = null, font_size: int = 20) -> Button:
 	var host := parent if parent else _stage
 	var button := _make_image_button("Selector_%s" % text, ASSET_ROOT + ("green-selector.png" if selected else "nomral-selector.png"), rect, host)
 	button.set_meta("selected", selected)
-	_add_button_label(button, text, 20, Color("FFF8DD") if selected else TEXT_BROWN, Vector2(34, 0), Vector2(rect.size.x - 48, rect.size.y))
+	_add_button_label(button, text, font_size, Color("FFF8DD") if selected else TEXT_BROWN, Vector2(18, 0), Vector2(rect.size.x - 26, rect.size.y))
 	return button
 
 
@@ -591,6 +632,19 @@ func _runner_color(runner_id: String) -> Color:
 		"wizard":
 			return Color("3E77B7")
 	return GREEN
+
+
+func _quiz_style_display(style_id: String, fallback: String) -> String:
+	match style_id:
+		"math":
+			return "Math"
+		"arabic_huroof":
+			return "Arabic"
+		"bangla_english":
+			return "BN->EN"
+		"english_bangla":
+			return "EN->BN"
+	return fallback.capitalize().replace("_", " ")
 
 
 func _make_label(text: String, font_size: int, color: Color) -> Label:
