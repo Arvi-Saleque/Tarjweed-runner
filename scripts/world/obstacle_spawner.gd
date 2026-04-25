@@ -157,12 +157,13 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 
 
 # =============================================================================
-# PRONUNCIATION MODE — voice action rows spaced about 2-2.5 seconds apart
+# PRONUNCIATION MODE — voice action rows spaced about 2.4-3 seconds apart
 # =============================================================================
 
-const PRONUN_MIN_ROW_GAP: float = 30.0
-const PRONUN_MAX_ROW_GAP: float = 37.5
-const PRONUN_LAST_OBS_Z_KEY: String = "_pronun_last_obs_z"
+const PRONUN_FIRST_ROW_DISTANCE: float = 68.0
+const PRONUN_MIN_ROW_GAP: float = 40.0
+const PRONUN_MAX_ROW_GAP: float = 48.0
+const PRONUN_NEXT_GLOBAL_Z_KEY: String = "_pronun_next_global_z"
 const PRONUN_OBSTACLE_SEQ_KEY: String = "_pronun_obstacle_seq"
 
 

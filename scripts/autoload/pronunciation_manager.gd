@@ -46,8 +46,8 @@ signal status_changed(text: String)
 
 # A pronunciation prompt is revealed only when its obstacle is close enough to
 # feel like a real runner reaction cue.
-@export var question_reveal_distance: float = 48.0
-@export var question_reveal_min_distance: float = 8.0
+@export var question_reveal_distance: float = 60.0
+@export var question_reveal_min_distance: float = 10.0
 
 @export var websocket_open_timeout: float = 0.75
 
@@ -1170,6 +1170,7 @@ func _reset_pronunciation_runtime_state() -> void:
 	_failed_row_ids.clear()
 	
 	GameManager.set_meta("_pronun_last_obs_z", 0.0)
+	GameManager.set_meta("_pronun_next_global_z", -68.0)
 	GameManager.set_meta("_pronun_obstacle_seq", 0)
 	GameManager.set_meta("_pronun_row_seq_id", 0)
 

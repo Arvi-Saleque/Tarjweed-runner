@@ -23,7 +23,7 @@ enum GameState { MENU, PLAYING, PAUSED, GAME_OVER }
 # --- Constants ---
 const BASE_SPEED: float = 12.0
 const MAX_SPEED: float = 28.0
-const PRONUNCIATION_SPEED: float = 15.0
+const PRONUNCIATION_SPEED: float = 13.5
 const SPEED_INCREMENT: float = 0.15        # Speed increase per second of play
 const MAX_LIVES: int = 3
 const LANE_WIDTH: float = 2.0
@@ -184,6 +184,8 @@ func start_game() -> void:
 		remove_meta("_quiz_row_seq_id")
 	if has_meta("_pronun_last_obs_z"):
 		remove_meta("_pronun_last_obs_z")
+	if has_meta("_pronun_next_global_z"):
+		remove_meta("_pronun_next_global_z")
 	if has_meta("_pronun_obstacle_seq"):
 		remove_meta("_pronun_obstacle_seq")
 	if has_meta("_pronun_row_seq_id"):
