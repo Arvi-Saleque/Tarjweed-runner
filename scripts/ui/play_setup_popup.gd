@@ -8,6 +8,7 @@ const MenuFlowCatalog = preload("res://scripts/ui/menu_flow_catalog.gd")
 const ThemeRegistryScript = preload("res://scripts/theme/theme_registry.gd")
 
 const ASSET_ROOT := "res://assets/UI/play_setup/"
+const MAINMENU_ASSET_ROOT := "res://assets/UI/mainmenu/"
 const BASE_SIZE := Vector2(1672.0, 941.0)
 
 const TEXT_DARK := Color("173F1F")
@@ -17,6 +18,8 @@ const PANEL_LINE := Color("9B7445")
 const GREEN := Color("2F6B3B")
 const CREAM := Color("FFF2D2")
 const GOLD := Color("E3A41E")
+const FIELD_LEAF_OFFSET := Vector2(-28, 3)
+const FIELD_LEAF_SIZE := Vector2(18, 22)
 
 var _stage: Control
 var _name_input: LineEdit
@@ -24,6 +27,7 @@ var _mode_buttons: Dictionary = {}
 var _difficulty_buttons: Dictionary = {}
 var _quiz_style_buttons: Dictionary = {}
 var _quiz_style_label: Label
+var _quiz_style_leaf: TextureRect
 var _quiz_style_row: Control
 var _difficulty_field_label: Label
 var _runner_preview_label: Label
@@ -141,6 +145,9 @@ func _build_left_panel() -> void:
 	_quiz_style_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_quiz_style_label.visible = false
 	_stage.add_child(_quiz_style_label)
+	_quiz_style_leaf = _add_texture(_stage, "QuizStyleLeaf", ASSET_ROOT + "leaf.png", Rect2(_quiz_style_label.position + FIELD_LEAF_OFFSET, FIELD_LEAF_SIZE))
+	_quiz_style_leaf.z_index = 5
+	_quiz_style_leaf.visible = false
 
 	_quiz_style_row = Control.new()
 	_quiz_style_row.position = Vector2(356, 458)
@@ -222,37 +229,37 @@ func _build_right_panel() -> void:
 	_summary_wallet_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_stage.add_child(_summary_wallet_value)
 
-	_add_summary_line(510)
+	_add_summary_line(494)
 
 	_summary_mode = _make_label("Mode", 18, TEXT_BROWN)
-	_summary_mode.position = Vector2(1022, 522)
+	_summary_mode.position = Vector2(1022, 506)
 	_summary_mode.size = Vector2(120, 28)
 	_summary_mode.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_stage.add_child(_summary_mode)
 	_summary_mode_value = _make_label("", 18, TEXT_BROWN)
-	_summary_mode_value.position = Vector2(1132, 522)
+	_summary_mode_value.position = Vector2(1132, 506)
 	_summary_mode_value.size = Vector2(154, 28)
 	_summary_mode_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_summary_mode_value.clip_text = true
 	_stage.add_child(_summary_mode_value)
 
-	_add_summary_line(554)
+	_add_summary_line(538)
 
 	_summary_difficulty = _make_label("Difficulty", 18, TEXT_BROWN)
-	_summary_difficulty.position = Vector2(1022, 566)
+	_summary_difficulty.position = Vector2(1022, 550)
 	_summary_difficulty.size = Vector2(120, 28)
 	_summary_difficulty.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_stage.add_child(_summary_difficulty)
 	_summary_difficulty_value = _make_label("", 18, TEXT_BROWN)
-	_summary_difficulty_value.position = Vector2(1132, 566)
+	_summary_difficulty_value.position = Vector2(1132, 550)
 	_summary_difficulty_value.size = Vector2(154, 28)
 	_summary_difficulty_value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_stage.add_child(_summary_difficulty_value)
 
 	var start_btn := _make_image_button_region("StartButton", ASSET_ROOT + "start-btn.png", Rect2(962, 642, 345, 78), Rect2(0, 260, 1536, 560))
 	start_btn.pressed.connect(_on_start_pressed)
-	_add_play_icon(start_btn, Vector2(72, 18), 42)
-	_add_button_label(start_btn, "Start", 38, Color("FFF8DD"), Vector2(116, 0), Vector2(170, 78))
+	_add_play_icon(start_btn, Vector2(72, 10), 42)
+	_add_button_label(start_btn, "Start", 38, Color("FFF8DD"), Vector2(116, -8), Vector2(170, 78))
 
 	var cancel_btn := _make_image_button("CancelButton", ASSET_ROOT + "cancel-btn.png", Rect2(962, 735, 345, 70))
 	cancel_btn.pressed.connect(func():
@@ -356,6 +363,8 @@ func _apply_quiz_style_layout() -> void:
 	var show_quiz_styles := _selected_mode == "quiz"
 	if _quiz_style_label:
 		_quiz_style_label.visible = show_quiz_styles
+	if _quiz_style_leaf:
+		_quiz_style_leaf.visible = show_quiz_styles
 	if _quiz_style_row:
 		_quiz_style_row.visible = show_quiz_styles
 
@@ -387,7 +396,7 @@ func _move_field_label(label: Label, leaf_name: String, pos: Vector2) -> void:
 		label.position = pos
 	var leaf := _stage.get_node_or_null(leaf_name) as TextureRect
 	if leaf:
-		leaf.position = pos + Vector2(-28, 3)
+		leaf.position = pos + FIELD_LEAF_OFFSET
 
 
 func _add_panel(rect: Rect2, radius: int) -> Panel:
@@ -416,7 +425,7 @@ func _add_field_label(text: String, pos: Vector2) -> Label:
 	label.size = Vector2(180, 26)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_stage.add_child(label)
-	_add_texture(_stage, "%sLeaf" % text.replace(" ", ""), ASSET_ROOT + "leaf.png", Rect2(pos + Vector2(-28, 3), Vector2(18, 22)))
+	_add_texture(_stage, "%sLeaf" % text.replace(" ", ""), ASSET_ROOT + "leaf.png", Rect2(pos + FIELD_LEAF_OFFSET, FIELD_LEAF_SIZE))
 	return label
 
 
