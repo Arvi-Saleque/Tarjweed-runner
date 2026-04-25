@@ -123,13 +123,13 @@ func _create_screen() -> void:
 	btn_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	vbox.add_child(btn_hbox)
 
-	_retry_btn = UITheme.make_button("  RETRY", UITheme.icon_play, UITheme.FONT_BODY, "primary", _skin)
+	_retry_btn = UITheme.make_button("RETRY", UITheme.icon_play, UITheme.FONT_BODY, "primary", _skin)
 	_retry_btn.custom_minimum_size = Vector2(180, 60)
 	_retry_btn.pressed.connect(_on_retry_pressed)
 	_retry_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))
 	btn_hbox.add_child(_retry_btn)
 
-	_menu_btn = UITheme.make_button("  HOME", UITheme.icon_home, UITheme.FONT_BODY, "secondary", _skin)
+	_menu_btn = UITheme.make_button("HOME", UITheme.icon_home, UITheme.FONT_BODY, "secondary", _skin)
 	_menu_btn.custom_minimum_size = Vector2(180, 60)
 	_menu_btn.pressed.connect(_on_menu_pressed)
 	_menu_btn.mouse_entered.connect(func(): AudioManager.play_ui_sound(AudioManager.ui_hover))

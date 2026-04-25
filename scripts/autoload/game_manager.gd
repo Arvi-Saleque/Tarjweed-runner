@@ -186,6 +186,8 @@ func start_game() -> void:
 		remove_meta("_pronun_last_obs_z")
 	if has_meta("_pronun_next_global_z"):
 		remove_meta("_pronun_next_global_z")
+	if has_meta("_pronun_next_track_z"):
+		remove_meta("_pronun_next_track_z")
 	if has_meta("_pronun_obstacle_seq"):
 		remove_meta("_pronun_obstacle_seq")
 	if has_meta("_pronun_row_seq_id"):

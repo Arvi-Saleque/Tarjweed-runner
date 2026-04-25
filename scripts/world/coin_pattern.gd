@@ -38,6 +38,14 @@ static func pick_random_pattern(difficulty: float) -> Pattern:
 	return Pattern.LINE
 
 
+static func spawn_ground_line(parent: Node3D, start_pos: Vector3, lane_idx: int,
+		generator: Node3D, count: int = 6, spacing: float = COIN_SPACING) -> void:
+	var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
+	for i in count:
+		var pos := Vector3(lane_x, COIN_HEIGHT, start_pos.z - i * spacing)
+		_create_coin(parent, pos, "gold", generator)
+
+
 # --- Pattern Implementations ---
 
 static func _spawn_line(parent: Node3D, start: Vector3, lane_idx: int, gen: Node3D) -> void:

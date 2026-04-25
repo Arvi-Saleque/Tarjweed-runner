@@ -157,14 +157,16 @@ static func _spawn_natural_obstacles(chunk: Node3D, chunk_length: float, generat
 
 
 # =============================================================================
-# PRONUNCIATION MODE — voice action rows spaced about 2.4-3 seconds apart
+# PRONUNCIATION MODE - voice action rows spaced about 4-5 seconds apart
 # =============================================================================
 
-const PRONUN_FIRST_ROW_DISTANCE: float = 68.0
-const PRONUN_MIN_ROW_GAP: float = 40.0
-const PRONUN_MAX_ROW_GAP: float = 48.0
-const PRONUN_NEXT_GLOBAL_Z_KEY: String = "_pronun_next_global_z"
+const PRONUN_FIRST_ROW_DISTANCE: float = 72.0
+const PRONUN_MIN_ROW_GAP: float = 54.0
+const PRONUN_MAX_ROW_GAP: float = 67.5
+const PRONUN_NEXT_TRACK_Z_KEY: String = "_pronun_next_track_z"
 const PRONUN_OBSTACLE_SEQ_KEY: String = "_pronun_obstacle_seq"
+const PRONUN_DODGE_OBSTACLE_CHANCE: float = 0.55
+const PRONUN_DODGE_ROW_CLEARANCE: float = 12.0
 
 
 static func _spawn_pronunciation_obstacles(chunk: Node3D, chunk_length: float, generator: Node3D) -> void:
@@ -172,15 +174,17 @@ static func _spawn_pronunciation_obstacles(chunk: Node3D, chunk_length: float, g
 	if chunk_index < PRONUN_FIRST_ROW_CHUNK_INDEX:
 		return
 
-	var carry_over: float = 0.0
-	if GameManager.has_meta(PRONUN_LAST_OBS_Z_KEY):
-		carry_over = GameManager.get_meta(PRONUN_LAST_OBS_Z_KEY)
-
-	var z: float = -carry_over if carry_over > 0.0 else -randf_range(PRONUN_MIN_ROW_GAP, PRONUN_MAX_ROW_GAP)
-
+	var chunk_front_track_z := chunk.position.z
+	var spawn_start_z := chunk_front_track_z - 2.0
+	var spawn_end_z := chunk_front_track_z - chunk_length + 2.0
+	var next_track_z: float = GameManager.get_meta(PRONUN_NEXT_TRACK_Z_KEY, -PRONUN_FIRST_ROW_DISTANCE) as float
 	var seq_idx: int = GameManager.get_meta(PRONUN_OBSTACLE_SEQ_KEY, 0) as int
 
-	while z >= -(chunk_length - 2.0):
+	while next_track_z > spawn_start_z:
+		next_track_z -= randf_range(PRONUN_MIN_ROW_GAP, PRONUN_MAX_ROW_GAP)
+
+	while next_track_z <= spawn_start_z and next_track_z >= spawn_end_z:
+		var local_z := next_track_z - chunk_front_track_z
 		var obs_type: int = seq_idx % 4
 		if seq_idx < 4:
 			# First four pronunciation obstacles guarantee all 4 actions:
@@ -189,18 +193,45 @@ static func _spawn_pronunciation_obstacles(chunk: Node3D, chunk_length: float, g
 		else:
 			obs_type = randi() % 4
 
-		_create_pronunciation_row_typed(chunk, z, generator, obs_type)
+		_create_pronunciation_row_typed(chunk, local_z, generator, obs_type)
 
 		seq_idx += 1
-		z -= randf_range(PRONUN_MIN_ROW_GAP, PRONUN_MAX_ROW_GAP)
+		next_track_z -= randf_range(PRONUN_MIN_ROW_GAP, PRONUN_MAX_ROW_GAP)
 
+	GameManager.set_meta(PRONUN_NEXT_TRACK_Z_KEY, next_track_z)
 	GameManager.set_meta(PRONUN_OBSTACLE_SEQ_KEY, seq_idx)
+	_spawn_pronunciation_dodge_obstacles(chunk, chunk_length, generator)
 
-	var remaining: float = absf(z) - chunk_length
-	if remaining > 0.0:
-		GameManager.set_meta(PRONUN_LAST_OBS_Z_KEY, remaining)
-	else:
-		GameManager.set_meta(PRONUN_LAST_OBS_Z_KEY, 0.0)
+
+static func _spawn_pronunciation_dodge_obstacles(chunk: Node3D, chunk_length: float, generator: Node3D) -> void:
+	if randf() > PRONUN_DODGE_OBSTACLE_CHANCE:
+		return
+
+	var row_positions: Array[float] = _get_pronunciation_row_positions(chunk)
+	for attempt in 6:
+		var z_pos := randf_range(-4.0, -(chunk_length - 4.0))
+		if not _is_clear_from_positions(z_pos, row_positions, PRONUN_DODGE_ROW_CLEARANCE):
+			continue
+
+		var lane_idx: int = randi() % GameManager.LANE_COUNT
+		var lane_x: float = GameManager.LANE_POSITIONS[lane_idx]
+		_create_obstacle(chunk, Vector3(lane_x, 0.0, z_pos), generator)
+		return
+
+
+static func _get_pronunciation_row_positions(chunk: Node3D) -> Array[float]:
+	var positions: Array[float] = []
+	for child in chunk.get_children():
+		if child.is_in_group("pronunciation_target_rows") or child.is_in_group("pronunciation_obstacles"):
+			positions.append(child.position.z)
+	return positions
+
+
+static func _is_clear_from_positions(z_pos: float, positions: Array[float], clearance: float) -> bool:
+	for used_z: float in positions:
+		if absf(z_pos - used_z) < clearance:
+			return false
+	return true
 
 
 static func _create_pronunciation_row_typed(parent: Node3D, z_pos: float, generator: Node3D, obs_type: int) -> void:

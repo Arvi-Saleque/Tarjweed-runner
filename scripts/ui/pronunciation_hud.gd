@@ -259,31 +259,29 @@ func _on_question_changed(question: Dictionary) -> void:
 		return
 
 	_panel.visible = true
-	_mid_area.visible = true
+	_mid_area.visible = false
 	_word_label.text = question.get("text", "?")
 	_hint_label.text = "(%s)" % question.get("hint", "")
+	_status_label.text = ""
+	_recognized_label.text = ""
+	_feedback_label.text = ""
+	_volume_bar.value = 0.0
 	print("PronunciationHUD: HUD word shown: %s" % _word_label.text)
 
 	_panel.scale = Vector2(0.95, 0.95)
-	_listen_panel.scale = Vector2(0.97, 0.97)
 	var tw := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	tw.tween_property(_panel, "scale", Vector2.ONE, 0.2)
-	tw.parallel().tween_property(_listen_panel, "scale", Vector2.ONE, 0.2)
 
 
-func _on_answer_result(correct: bool) -> void:
-	if correct:
-		_feedback_label.text = "CORRECT!"
-		_feedback_label.add_theme_color_override("font_color", _COL_SUCCESS)
-	else:
-		_feedback_label.text = "TRY AGAIN"
-		_feedback_label.add_theme_color_override("font_color", _COL_ERROR)
-	_feedback_label.modulate.a = 1.0
-	var tw := create_tween()
-	tw.tween_property(_feedback_label, "modulate:a", 0.0, 0.6).set_delay(0.3)
+func _on_answer_result(_correct: bool) -> void:
+	_feedback_label.text = ""
+	_feedback_label.modulate.a = 0.0
 
 
 func _on_mic_status_changed(listening: bool) -> void:
+	if not _mid_area.visible:
+		_volume_bar.value = 0.0
+		return
 	if listening:
 		_status_label.text = "Listening..."
 		_mic_icon_label.add_theme_color_override("font_color", _COL_MID_GREEN)
@@ -293,10 +291,14 @@ func _on_mic_status_changed(listening: bool) -> void:
 
 
 func _on_status_changed(text: String) -> void:
+	if not _mid_area.visible:
+		return
 	_status_label.text = text
 
 
 func _on_recognized_text_changed(text: String) -> void:
+	if not _mid_area.visible:
+		return
 	if text.is_empty():
 		_recognized_label.text = ""
 	else:
@@ -304,6 +306,9 @@ func _on_recognized_text_changed(text: String) -> void:
 
 
 func _on_volume_updated(level: float) -> void:
+	if not _mid_area.visible:
+		_volume_bar.value = 0.0
+		return
 	_volume_bar.value = level
 	var bar_fill := _volume_bar.get_theme_stylebox("fill") as StyleBoxFlat
 	if bar_fill:

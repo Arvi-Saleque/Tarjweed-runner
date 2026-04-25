@@ -25,9 +25,9 @@ signal status_changed(text: String)
 @export var language: String = "en-US"
 
 # Timing tuned for local backend + Azure pronunciation.
-# Keep recording short, but give the player a real reaction moment before recording starts.
-@export var pre_record_delay: float = 0.70
-@export var max_record_duration: float = 1.45
+# The HUD only shows the word, so capture starts almost immediately after reveal.
+@export var pre_record_delay: float = 0.10
+@export var max_record_duration: float = 2.10
 @export var audio_chunk_interval: float = 0.025
 
 @export var pronunciation_threshold: float = 60.0
@@ -46,7 +46,7 @@ signal status_changed(text: String)
 
 # A pronunciation prompt is revealed only when its obstacle is close enough to
 # feel like a real runner reaction cue.
-@export var question_reveal_distance: float = 60.0
+@export var question_reveal_distance: float = 72.0
 @export var question_reveal_min_distance: float = 10.0
 
 @export var websocket_open_timeout: float = 0.75
@@ -97,8 +97,9 @@ var _resolved_row_ids: Dictionary = {}
 # Rows that have correct pronunciation ready, waiting for obstacle timing.
 var _ready_actions: Dictionary = {}
 
-# Rows where pronunciation was wrong. They should not block next questions.
+# Rows where pronunciation was wrong.
 var _failed_row_ids: Dictionary = {}
+var _blocked_until_row_id: int = -1
 
 var _next_question_id: int = 1
 var _request_row_id: int = -1
@@ -324,6 +325,8 @@ func _capture_upcoming_target() -> void:
 	if _has_active_target() or pronunciation_request_pending or _is_recording:
 		return
 	if not current_question.is_empty():
+		return
+	if _has_pending_row_resolution():
 		return
 
 	var next_row := _find_nearest_registered_target()
@@ -911,6 +914,7 @@ func _mark_current_challenge_failed(message: String) -> void:
 
 	if row_id >= 0:
 		_failed_row_ids[row_id] = true
+		_blocked_until_row_id = row_id
 
 	print("PronunciationManager: %s" % message)
 
@@ -924,7 +928,7 @@ func _mark_current_challenge_failed(message: String) -> void:
 	volume_updated.emit(0.0)
 	answer_result.emit(false)
 
-	# Free the manager so the next row can prepare.
+	# Hide the word, then wait for this obstacle to pass before preparing another.
 	_clear_current_challenge_keep_failed_rows()
 
 
@@ -1034,6 +1038,33 @@ func _set_active_target_from_row(row_data: Dictionary) -> void:
 	_active_target["state"] = "in_range"
 
 
+func _has_pending_row_resolution() -> bool:
+	if not _ready_actions.is_empty():
+		return true
+
+	if _blocked_until_row_id < 0:
+		return false
+	if _resolved_row_ids.has(_blocked_until_row_id):
+		_blocked_until_row_id = -1
+		return false
+
+	var target := _find_registered_target_by_row_id(_blocked_until_row_id)
+	if target.is_empty():
+		_blocked_until_row_id = -1
+		return false
+
+	var row_root := target.get("row_root") as Node3D
+	if row_root == null or not is_instance_valid(row_root):
+		_blocked_until_row_id = -1
+		return false
+	if _is_row_late(row_root):
+		_resolved_row_ids[_blocked_until_row_id] = true
+		_blocked_until_row_id = -1
+		return false
+
+	return true
+
+
 func _release_passed_targets() -> void:
 	for target in _registered_targets:
 		var row_id := int(target.get("row_id", -1))
@@ -1050,6 +1081,8 @@ func _release_passed_targets() -> void:
 		if _is_row_late(row_root):
 			_resolved_row_ids[row_id] = true
 			_ready_actions.erase(row_id)
+			if _blocked_until_row_id == row_id:
+				_blocked_until_row_id = -1
 
 			if _has_active_target() and int(_active_target.get("row_id", -1)) == row_id:
 				_clear_current_challenge()
@@ -1168,9 +1201,9 @@ func _reset_pronunciation_runtime_state() -> void:
 	_resolved_row_ids.clear()
 	_ready_actions.clear()
 	_failed_row_ids.clear()
+	_blocked_until_row_id = -1
 	
-	GameManager.set_meta("_pronun_last_obs_z", 0.0)
-	GameManager.set_meta("_pronun_next_global_z", -68.0)
+	GameManager.set_meta("_pronun_next_track_z", -72.0)
 	GameManager.set_meta("_pronun_obstacle_seq", 0)
 	GameManager.set_meta("_pronun_row_seq_id", 0)
 

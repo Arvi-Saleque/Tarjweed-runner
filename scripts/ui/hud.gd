@@ -491,15 +491,15 @@ func _create_lives_panel() -> void:
 	_life_labels.clear()
 
 	var lives_outer := UITheme.make_panel("dark", _skin)
-	lives_outer.custom_minimum_size = Vector2(170, 58)
+	lives_outer.custom_minimum_size = Vector2(170, 64)
 	lives_outer.anchor_left = 0.0
 	lives_outer.anchor_top = 0.0
 	lives_outer.anchor_right = 0.0
 	lives_outer.anchor_bottom = 0.0
 	lives_outer.offset_left = 20.0
-	lives_outer.offset_top = 104.0
+	lives_outer.offset_top = 186.0
 	lives_outer.offset_right = 190.0
-	lives_outer.offset_bottom = 162.0
+	lives_outer.offset_bottom = 250.0
 	lives_outer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(lives_outer)
 

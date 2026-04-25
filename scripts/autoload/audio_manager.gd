@@ -121,6 +121,8 @@ func play_sfx(stream: AudioStream, pitch_variation: float = 0.0) -> void:
 
 
 func play_ui_sound(stream: AudioStream = null) -> void:
+	if not _sfx_enabled:
+		return
 	var resolved_stream: AudioStream = stream
 	if not resolved_stream:
 		resolved_stream = ui_click
@@ -254,7 +256,7 @@ func start_menu_music(duration: float = 1.5) -> void:
 # --- Public API: Ambient ---
 
 func start_wind_ambient() -> void:
-	if not _wind_player:
+	if not _wind_player or not _sfx_enabled:
 		return
 	var ambient_stream: AudioStream = _get_theme_ambient_stream()
 	if ambient_stream and _wind_player.stream != ambient_stream:
@@ -288,6 +290,9 @@ func update_wind_for_speed(speed_ratio: float) -> void:
 
 func set_music_enabled(enabled: bool) -> void:
 	_music_enabled = enabled
+	var bus_idx: int = AudioServer.get_bus_index(BUS_MUSIC)
+	if bus_idx >= 0:
+		AudioServer.set_bus_mute(bus_idx, not enabled)
 	if not enabled:
 		_music_player.stop()
 	SaveManager.set_setting("music_enabled", enabled)
@@ -295,6 +300,12 @@ func set_music_enabled(enabled: bool) -> void:
 
 func set_sfx_enabled(enabled: bool) -> void:
 	_sfx_enabled = enabled
+	for bus_name: StringName in [BUS_SFX, BUS_UI]:
+		var bus_idx: int = AudioServer.get_bus_index(bus_name)
+		if bus_idx >= 0:
+			AudioServer.set_bus_mute(bus_idx, not enabled)
+	if not enabled:
+		stop_wind_ambient()
 	SaveManager.set_setting("sfx_enabled", enabled)
 
 
@@ -307,17 +318,20 @@ func is_sfx_enabled() -> bool:
 
 
 func set_music_volume(linear: float) -> void:
+	var clamped := clampf(linear, 0.0, 1.0)
 	var bus_idx: int = AudioServer.get_bus_index(BUS_MUSIC)
 	if bus_idx >= 0:
-		AudioServer.set_bus_volume_db(bus_idx, linear_to_db(clampf(linear, 0.0, 1.0)))
-	SaveManager.set_setting("music_volume", linear)
+		AudioServer.set_bus_volume_db(bus_idx, linear_to_db(clamped))
+	SaveManager.set_setting("music_volume", clamped)
 
 
 func set_sfx_volume(linear: float) -> void:
-	var bus_idx: int = AudioServer.get_bus_index(BUS_SFX)
-	if bus_idx >= 0:
-		AudioServer.set_bus_volume_db(bus_idx, linear_to_db(clampf(linear, 0.0, 1.0)))
-	SaveManager.set_setting("sfx_volume", linear)
+	var clamped := clampf(linear, 0.0, 1.0)
+	for bus_name: StringName in [BUS_SFX, BUS_UI]:
+		var bus_idx: int = AudioServer.get_bus_index(bus_name)
+		if bus_idx >= 0:
+			AudioServer.set_bus_volume_db(bus_idx, linear_to_db(clamped))
+	SaveManager.set_setting("sfx_volume", clamped)
 
 
 func get_music_volume() -> float:
@@ -484,6 +498,8 @@ func _apply_saved_settings() -> void:
 	_sfx_enabled = SaveManager.get_setting("sfx_enabled", true)
 	set_music_volume(SaveManager.get_setting("music_volume", 0.8))
 	set_sfx_volume(SaveManager.get_setting("sfx_volume", 1.0))
+	set_music_enabled(_music_enabled)
+	set_sfx_enabled(_sfx_enabled)
 
 
 func _get_available_sfx_player() -> AudioStreamPlayer:
@@ -616,7 +632,7 @@ func _on_game_paused() -> void:
 func _on_game_resumed() -> void:
 	if _music_player.playing:
 		var tween: Tween = create_tween()
-		tween.tween_property(_music_player, "volume_db", 0.0, 0.3)
+		tween.tween_property(_music_player, "volume_db", GAMEPLAY_MUSIC_TARGET_DB, 0.3)
 
 
 func _on_speed_changed(new_speed: float) -> void:

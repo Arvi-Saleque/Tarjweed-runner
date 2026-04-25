@@ -139,6 +139,10 @@ func _on_settings_pressed() -> void:
 
 func _on_menu_pressed() -> void:
 	AudioManager.play_ui_sound(AudioManager.ui_click)
-	GameManager.resume_game()  # Unpause tree first
+	_menu_btn.disabled = true
+	_resume_btn.disabled = true
+	_settings_btn.disabled = true
+	if GameManager.is_pronunciation_mode():
+		PronunciationManager.stop_pronunciation_for_menu()
 	GameManager.go_to_menu()
 	SceneManager.change_scene("res://scenes/main_menu.tscn")

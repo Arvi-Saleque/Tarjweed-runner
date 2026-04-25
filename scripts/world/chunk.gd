@@ -313,6 +313,10 @@ func _spawn_coins() -> void:
 	if is_safe and chunk_index == 0:
 		return  # No coins on the very first chunk
 
+	if GameManager.is_pronunciation_mode():
+		_spawn_pronunciation_ground_coins()
+		return
+
 	# No coins on chunks with a giant rock
 	if _has_giant_rock():
 		return
@@ -348,6 +352,59 @@ func _spawn_coins() -> void:
 
 	var start_pos := Vector3(0, 0, start_z)
 	CoinPattern.call("spawn_pattern", self, pattern, start_pos, lane_idx, _generator)
+
+
+func _spawn_pronunciation_ground_coins() -> void:
+	if randf() > 0.85:
+		return
+
+	var CoinPattern: GDScript = load("res://scripts/world/coin_pattern.gd") as GDScript
+	if not CoinPattern:
+		return
+
+	var obstacle_zs: Array[float] = _get_obstacle_z_positions()
+	var used_zs: Array[float] = []
+	var line_count: int = 2 if randf() < 0.45 else 1
+
+	for line_idx in line_count:
+		var coin_count: int = randi_range(5, 6)
+		var spacing: float = 2.0
+		var latest_start_z: float = -3.0
+		var earliest_start_z: float = -(chunk_length - 2.0 - float(coin_count - 1) * spacing)
+		var placed := false
+
+		for attempt in 8:
+			var start_z: float = randf_range(earliest_start_z, latest_start_z)
+			if not _is_coin_line_clear(start_z, coin_count, spacing, obstacle_zs, 8.0):
+				continue
+			if not _is_coin_line_clear(start_z, coin_count, spacing, used_zs, 4.0):
+				continue
+
+			var lane_idx: int = randi() % GameManager.LANE_COUNT
+			CoinPattern.call(
+				"spawn_ground_line",
+				self,
+				Vector3(0.0, 0.0, start_z),
+				lane_idx,
+				_generator,
+				coin_count,
+				spacing
+			)
+			used_zs.append(start_z)
+			placed = true
+			break
+
+		if not placed:
+			continue
+
+
+func _is_coin_line_clear(start_z: float, count: int, spacing: float, blocked_zs: Array[float], clearance: float) -> bool:
+	for i in count:
+		var coin_z := start_z - float(i) * spacing
+		for blocked_z: float in blocked_zs:
+			if absf(coin_z - blocked_z) < clearance:
+				return false
+	return true
 
 
 func _get_obstacle_z_positions() -> Array[float]:

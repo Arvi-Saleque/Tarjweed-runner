@@ -347,8 +347,9 @@ func _apply_button_variant(btn: Button, variant: String, skin_override: String =
 		btn.add_theme_color_override("font_hover_color", button_text_color)
 		btn.add_theme_color_override("font_pressed_color", button_text_color)
 		btn.add_theme_color_override("font_disabled_color", Color(0.46, 0.44, 0.36, 1.0))
-		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		btn.expand_icon = false
+		btn.add_theme_constant_override("h_separation", 8)
 		btn.add_theme_color_override("icon_normal_color", button_text_color)
 		btn.add_theme_color_override("icon_hover_color", button_text_color)
 		btn.add_theme_color_override("icon_pressed_color", button_text_color)
