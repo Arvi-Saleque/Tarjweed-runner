@@ -66,21 +66,19 @@ const MODES: Array[Dictionary] = [
 
 const DEFAULT_UNLOCKED_RUNNERS: Array[String] = [
 	"elf",
-	"goblin_male",
-	"soldier_male",
 ]
 
 const RUNNER_PRICES: Dictionary = {
 	"elf": 0,
-	"goblin_male": 0,
-	"soldier_male": 0,
-	"cowboy_male": 120,
-	"kimono_male": 160,
-	"knight_male": 220,
-	"ninja_male": 260,
-	"pirate_male": 320,
-	"witch": 380,
-	"wizard": 440,
+	"goblin_male": 5000,
+	"soldier_male": 7000,
+	"cowboy_male": 10000,
+	"kimono_male": 13500,
+	"knight_male": 15000,
+	"ninja_male": 18000,
+	"pirate_male": 20000,
+	"witch": 22000,
+	"wizard": 25000,
 }
 
 
