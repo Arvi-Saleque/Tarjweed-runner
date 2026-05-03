@@ -15,14 +15,14 @@ const _COL_HARD := Color("D92727")
 const _MODE_LABELS := {
 	"normal": "Normal",
 	"quiz": "Quiz",
-	"pronunciation": "Pronun.",
+	# "pronunciation": "Pronun.",  # Pronunciation UI hidden
 }
 
 const _MODE_CHOICES := [
 	{"label": "ALL MODES", "value": ""},
 	{"label": "NORMAL", "value": "normal"},
 	{"label": "QUIZ", "value": "quiz"},
-	{"label": "PRONUN.", "value": "pronunciation"},
+	# {"label": "PRONUN.", "value": "pronunciation"},  # Pronunciation UI hidden
 ]
 
 const _DIFF_CHOICES := [

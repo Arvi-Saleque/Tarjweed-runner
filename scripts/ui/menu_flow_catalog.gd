@@ -57,11 +57,12 @@ const MODES: Array[Dictionary] = [
 		"title": "QUIZ",
 		"subtitle": "Answer and learn",
 	},
-	{
-		"id": "pronunciation",
-		"title": "PRONUNCIATION",
-		"subtitle": "Listen and practice",
-	},
+	# Pronunciation mode UI hidden — backend & code kept for future use.
+	# {
+	# 	"id": "pronunciation",
+	# 	"title": "PRONUNCIATION",
+	# 	"subtitle": "Listen and practice",
+	# },
 ]
 
 const DEFAULT_UNLOCKED_RUNNERS: Array[String] = [

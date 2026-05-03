@@ -59,6 +59,7 @@ var _touch_start: Vector2 = Vector2.ZERO
 var _touch_active: bool = false
 var _touch_start_time: float = 0.0        # When touch began (for hold detection)
 var _touch_hold_building: bool = false     # True while touch-holding to build bridge
+var _touch_swipe_consumed: bool = false    # True after a drag-triggered swipe is processed
 const TOUCH_HOLD_THRESHOLD: float = PlayerTuning.TOUCH_HOLD_THRESHOLD   # Seconds before touch counts as hold
 
 # --- Giant Rock / Double-Tap Blast ---
@@ -208,6 +209,7 @@ func _input(event: InputEvent) -> void:
 			_touch_start_time = Time.get_ticks_msec() / 1000.0
 			_touch_active = true
 			_touch_hold_building = false
+			_touch_swipe_consumed = false
 		else:
 			if _touch_active:
 				var delta_v: Vector2 = event.position - _touch_start
@@ -215,17 +217,28 @@ func _input(event: InputEvent) -> void:
 				if _touch_hold_building:
 					# Was holding to build bridge — already handled in _process
 					pass
-				elif delta_v.length() < SWIPE_MIN_DISTANCE:
-					# Short tap (not a hold) — double tap for blast
-					if hold_duration < TOUCH_HOLD_THRESHOLD:
-						if GameManager.is_normal_mode():
-							var blast_result := _try_giant_rock_blast()
-							if blast_result == 1:
-								pass  # Blast fired via double tap
-					else:
-						_process_swipe(event.position)
+				elif _touch_swipe_consumed:
+					# Swipe already processed during drag — nothing more to do
+					pass
+				elif delta_v.length() >= SWIPE_MIN_DISTANCE:
+					# Swipe gesture finished — process direction
+					_process_swipe(event.position)
+				elif hold_duration < TOUCH_HOLD_THRESHOLD:
+					# Short tap — double-tap blast in normal mode
+					if GameManager.is_normal_mode():
+						var blast_result := _try_giant_rock_blast()
+						if blast_result == 1:
+							pass  # Blast fired via double tap
 				_touch_active = false
 				_touch_hold_building = false
+				_touch_swipe_consumed = false
+	elif event is InputEventScreenDrag:
+		# Process swipe early as soon as the threshold is crossed for snappier feel
+		if _touch_active and not _touch_hold_building and not _touch_swipe_consumed:
+			var drag_delta: Vector2 = event.position - _touch_start
+			if drag_delta.length() >= SWIPE_MIN_DISTANCE:
+				_process_swipe(event.position)
+				_touch_swipe_consumed = true
 
 
 func _process_swipe(end_pos: Vector2) -> void:

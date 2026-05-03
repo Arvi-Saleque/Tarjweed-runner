@@ -95,12 +95,12 @@ func _create_question_panel() -> void:
 
 
 func _create_answer_area() -> void:
-	# This container sits directly below the top question panel
+	# Container holding the instruction pill + action chip directly under the question
 	var area := Control.new()
 	area.set_anchors_preset(Control.PRESET_TOP_WIDE)
 	area.anchor_right = 1.0
 	area.offset_top = 150.0
-	area.offset_bottom = 320.0
+	area.offset_bottom = 240.0
 	area.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(area)
 
@@ -177,42 +177,72 @@ func _create_answer_area() -> void:
 	_action_chip_label.add_theme_color_override("font_color", _COL_DARK_GREEN)
 	chip_margin.add_child(_action_chip_label)
 
-	# Compact answer row directly below the question
-	var answers_center := CenterContainer.new()
-	answers_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	answers_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(answers_center)
+	# Answer cards split into two side columns: 2 on left, 2 on right.
+	# Player taps the side closer to the desired option without overlapping
+	# the centre of the screen where the runner is visible.
+	const SIDE_COLUMN_WIDTH: float = 240.0
+	const SIDE_COLUMN_TOP: float = 260.0
+	const SIDE_COLUMN_BOTTOM: float = 60.0
+	const SIDE_COLUMN_MARGIN: float = 24.0
 
-	# same visual width zone as the question box
-	var row_shell := HBoxContainer.new()
-	row_shell.custom_minimum_size = Vector2(900, 0)
-	row_shell.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	row_shell.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	answers_center.add_child(row_shell)
+	var left_side := Control.new()
+	left_side.set_anchors_preset(Control.PRESET_LEFT_WIDE)
+	left_side.anchor_top = 0.0
+	left_side.anchor_bottom = 1.0
+	left_side.offset_left = SIDE_COLUMN_MARGIN
+	left_side.offset_right = SIDE_COLUMN_MARGIN + SIDE_COLUMN_WIDTH
+	left_side.offset_top = SIDE_COLUMN_TOP
+	left_side.offset_bottom = -SIDE_COLUMN_BOTTOM
+	left_side.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(left_side)
 
-	var left_spacer := Control.new()
-	left_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row_shell.add_child(left_spacer)
+	var left_center := CenterContainer.new()
+	left_center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	left_center.anchor_right = 1.0
+	left_center.anchor_bottom = 1.0
+	left_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left_side.add_child(left_center)
 
-	var btn_row := HBoxContainer.new()
-	btn_row.add_theme_constant_override("separation", 12)
-	btn_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row_shell.add_child(btn_row)
+	var left_col := VBoxContainer.new()
+	left_col.alignment = BoxContainer.ALIGNMENT_CENTER
+	left_col.add_theme_constant_override("separation", 18)
+	left_col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	left_center.add_child(left_col)
 
-	for i in 4:
-		var card := _create_answer_card(i)
-		btn_row.add_child(card)
+	var right_side := Control.new()
+	right_side.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
+	right_side.anchor_top = 0.0
+	right_side.anchor_bottom = 1.0
+	right_side.offset_left = -(SIDE_COLUMN_MARGIN + SIDE_COLUMN_WIDTH)
+	right_side.offset_right = -SIDE_COLUMN_MARGIN
+	right_side.offset_top = SIDE_COLUMN_TOP
+	right_side.offset_bottom = -SIDE_COLUMN_BOTTOM
+	right_side.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(right_side)
 
-	var right_spacer := Control.new()
-	right_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row_shell.add_child(right_spacer)
+	var right_center := CenterContainer.new()
+	right_center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	right_center.anchor_right = 1.0
+	right_center.anchor_bottom = 1.0
+	right_center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right_side.add_child(right_center)
+
+	var right_col := VBoxContainer.new()
+	right_col.alignment = BoxContainer.ALIGNMENT_CENTER
+	right_col.add_theme_constant_override("separation", 18)
+	right_col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right_center.add_child(right_col)
+
+	# Cards 0 & 1 on left, 2 & 3 on right
+	left_col.add_child(_create_answer_card(0))
+	left_col.add_child(_create_answer_card(1))
+	right_col.add_child(_create_answer_card(2))
+	right_col.add_child(_create_answer_card(3))
 
 
 func _create_answer_card(index: int) -> Control:
 	var root := Control.new()
-	root.custom_minimum_size = Vector2(168, 92)
+	root.custom_minimum_size = Vector2(220, 96)
 	root.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	root.mouse_filter = Control.MOUSE_FILTER_PASS
 
