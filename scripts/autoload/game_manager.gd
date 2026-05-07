@@ -105,6 +105,11 @@ var max_obstacle_frequency: float = 0.75
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS  # Keep processing even when paused
+	# Cap framerate on mobile to reduce GPU load and device heat. Most phones
+	# default to 90/120 Hz which is wasted for an endless runner.
+	if OS.has_feature("mobile") or OS.has_feature("android") or OS.has_feature("ios"):
+		Engine.max_fps = 60
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED)
 	ControlsManager.ensure_controls_ready()
 	current_player_name = SaveManager.get_player_name()
 	current_difficulty_id = SaveManager.get_selected_difficulty()
